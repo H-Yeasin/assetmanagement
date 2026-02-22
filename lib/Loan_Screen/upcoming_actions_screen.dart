@@ -1,0 +1,116 @@
+import 'package:flutter/material.dart';
+import '../Home_Dashboard/widgets.dart';
+import 'services/loan_api_service.dart';
+import 'package:intl/intl.dart';
+
+class UpcomingActionsScreen extends StatefulWidget {
+  const UpcomingActionsScreen({super.key});
+
+  @override
+  State<UpcomingActionsScreen> createState() => _UpcomingActionsScreenState();
+}
+
+class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
+  final LoanApiService _apiService = LoanApiService();
+  List<dynamic> _upcomingGroups = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUpcoming();
+  }
+
+  Future<void> _loadUpcoming() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final groups = await _apiService.fetchUpcomingPayments();
+      setState(() {
+        _upcomingGroups = groups;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFBFBFB), // Match design's off-white background
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFBFBFB),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF111111), size: 24),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Upcoming Actions',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {},
+            child: const Text('Edit', style: TextStyle(color: brandRed, fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(width: 8),
+        ],
+        centerTitle: true,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: brandRed))
+          : _error != null
+              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('Error: $_error', textAlign: TextAlign.center)))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            'Upcoming Actions',
+                            style: TextStyle(fontSize: 14, color: Color(0xFF888888), fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            'See All',
+                            style: TextStyle(fontSize: 13, color: Color(0xFF111111), fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (_upcomingGroups.isEmpty)
+                        const Center(child: Padding(padding: EdgeInsets.only(top: 40), child: Text('No upcoming actions', style: TextStyle(color: Colors.grey))))
+                      else
+                        ..._upcomingGroups.map((group) {
+                          final date = DateTime.parse(group['date']);
+                          final items = group['items'] as List;
+                          return Column(
+                            children: items.map((item) {
+                              return PaymentCard(
+                                month: DateFormat('MMM').format(date),
+                                day: DateFormat('dd').format(date),
+                                title: item['name'],
+                                amount: NumberFormat.simpleCurrency().format(item['monthlyPayment']),
+                                status: item['autoPay'] ? 'Paid automatically' : 'Manual payment required',
+                                isPaid: item['autoPay'],
+                              );
+                            }).toList(),
+                          );
+                        }).toList(),
+                    ],
+                  ),
+                ),
+    );
+  }
+}
