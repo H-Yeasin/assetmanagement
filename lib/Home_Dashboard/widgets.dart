@@ -325,7 +325,7 @@ class AddItemBottomSheet extends StatelessWidget {
                   context.go('/my-loans');
                 },
               ),
-              _CategoryOption(iconPath: 'assets/images/icon/housing.png', title: 'Housing / Living Costs', iconColor: Colors.purple, onTap: () => Navigator.pop(context)),
+              _CategoryOption(iconPath: 'assets/images/icon/housing.png', title: 'Housing / Living Costs', iconColor: Colors.purple, onTap: () { Navigator.pop(context); context.go('/housing-costs'); }),
               _CategoryOption(iconPath: 'assets/images/icon/insurance.png', title: 'Insurance', iconColor: Colors.blue, onTap: () => Navigator.pop(context)),
               _CategoryOption(iconPath: 'assets/images/icon/doccument.png', title: 'Documents', iconColor: Colors.orange, onTap: () => Navigator.pop(context)),
             ],

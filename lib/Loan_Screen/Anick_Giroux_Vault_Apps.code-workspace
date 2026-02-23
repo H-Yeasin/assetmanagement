@@ -2,6 +2,9 @@
     "folders": [
         {
             "path": "../../.."
+        },
+        {
+            "path": "../../../../anick_giroux_backend"
         }
     ]
 }

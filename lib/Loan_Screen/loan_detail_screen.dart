@@ -394,6 +394,15 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                 builder: (_) => AddDocumentsScreen(
                                   loan: _currentLoan,
                                   initialDocuments: _currentLoan.documents.map((doc) {
+                                    if (doc is Map<String, dynamic>) {
+                                      return {
+                                        'id': doc['_id'] ?? doc['id'] ?? '',
+                                        'name': doc['displayName'] ?? doc['name'] ?? 'Existing Document',
+                                        'type': (doc['mimeType']?.toString().contains('pdf') == true) || doc['type'] == 'pdf' ? 'pdf' : 'image',
+                                        'date': doc['createdAt'] != null ? DateTime.tryParse(doc['createdAt']) ?? DateTime.now() : (doc['date'] is DateTime ? doc['date'] : DateTime.now()),
+                                        'path': doc['path'],
+                                      };
+                                    }
                                     if (doc is DocumentFile) {
                                       return {
                                         'id': doc.id,
@@ -404,7 +413,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                       };
                                     }
                                     return {
-                                      'id': doc as String,
+                                      'id': doc is String ? doc : doc.toString(),
                                       'name': 'Existing Document',
                                       'type': 'pdf',
                                       'date': DateTime.now(),

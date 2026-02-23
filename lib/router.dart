@@ -15,6 +15,10 @@ import 'package:anick_giroux/Home_Dashboard/past_activities.dart';
 import 'package:anick_giroux/Loan_Screen/additional_details.dart';
 import 'package:anick_giroux/Loan_Screen/upcoming_payments.dart';
 import 'package:anick_giroux/Loan_Screen/models/loan_model.dart';
+import 'package:anick_giroux/Housing_Living_cost/housing_costs_screen.dart';
+import 'package:anick_giroux/Housing_Living_cost/add_housing_cost_screen.dart';
+import 'package:anick_giroux/Housing_Living_cost/housing_cost_detail_screen.dart';
+import 'package:anick_giroux/Housing_Living_cost/models/housing_cost_model.dart';
 // other screens to be imported later.
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -60,7 +64,22 @@ final GoRouter appRouter = GoRouter(
             return AdditionalDetailsScreen(loan: loan);
           },
         ),
+        GoRoute(
+          path: '/housing-costs',
+          builder: (context, state) => const HousingCostsScreen(),
+        ),
+        GoRoute(
+          path: '/housing-cost-detail',
+          builder: (context, state) {
+            final cost = state.extra as HousingCost;
+            return HousingCostDetailScreen(cost: cost);
+          },
+        ),
       ],
+    ),
+    GoRoute(
+      path: '/add-housing-cost',
+      builder: (context, state) => const AddHousingCostScreen(),
     ),
     GoRoute(
       path: '/add-loan',

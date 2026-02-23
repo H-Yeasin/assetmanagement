@@ -413,6 +413,7 @@ class _ReminderModalState extends State<ReminderModal> {
   void _openCalendar() async {
     final DateTime? result = await showDialog<DateTime>(
       context: context,
+      useRootNavigator: true,
       barrierColor: Colors.black.withOpacity(0.3),
       builder: (context) => Stack(
         children: [
@@ -445,6 +446,7 @@ class _ReminderModalState extends State<ReminderModal> {
   void _openTimePicker() async {
     final TimeOfDay? result = await showTimePicker(
       context: context,
+      useRootNavigator: true,
       initialTime: _selectedTime,
       builder: (context, child) {
         return Theme(
@@ -618,7 +620,7 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
   late DateTime _selectedDay;
 
   final List<String> _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  final List<int> _years = List.generate(10, (index) => 2024 + index);
+  final List<int> _years = List.generate(20, (index) => 2015 + index);
 
   @override
   void initState() {
@@ -713,8 +715,8 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
 
           // ── Table Calendar ──
           TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
+            firstDay: DateTime.utc(2015, 1, 1),
+            lastDay: DateTime.utc(2035, 12, 31),
             focusedDay: _focusedDay,
             currentDay: DateTime.now(),
             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),

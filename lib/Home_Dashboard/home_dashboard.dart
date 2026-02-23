@@ -110,7 +110,9 @@ class HomeDashboardScreen extends StatelessWidget {
                     title: 'Housing / Living Costs', 
                     subtitle: 'up to date', 
                     iconColor: Colors.purple, 
-                    onTap: () => _showFeedback(context, 'Housing'),
+                    onTap: () {
+                      context.go('/housing-costs');
+                    },
                   ),
                   CategoryCard(
                     iconPath: 'assets/images/icon/insurance.png', 
