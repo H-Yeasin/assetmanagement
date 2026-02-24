@@ -11,6 +11,18 @@ import 'package:anick_giroux/Home_Dashboard/main_shell.dart';
 import 'package:anick_giroux/Home_Dashboard/home_dashboard.dart';
 import 'package:anick_giroux/Home_Vault/vault_screen.dart';
 import 'package:anick_giroux/Home_Profile/profile_screen.dart';
+import 'package:anick_giroux/Home_Profile/edit_profile_screen.dart';
+import 'package:anick_giroux/Home_Profile/data_security_screen.dart';
+import 'package:anick_giroux/Home_Profile/fingerprint_screen.dart';
+import 'package:anick_giroux/Home_Profile/set_pin_screen.dart';
+import 'package:anick_giroux/Home_Profile/pincode_locked_screen.dart';
+import 'package:anick_giroux/Home_Profile/two_factor_screen.dart';
+import 'package:anick_giroux/Home_Profile/two_factor_email_screen.dart';
+import 'package:anick_giroux/Home_Profile/two_factor_otp_screen.dart';
+import 'package:anick_giroux/Home_Profile/faq_screen.dart';
+import 'package:anick_giroux/Home_Profile/change_password_screen.dart';
+import 'package:anick_giroux/Home_Profile/delete_account_screen.dart';
+import 'package:anick_giroux/Home_Profile/fingerprint_success_screen.dart';
 import 'package:anick_giroux/Home_Dashboard/past_activities.dart';
 import 'package:anick_giroux/Loan_Screen/additional_details.dart';
 import 'package:anick_giroux/Loan_Screen/upcoming_payments.dart';
@@ -62,6 +74,42 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const ProfileScreen(),
         ),
         GoRoute(
+          path: '/edit-profile',
+          builder: (context, state) => const EditProfileScreen(),
+        ),
+        GoRoute(
+          path: '/data-security',
+          builder: (context, state) => const DataSecurityScreen(),
+        ),
+        GoRoute(
+          path: '/change-password',
+          builder: (context, state) => const ChangePasswordScreen(),
+        ),
+        GoRoute(
+          path: '/delete-account',
+          builder: (context, state) => const DeleteAccountScreen(),
+        ),
+        GoRoute(
+          path: '/fingerprint',
+          builder: (context, state) => const FingerprintScreen(),
+        ),
+        GoRoute(
+          path: '/fingerprint-success',
+          builder: (context, state) => const FingerprintSuccessScreen(),
+        ),
+        GoRoute(
+          path: '/set-pin',
+          builder: (context, state) => const SetPinScreen(),
+        ),
+        GoRoute(
+          path: '/pin-locked',
+          builder: (context, state) => const PincodeLocked(),
+        ),
+        GoRoute(
+          path: '/faq',
+          builder: (context, state) => const FaqScreen(),
+        ),
+        GoRoute(
           path: '/loan-detail',
           builder: (context, state) {
             final loan = state.extra as Loan;
@@ -105,6 +153,18 @@ final GoRouter appRouter = GoRouter(
           },
         ),
       ],
+    ),
+    GoRoute(
+      path: '/two-factor',
+      builder: (context, state) => const TwoFactorScreen(),
+    ),
+    GoRoute(
+      path: '/two-factor-email',
+      builder: (context, state) => const TwoFactorEmailScreen(),
+    ),
+    GoRoute(
+      path: '/two-factor-otp',
+      builder: (context, state) => const TwoFactorOtpScreen(),
     ),
     GoRoute(
       path: '/add-housing-cost',
