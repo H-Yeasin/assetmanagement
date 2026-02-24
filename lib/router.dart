@@ -19,7 +19,14 @@ import 'package:anick_giroux/Housing_Living_cost/housing_costs_screen.dart';
 import 'package:anick_giroux/Housing_Living_cost/add_housing_cost_screen.dart';
 import 'package:anick_giroux/Housing_Living_cost/housing_cost_detail_screen.dart';
 import 'package:anick_giroux/Housing_Living_cost/models/housing_cost_model.dart';
-// other screens to be imported later.
+import 'package:anick_giroux/Insurance/my_insurances_screen.dart';
+import 'package:anick_giroux/Insurance/insurance_detail_screen.dart';
+import 'package:anick_giroux/Insurance/add_insurance_screen.dart';
+import 'package:anick_giroux/Insurance/insurance_additional_details_screen.dart';
+import 'package:anick_giroux/Insurance/edit_insurance_screen.dart';
+import 'package:anick_giroux/Insurance/insurance_add_documents_screen.dart';
+import 'package:anick_giroux/Insurance/insurance_upcoming_actions_screen.dart';
+import 'package:anick_giroux/Insurance/models/insurance_model.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -27,6 +34,10 @@ final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   routes: <RouteBase>[
+    GoRoute(
+      path: '/insurance-upcoming',
+      builder: (context, state) => const InsuranceUpcomingActionsScreen(),
+    ),
     GoRoute(
       path: '/',
       builder: (BuildContext context, GoRouterState state) => const SplashScreen(),
@@ -75,6 +86,24 @@ final GoRouter appRouter = GoRouter(
             return HousingCostDetailScreen(cost: cost);
           },
         ),
+        GoRoute(
+          path: '/my-insurances',
+          builder: (context, state) => const MyInsurancesScreen(),
+        ),
+        GoRoute(
+          path: '/insurance-detail',
+          builder: (context, state) {
+            final policy = state.extra as InsurancePolicy;
+            return InsuranceDetailScreen(policy: policy);
+          },
+        ),
+        GoRoute(
+          path: '/insurance-additional-details',
+          builder: (context, state) {
+            final policy = state.extra as InsurancePolicy;
+            return InsuranceAdditionalDetailsScreen(policy: policy);
+          },
+        ),
       ],
     ),
     GoRoute(
@@ -106,8 +135,29 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const AddDocumentsScreen(),
     ),
     GoRoute(
+      path: '/add-insurance',
+      builder: (context, state) => const AddInsuranceScreen(),
+    ),
+    GoRoute(
       path: '/main', // Fallback for direct MainShell navigation if used previously
       builder: (context, state) => const MainShell(child: HomeDashboardScreen()), 
+    ),
+    GoRoute(
+      path: '/edit-insurance',
+      builder: (context, state) {
+        final policy = state.extra as InsurancePolicy;
+        return EditInsuranceScreen(policy: policy);
+      },
+    ),
+    GoRoute(
+      path: '/insurance-add-documents',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return InsuranceAddDocumentsScreen(
+          policy: extra?['policy'] as InsurancePolicy?,
+          initialDocuments: extra?['initialDocuments'] as List<Map<String, dynamic>>?,
+        );
+      },
     ),
   ],
 );

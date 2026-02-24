@@ -43,9 +43,10 @@ flutter:
   uses-material-design: true
 
   assets:
-     - assets/images/logo.png
-     - assets/images/onbording1.png
-     - assets/images/onbording2.png
-     - assets/images/onbording3.png
-     - assets/images/loginpage_image.png
-     - assets/images/icon/
+    - assets/images/logo.png
+    - assets/images/onbording1.png
+    - assets/images/onbording2.png
+    - assets/images/onbording3.png
+    - assets/images/loginpage_image.png
+    - assets/images/icon/
+    - assets/images/insurance/

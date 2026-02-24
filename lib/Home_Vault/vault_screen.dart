@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 
 class VaultScreen extends StatelessWidget {
@@ -65,10 +66,30 @@ class VaultScreen extends StatelessWidget {
                 crossAxisSpacing: 16,
                 childAspectRatio: 1.25,
                 children: [
-                  _VaultEntry(icon: Icons.account_balance_wallet_outlined, title: 'Loans', iconColor: brandRed),
-                  _VaultEntry(icon: Icons.home_outlined, title: 'Housing / Living Costs', iconColor: Colors.purple),
-                  _VaultEntry(icon: Icons.shield_outlined, title: 'Insurance', iconColor: Colors.blue),
-                  _VaultEntry(icon: Icons.description_outlined, title: 'Documents', iconColor: Colors.orange),
+                  _VaultEntry(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'Loans',
+                    iconColor: brandRed,
+                    onTap: () => context.push('/my-loans'),
+                  ),
+                  _VaultEntry(
+                    icon: Icons.home_outlined, 
+                    title: 'Housing / Living Costs', 
+                    iconColor: Colors.purple,
+                    onTap: () => context.push('/housing-costs'),
+                  ),
+                  _VaultEntry(
+                    icon: Icons.shield_outlined, 
+                    title: 'Insurance', 
+                    iconColor: Colors.blue,
+                    onTap: () => context.push('/my-insurances'),
+                  ),
+                  _VaultEntry(
+                    icon: Icons.description_outlined, 
+                    title: 'Documents', 
+                    iconColor: Colors.orange,
+                    onTap: () => context.push('/add-documents'),
+                  ),
                 ],
               ),
             ],
@@ -83,43 +104,48 @@ class _VaultEntry extends StatelessWidget {
   final IconData icon;
   final String title;
   final Color iconColor;
+  final VoidCallback? onTap;
 
   const _VaultEntry({
     required this.icon,
     required this.title,
     required this.iconColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFEEEEEE)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 28),
             ),
-            child: Icon(icon, color: iconColor, size: 28),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111111),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
