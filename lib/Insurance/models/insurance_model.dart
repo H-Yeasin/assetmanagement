@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 
 class InsurancePolicy {
@@ -65,6 +66,20 @@ class InsurancePolicy {
   });
 
   factory InsurancePolicy.fromJson(Map<String, dynamic> json) {
+    String? rawNotes = json['coverageNotes'];
+    Map<String, dynamic> extraData = {};
+    String? displayNotes = rawNotes;
+
+    if (rawNotes != null && rawNotes.startsWith('@DATA:')) {
+      try {
+        final jsonStr = rawNotes.substring(6);
+        extraData = jsonDecode(jsonStr);
+        displayNotes = extraData['notes']; 
+      } catch (e) {
+        debugPrint('Error parsing extra data: $e');
+      }
+    }
+
     return InsurancePolicy(
       id: json['_id'],
       userId: json['userId'] ?? '',
@@ -74,38 +89,34 @@ class InsurancePolicy {
       paymentFrequency: json['paymentFrequency'],
       provider: json['provider'],
       renewalDate: json['renewalDate'] != null ? DateTime.parse(json['renewalDate']) : null,
-      coverageNotes: json['coverageNotes'],
+      coverageNotes: displayNotes,
       documents: json['documents'] != null ? (json['documents'] as List) : [],
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      policyNumber: json['policyNumber'],
-      coverageType: json['coverageType'],
-      petName: json['petName'],
-      propertyAddress: json['propertyAddress'],
-      applianceName: json['applianceName'],
-      manufacturer: json['manufacturer'],
-      vehicleModel: json['vehicleModel'],
-      timeLeft: json['timeLeft'],
-      paymentsCompleted: json['paymentsCompleted'],
-      totalPayments: json['totalPayments'],
-      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : null,
-      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
-      isAutoPay: json['isAutoPay'],
-      paymentDay: json['paymentDay'],
-      personalInsuranceType: json['personalInsuranceType'],
+      
+      policyNumber: json['policyNumber'] ?? extraData['policyNumber'],
+      coverageType: json['coverageType'] ?? extraData['coverageType'],
+      petName: json['petName'] ?? extraData['petName'],
+      propertyAddress: json['propertyAddress'] ?? extraData['propertyAddress'],
+      applianceName: json['applianceName'] ?? extraData['applianceName'],
+      manufacturer: json['manufacturer'] ?? extraData['manufacturer'],
+      vehicleModel: json['vehicleModel'] ?? extraData['vehicleModel'],
+      timeLeft: json['timeLeft'] ?? extraData['timeLeft'],
+      paymentsCompleted: json['paymentsCompleted'] ?? extraData['paymentsCompleted'],
+      totalPayments: json['totalPayments'] ?? extraData['totalPayments'],
+      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : 
+                 (extraData['startDate'] != null ? DateTime.parse(extraData['startDate']) : null),
+      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : 
+               (extraData['endDate'] != null ? DateTime.parse(extraData['endDate']) : null),
+      isAutoPay: json['isAutoPay'] ?? extraData['isAutoPay'],
+      paymentDay: json['paymentDay'] ?? extraData['paymentDay'],
+      personalInsuranceType: json['personalInsuranceType'] ?? extraData['personalInsuranceType'],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'category': category,
-      'premium': premium,
-      'paymentFrequency': paymentFrequency,
-      'provider': provider,
-      'renewalDate': renewalDate?.toIso8601String(),
-      'coverageNotes': coverageNotes,
-      'documents': documents.map((doc) => doc is String ? doc : doc.id).toList(),
+    final Map<String, dynamic> extraData = {
+      'notes': coverageNotes,
       'policyNumber': policyNumber,
       'coverageType': coverageType,
       'petName': petName,
@@ -121,6 +132,22 @@ class InsurancePolicy {
       'isAutoPay': isAutoPay,
       'paymentDay': paymentDay,
       'personalInsuranceType': personalInsuranceType,
+    };
+
+    return {
+      'name': name,
+      'category': category,
+      'premium': premium,
+      'paymentFrequency': paymentFrequency,
+      'provider': provider,
+      'renewalDate': renewalDate?.toIso8601String(),
+      'coverageNotes': '@DATA:${jsonEncode(extraData)}',
+      'documents': documents.map((doc) {
+        if (doc is String) return doc;
+        try { return doc.id; } catch (_) {
+          try { return doc['_id'] ?? doc['id']; } catch (_) { return doc.toString(); }
+        }
+      }).toList(),
     };
   }
 

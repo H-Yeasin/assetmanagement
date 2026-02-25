@@ -67,7 +67,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     // For simplicity, assuming monthly if not specified, or dividing annual by 12
     return _policies.fold(0.0, (sum, p) {
       final freq = p.paymentFrequency?.toLowerCase() ?? '';
-      if (freq.contains('annually')) {
+      if (freq.contains('annually') || freq.contains('yearly')) {
         return sum + (p.premium / 12);
       } else if (freq.contains('quarterly')) {
         return sum + (p.premium / 3);
@@ -289,7 +289,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                           title: p.name,
                           subtitle: p.provider ?? p.category,
                           amount: '\$${NumberFormat('#,##0.0').format(p.premium)}',
-                          frequency: '(${p.paymentFrequency?.toLowerCase() ?? 'yearly'})',
+                          frequency: p.paymentFrequency ?? 'Yearly',
                           isAutoPay: true,
                           onTap: () async {
                             await context.push('/insurance-detail', extra: p);

@@ -42,7 +42,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   List<String> _documentIds = [];
 
   final List<String> _categories = ['Personal', 'Pet', 'Home', 'Appliance', 'Auto', 'Other'];
-  final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Annually'];
+  final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Yearly'];
   final List<String> _personalTypes = ['Disability', 'Travel', 'Group', 'Critical Illness'];
 
   @override
@@ -171,6 +171,8 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         endDate: endDate,
         coverageType: _selectedCategory == 'Auto' ? _coverageType : null,
         isAutoPay: true, // Defaulting for now
+        paymentDay: 'Every 15th of the month', // Default for new policies
+        personalInsuranceType: _personalInsuranceType,
       );
 
       await _apiService.createInsurance(policy);
@@ -379,7 +381,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Annually', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Yearly', (v) => setState(() => _paymentType = v!), isRed: true)),
         ],
       ),
 

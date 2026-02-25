@@ -39,7 +39,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   bool _isAutoPay = true;
   String _paymentDay = 'Every 15th of the month';
 
-  final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Annually'];
+  final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Yearly'];
   final List<String> _personalTypes = ['Disability', 'Travel', 'Group', 'Critical Illness'];
 
   @override
@@ -78,8 +78,8 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       _paymentType = 'Monthly';
     } else if (freq == 'quarterly') {
       _paymentType = 'Quarterly';
-    } else if (freq == 'annually') {
-      _paymentType = 'Annually';
+    } else if (freq == 'annually' || freq == 'yearly') {
+      _paymentType = 'Yearly';
     } else {
       _paymentType = 'Monthly';
     }
@@ -122,30 +122,35 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         try { endDate = DateFormat('MM/dd/yyyy').parse(_endDateController.text); } catch (_) {}
       }
 
-      final Map<String, dynamic> updates = {
-        'name': widget.policy.category == 'pet' ? _petNameController.text : _nameController.text,
-        'premium': amount,
-        'paymentFrequency': _paymentType,
-        'provider': _providerController.text,
-        'renewalDate': renewalDate?.toIso8601String(),
-        'coverageNotes': _notesController.text,
-        'petName': _petNameController.text,
-        'propertyAddress': _addressController.text,
-        'manufacturer': _manufacturerController.text,
-        'policyNumber': _policyNumberController.text,
-        'vehicleModel': _vehicleModelController.text,
-        'timeLeft': _timeLeftController.text,
-        'paymentsCompleted': int.tryParse(_paymentsCompletedController.text),
-        'totalPayments': int.tryParse(_totalPaymentsController.text),
-        'startDate': startDate?.toIso8601String(),
-        'endDate': endDate?.toIso8601String(),
-        'coverageType': _coverageType,
-        'isAutoPay': _isAutoPay,
-        'paymentDay': _paymentDay,
-        'personalInsuranceType': _personalInsuranceType,
-      };
+      final tempPolicy = InsurancePolicy(
+        userId: widget.policy.userId,
+        name: widget.policy.category == 'pet' ? _petNameController.text : _nameController.text,
+        category: widget.policy.category,
+        premium: amount,
+        paymentFrequency: _paymentType,
+        provider: _providerController.text,
+        renewalDate: renewalDate,
+        coverageNotes: _notesController.text,
+        petName: _petNameController.text,
+        propertyAddress: _addressController.text,
+        applianceName: widget.policy.category == 'appliance' ? _nameController.text : null,
+        manufacturer: _manufacturerController.text,
+        policyNumber: _policyNumberController.text,
+        vehicleModel: _vehicleModelController.text,
+        timeLeft: _timeLeftController.text,
+        paymentsCompleted: int.tryParse(_paymentsCompletedController.text),
+        totalPayments: int.tryParse(_totalPaymentsController.text),
+        startDate: startDate,
+        endDate: endDate,
+        coverageType: _coverageType,
+        isAutoPay: _isAutoPay,
+        paymentDay: _paymentDay,
+        personalInsuranceType: _personalInsuranceType,
+        documents: widget.policy.documents,
+      );
 
-      await _apiService.updateInsurance(widget.policy.id!, updates);
+      final packedUpdates = tempPolicy.toJson();
+      await _apiService.updateInsurance(widget.policy.id!, packedUpdates);
       if (mounted) context.pop(true);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -219,7 +224,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Annually', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Yearly', (v) => setState(() => _paymentType = v!), isRed: true)),
         ],
       ),
 
@@ -356,7 +361,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Annually', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Yearly', (v) => setState(() => _paymentType = v!), isRed: true)),
         ],
       ),
 
@@ -609,7 +614,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Annually', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Yearly', (v) => setState(() => _paymentType = v!), isRed: true)),
         ],
       ),
 

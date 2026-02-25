@@ -87,12 +87,12 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
               child: Container(color: Colors.transparent),
             ),
           ),
-          const Center(
+          Center(
             child: Material(
               color: Colors.transparent,
               child: SizedBox(
                 width: 343,
-                child: ReminderModal(),
+                child: InsuranceReminderModal(policy: _policy),
               ),
             ),
           ),
@@ -249,12 +249,26 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                     child: Center(child: Image.asset('assets/images/insurance/doccument.png', width: 24, height: 24)),
                   ),
                   const SizedBox(width: 16),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('2 Documents', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF111111))),
-                      Text('toyota_car_2', style: TextStyle(color: Color(0xFF888888), fontSize: 12)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${_policy.documents.length} Documents', 
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF111111)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(_policy.documents.isNotEmpty 
+                          ? (_policy.documents.first is String 
+                              ? _policy.documents.first 
+                              : (_policy.documents.first as Map)['displayName'] ?? 'document') 
+                          : 'No documents', 
+                             style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
+                             maxLines: 1,
+                             overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

@@ -164,4 +164,45 @@ class InsuranceApiService {
       throw Exception('Failed to upload document: $resBody');
     }
   }
+
+  // Reminder Management
+  Future<void> createReminder({
+    required String itemId,
+    required String itemType,
+    required String title,
+    required DateTime remindAt,
+    String? note,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reminders'),
+      headers: _headers,
+      body: json.encode({
+        'itemId': itemId,
+        'itemType': itemType,
+        'title': title,
+        'remindAt': remindAt.toIso8601String(),
+        'note': note,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to create reminder: ${response.body}');
+    }
+  }
+
+  Future<List<dynamic>> fetchUpcomingReminders({DateTime? from, DateTime? to}) async {
+    String query = '';
+    if (from != null) query += 'from=${from.toIso8601String()}&';
+    if (to != null) query += 'to=${to.toIso8601String()}&';
+    if (query.isNotEmpty) query = '?${query.substring(0, query.length - 1)}';
+
+    final response = await http.get(Uri.parse('$baseUrl/reminders/upcoming$query'), headers: _headers);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      return data['data'];
+    } else {
+      throw Exception('Failed to load upcoming reminders: ${response.body}');
+    }
+  }
 }

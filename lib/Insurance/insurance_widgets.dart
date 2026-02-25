@@ -1,7 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'models/insurance_model.dart';
+import 'services/insurance_api_service.dart';
+import '../Loan_Screen/loan_widgets.dart';
 
 class InsuranceListItem extends StatelessWidget {
   final String iconPath;
@@ -27,8 +30,24 @@ class InsuranceListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frequencyColor = frequency.toLowerCase().contains('yearly') ? const Color(0xFFFFA726) : const Color(0xFFBA68C8);
-    final frequencyBgColor = frequency.toLowerCase().contains('yearly') ? const Color(0xFFFFF7E6) : frequencyColor.withValues(alpha: 0.1);
+    final freqLower = frequency.toLowerCase();
+    final bool isYearly = freqLower.contains('yearly') || freqLower.contains('annually');
+    final bool isQuarterly = freqLower.contains('quarterly');
+    
+    final frequencyColor = isYearly 
+        ? const Color(0xFFFFA726) 
+        : (isQuarterly ? const Color(0xFF906AF9) : const Color(0xFFBA68C8));
+        
+    final frequencyBgColor = isYearly 
+        ? const Color(0xFFFFF7E6) 
+        : (isQuarterly ? const Color(0xFFF2E7FF) : frequencyColor.withValues(alpha: 0.1));
+        
+    String displayFrequency = frequency.replaceAll('(', '').replaceAll(')', '');
+    if (isYearly) {
+      displayFrequency = 'Yearly';
+    } else if (displayFrequency.isNotEmpty) {
+      displayFrequency = displayFrequency[0].toUpperCase() + displayFrequency.substring(1);
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -101,7 +120,7 @@ class InsuranceListItem extends StatelessWidget {
                             Icon(Icons.sync, color: frequencyColor, size: 12),
                             const SizedBox(width: 4),
                             Text(
-                              frequency,
+                              displayFrequency,
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
@@ -244,9 +263,36 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
   Future<void> _recordPayment() async {
     setState(() => _isProcessing = true);
     try {
-      // Logic for recording payment would go here (e.g., adding to a payments list)
-      // For now, we follow the pattern of refreshing the UI
-      await Future.delayed(const Duration(seconds: 1)); 
+      final newCompleted = (widget.policy.paymentsCompleted ?? 0) + 1;
+      
+      final tempPolicy = InsurancePolicy(
+        userId: widget.policy.userId,
+        name: widget.policy.name,
+        category: widget.policy.category,
+        premium: widget.policy.premium,
+        paymentFrequency: widget.policy.paymentFrequency,
+        provider: widget.policy.provider,
+        renewalDate: widget.policy.renewalDate,
+        coverageNotes: widget.policy.coverageNotes,
+        policyNumber: widget.policy.policyNumber,
+        coverageType: widget.policy.coverageType,
+        petName: widget.policy.petName,
+        propertyAddress: widget.policy.propertyAddress,
+        applianceName: widget.policy.applianceName,
+        manufacturer: widget.policy.manufacturer,
+        vehicleModel: widget.policy.vehicleModel,
+        timeLeft: widget.policy.timeLeft,
+        paymentsCompleted: newCompleted,
+        totalPayments: widget.policy.totalPayments,
+        startDate: widget.policy.startDate,
+        endDate: widget.policy.endDate,
+        isAutoPay: widget.policy.isAutoPay,
+        paymentDay: widget.policy.paymentDay,
+        personalInsuranceType: widget.policy.personalInsuranceType,
+        documents: widget.policy.documents,
+      );
+
+      await InsuranceApiService().updateInsurance(widget.policy.id!, tempPolicy.toJson());
 
       if (mounted) {
         Navigator.pop(context);
@@ -394,6 +440,217 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
                   child: _isProcessing 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC61C36)))
                       : const Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Insurance Reminder Modal ──────────────────────────────────────────────────
+
+class InsuranceReminderModal extends StatefulWidget {
+  final InsurancePolicy policy;
+  const InsuranceReminderModal({super.key, required this.policy});
+
+  @override
+  State<InsuranceReminderModal> createState() => _InsuranceReminderModalState();
+}
+
+class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+  TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.policy.renewalDate != null && widget.policy.renewalDate!.isAfter(DateTime.now())) {
+      _selectedDate = widget.policy.renewalDate!.subtract(const Duration(days: 1));
+    }
+  }
+
+  void _openCalendar() async {
+    final DateTime? result = await showDialog<DateTime>(
+      context: context,
+      useRootNavigator: true,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          Center(
+            child: Material(
+              color: Colors.transparent,
+              child: SizedBox(
+                width: 343,
+                child: CustomCalendarModal(initialDate: _selectedDate),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      setState(() => _selectedDate = result);
+    }
+  }
+
+  void _openTimePicker() async {
+    final TimeOfDay? result = await showTimePicker(
+      context: context,
+      useRootNavigator: true,
+      initialTime: _selectedTime,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: brandRed),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() => _selectedTime = result);
+    }
+  }
+
+  void _onSave() async {
+    setState(() => _isSaving = true);
+    try {
+      final remindAt = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime.hour,
+        _selectedTime.minute,
+      );
+
+      await InsuranceApiService().createReminder(
+        itemId: widget.policy.id!,
+        itemType: 'insurance',
+        title: 'Insurance Renewal: ${widget.policy.name}',
+        remindAt: remindAt,
+        note: 'Reminder for ${widget.policy.provider} policy ${widget.policy.policyNumber ?? ""}',
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reminder set successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String formattedDate = DateFormat('MMMM dd, yyyy').format(_selectedDate);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Set Reminder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          GestureDetector(
+            onTap: _openCalendar,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Pick Date', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(formattedDate, style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                    const Icon(Icons.calendar_today, color: brandRed, size: 18),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(height: 1, color: const Color(0xFFEEEEEE)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          GestureDetector(
+            onTap: _openTimePicker,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Pick Time', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_selectedTime.hourOfPeriod.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${_selectedTime.period == DayPeriod.am ? 'AM' : 'PM'}',
+                      style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500),
+                    ),
+                    const Icon(Icons.access_time, color: brandRed, size: 18),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(height: 1, color: const Color(0xFFEEEEEE)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel', style: TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _onSave,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFDE7E9),
+                    foregroundColor: brandRed,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: _isSaving 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: brandRed))
+                    : const Text('Set Reminder', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 ),
               ),
             ],
