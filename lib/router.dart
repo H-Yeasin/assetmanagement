@@ -10,6 +10,10 @@ import 'package:anick_giroux/Loan_Screen/add_documents_screen.dart';
 import 'package:anick_giroux/Home_Dashboard/main_shell.dart';
 import 'package:anick_giroux/Home_Dashboard/home_dashboard.dart';
 import 'package:anick_giroux/Home_Vault/vault_screen.dart';
+import 'package:anick_giroux/Home_Vault/vault_category_screen.dart';
+import 'package:anick_giroux/Home_Vault/vault_subfolder_screen.dart';
+import 'package:anick_giroux/Home_Vault/vault_edit_folder_screen.dart';
+import 'package:anick_giroux/Home_Vault/vault_create_subfolder_screen.dart';
 import 'package:anick_giroux/Home_Profile/profile_screen.dart';
 import 'package:anick_giroux/Home_Profile/edit_profile_screen.dart';
 import 'package:anick_giroux/Home_Profile/data_security_screen.dart';
@@ -217,6 +221,34 @@ final GoRouter appRouter = GoRouter(
           policy: extra?['policy'] as InsurancePolicy?,
           initialDocuments: extra?['initialDocuments'] as List<Map<String, dynamic>>?,
         );
+      },
+    ),
+    GoRoute(
+      path: '/vault-category',
+      builder: (context, state) {
+        final categoryName = state.extra as String;
+        return VaultCategoryScreen(categoryName: categoryName);
+      },
+    ),
+    GoRoute(
+      path: '/vault-subfolder',
+      builder: (context, state) {
+        final folderName = state.extra as String;
+        return VaultSubfolderScreen(folderName: folderName);
+      },
+    ),
+    GoRoute(
+      path: '/vault-edit-folder',
+      builder: (context, state) {
+        final folderName = state.extra as String;
+        return VaultEditFolderScreen(folderName: folderName);
+      },
+    ),
+    GoRoute(
+      path: '/vault-create-subfolder',
+      builder: (context, state) {
+        final categoryName = state.extra as String;
+        return VaultCreateSubfolderScreen(categoryName: categoryName);
       },
     ),
   ],

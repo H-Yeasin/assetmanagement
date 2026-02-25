@@ -50,3 +50,12 @@ flutter:
     - assets/images/loginpage_image.png
     - assets/images/icon/
     - assets/images/insurance/
+    - assets/images/protected.png
+    - assets/images/create.png
+    - assets/images/upload.png
+    - assets/images/update_delete.png
+    - assets/images/createsubfolder.png
+    - assets/images/pdficon.png
+    - assets/images/black_delete.png
+    - assets/images/black_download.png
+    - assets/images/black_share.png
