@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 
-class UpcomingPaymentsScreen extends StatelessWidget {
-  const UpcomingPaymentsScreen({super.key});
+class UpcomingRemindersScreen extends StatelessWidget {
+  const UpcomingRemindersScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class UpcomingPaymentsScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Upcoming Payments',
+          'Upcoming Reminders',
           style: TextStyle(
             fontSize: 18, 
             fontWeight: FontWeight.w700, 
@@ -31,11 +31,7 @@ class UpcomingPaymentsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 10),
-            // Interactive Calendar
-            const CalendarWidget(),
-            
-            const SizedBox(height: 32),
+
             
             // Payment List Section
             const Text(
@@ -48,30 +44,35 @@ class UpcomingPaymentsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            // Dummy Payment Data aligned with Calendar Markers (Jan 2025)
-            const PaymentCard(
+            // Dummy Reminders
+
+            ReminderCard(
               month: 'Jan', 
-              day: '11', 
-              title: 'Home Loan', 
-              amount: '\$2,460.00', 
-              status: 'Paid Automatically', 
-              isPaid: true,
+              day: '01', 
+              title: 'Apartment Rent Due', 
+              dueInfo: 'Due in 3 days',
+              onTap: () {},
             ),
-            const PaymentCard(
-              month: 'Jan', 
-              day: '17', 
-              title: 'Car Loan', 
-              amount: '\$2,230.00', 
-              status: 'Manual Payment Required', 
-              isPaid: false,
+            ReminderCard(
+              month: 'Feb', 
+              day: '20', 
+              title: 'Car Insurance Renewal', 
+              dueInfo: 'February 20, 2025',
+              onTap: () {},
             ),
-            const PaymentCard(
-              month: 'Jan', 
-              day: '22', 
-              title: 'Student Loan', 
-              amount: '\$1,300.00', 
-              status: 'Paid Automatically', 
-              isPaid: true,
+            ReminderCard(
+              month: 'Mar', 
+              day: '15', 
+              title: 'Health Insurance Premium', 
+              dueInfo: 'March 15, 2025',
+              onTap: () {},
+            ),
+            ReminderCard(
+              month: 'Apr', 
+              day: '10', 
+              title: 'Property Tax Installment', 
+              dueInfo: 'April 10, 2025',
+              onTap: () {},
             ),
 
             const SizedBox(height: 24),
@@ -101,12 +102,7 @@ class UpcomingPaymentsScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 48),
-            
-            // Notification Toggle Section
-            const NotificationToggle(),
-            
-            const SizedBox(height: 40),
+
           ],
         ),
       ),

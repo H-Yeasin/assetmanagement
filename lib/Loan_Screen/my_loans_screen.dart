@@ -269,7 +269,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                               child: GestureDetector(
                                 onTap: () => setState(() => _selectedTab = index),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(vertical: 9),
                                   decoration: BoxDecoration(
                                     color: isSelected ? brandRed : Colors.white,
                                     borderRadius: BorderRadius.circular(12),

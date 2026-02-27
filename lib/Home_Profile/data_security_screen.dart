@@ -21,7 +21,7 @@ class _DataSecurityScreenState extends State<DataSecurityScreen> {
         backgroundColor: const Color(0xFFF8F6F6),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
+          icon: const Icon(Icons.arrow_back,
               size: 18, color: Color(0xFF111111)),
           onPressed: () => Navigator.pop(context),
         ),

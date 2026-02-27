@@ -27,7 +27,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         backgroundColor: const Color(0xFFF8F6F6),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Color(0xFF111111)),
+          icon: const Icon(Icons.arrow_back, size: 18, color: Color(0xFF111111)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(

@@ -9,6 +9,7 @@ import 'package:anick_giroux/Loan_Screen/loan_detail_screen.dart';
 import 'package:anick_giroux/Loan_Screen/add_documents_screen.dart';
 import 'package:anick_giroux/Home_Dashboard/main_shell.dart';
 import 'package:anick_giroux/Home_Dashboard/home_dashboard.dart';
+import 'package:anick_giroux/Home_Dashboard/upcoming_reminders_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_category_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_subfolder_screen.dart';
@@ -81,38 +82,7 @@ final GoRouter appRouter = GoRouter(
           path: '/edit-profile',
           builder: (context, state) => const EditProfileScreen(),
         ),
-        GoRoute(
-          path: '/data-security',
-          builder: (context, state) => const DataSecurityScreen(),
-        ),
-        GoRoute(
-          path: '/change-password',
-          builder: (context, state) => const ChangePasswordScreen(),
-        ),
-        GoRoute(
-          path: '/delete-account',
-          builder: (context, state) => const DeleteAccountScreen(),
-        ),
-        GoRoute(
-          path: '/fingerprint',
-          builder: (context, state) => const FingerprintScreen(),
-        ),
-        GoRoute(
-          path: '/fingerprint-success',
-          builder: (context, state) => const FingerprintSuccessScreen(),
-        ),
-        GoRoute(
-          path: '/set-pin',
-          builder: (context, state) => const SetPinScreen(),
-        ),
-        GoRoute(
-          path: '/pin-locked',
-          builder: (context, state) => const PincodeLocked(),
-        ),
-        GoRoute(
-          path: '/faq',
-          builder: (context, state) => const FaqScreen(),
-        ),
+
         GoRoute(
           path: '/loan-detail',
           builder: (context, state) {
@@ -159,6 +129,38 @@ final GoRouter appRouter = GoRouter(
       ],
     ),
     GoRoute(
+      path: '/data-security',
+      builder: (context, state) => const DataSecurityScreen(),
+    ),
+    GoRoute(
+      path: '/change-password',
+      builder: (context, state) => const ChangePasswordScreen(),
+    ),
+    GoRoute(
+      path: '/delete-account',
+      builder: (context, state) => const DeleteAccountScreen(),
+    ),
+    GoRoute(
+      path: '/fingerprint',
+      builder: (context, state) => const FingerprintScreen(),
+    ),
+    GoRoute(
+      path: '/fingerprint-success',
+      builder: (context, state) => const FingerprintSuccessScreen(),
+    ),
+    GoRoute(
+      path: '/set-pin',
+      builder: (context, state) => const SetPinScreen(),
+    ),
+    GoRoute(
+      path: '/pin-locked',
+      builder: (context, state) => const PincodeLocked(),
+    ),
+    GoRoute(
+      path: '/faq',
+      builder: (context, state) => const FaqScreen(),
+    ),
+    GoRoute(
       path: '/two-factor',
       builder: (context, state) => const TwoFactorScreen(),
     ),
@@ -181,6 +183,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/upcoming-actions',
       builder: (context, state) => const UpcomingActionsScreen(),
+    ),
+    GoRoute(
+      path: '/upcoming-reminders',
+      builder: (context, state) => const UpcomingRemindersScreen(),
     ),
     GoRoute(
       path: '/upcoming-payments',

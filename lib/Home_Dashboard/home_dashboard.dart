@@ -65,13 +65,16 @@ class HomeDashboardScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8F8F8),
-                      borderRadius: BorderRadius.circular(12),
+                  GestureDetector(
+                    onTap: () => _navigateToPayments(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F8F8),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Image.asset('assets/images/icon/notification.png', width: 24, height: 24),
                     ),
-                    child: Image.asset('assets/images/icon/notification.png', width: 24, height: 24),
                   ),
                 ],
               ),
@@ -142,28 +145,28 @@ class HomeDashboardScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
                   ),
                   GestureDetector(
-                    onTap: () => _navigateToPayments(context),
+                    onTap: () => context.push('/upcoming-reminders'),
                     child: const Text(
                       'See All',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF888888)),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+             const SizedBox(height: 20),
               ReminderCard(
                 month: 'Jan', 
-                day: '01', 
+                day: '01' , 
                 title: 'Apartment Rent Due', 
                 dueInfo: 'Due in 3 days',
-                onTap: () => _navigateToPayments(context),
+                onTap: () => context.push('/upcoming-reminders'),
               ),
               ReminderCard(
                 month: 'Feb', 
                 day: '20', 
                 title: 'Car Insurance Renewal', 
                 dueInfo: 'February 20, 2025',
-                onTap: () => _navigateToPayments(context),
+                onTap: () => context.push('/upcoming-reminders'),
               ),
 
               const SizedBox(height: 32),

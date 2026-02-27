@@ -267,16 +267,14 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                   ),
                   child: Row(
                     children: [
-                      if (isSelected) ...[
-                        Image.asset(
-                          InsurancePolicy.categoryIcon(cat),
-                          width: 16,
-                          height: 16,
-                          color: Colors.white,
-                          errorBuilder: (c, e, s) => const Icon(Icons.shield, color: Colors.white, size: 16),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
+                      Image.asset(
+                        InsurancePolicy.categoryIcon(cat),
+                        width: 16,
+                        height: 16,
+                        color: isSelected ? Colors.white : const Color(0xFF555555),
+                        errorBuilder: (c, e, s) => Icon(Icons.shield, color: isSelected ? Colors.white : const Color(0xFF555555), size: 16),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         cat,
                         style: TextStyle(

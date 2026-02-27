@@ -183,8 +183,8 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.chevron_left,
-                        size: 28, color: brandRed),
+                    icon: const Icon(Icons.arrow_back,
+                        size: 22, color: brandRed),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],

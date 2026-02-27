@@ -55,14 +55,19 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Clarify, control, and peace of mind.\nAll in One Place.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF888888),
-                      height: 1.5,
-                    ),
-                  ),
+                 RichText(
+  text: TextSpan(
+    style: const TextStyle(fontSize: 16, color: Color(0xFF888888), height: 1.5),
+    children: [
+      const TextSpan(text: 'Clarify, control, and peace of mind.\n'),
+      const TextSpan(text: 'All in '),
+      TextSpan(
+        text: 'One Place.',
+        style: TextStyle(color: brandRed, fontWeight: FontWeight.w600),
+      ),
+    ],
+  ),
+  ),
                   const SizedBox(height: 48),
                   
                   // Buttons

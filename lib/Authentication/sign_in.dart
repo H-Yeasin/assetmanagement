@@ -164,7 +164,7 @@ class _SignInState extends State<SignIn> {
                       'Already have an account? ',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF888888),
+                        color: Color(0xFF1E1E1E),
                       ),
                     ),
                     GestureDetector(

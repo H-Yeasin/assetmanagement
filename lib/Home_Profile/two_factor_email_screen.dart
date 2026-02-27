@@ -26,8 +26,8 @@ class _TwoFactorEmailScreenState extends State<TwoFactorEmailScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left,
-              size: 28, color: Color(0xFF111111)),
+          icon: const Icon(Icons.arrow_back,
+              size: 22, color: Color(0xFF111111)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(

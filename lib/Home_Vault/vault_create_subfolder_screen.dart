@@ -33,7 +33,7 @@ class _VaultCreateSubfolderScreenState extends State<VaultCreateSubfolderScreen>
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF111111)),
+                    child: const Icon(Icons.arrow_back, size: 20, color: Color(0xFF111111)),
                   ),
                   const Expanded(
                     child: Center(

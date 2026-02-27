@@ -189,7 +189,7 @@ class _LoginState extends State<Login> {
                 children: [
                   const Text(
                     "Don't have an account? ",
-                    style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF81E1E1E)),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.push(

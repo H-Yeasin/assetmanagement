@@ -21,7 +21,7 @@ class VaultCategoryScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF111111)),
+                    child: const Icon(Icons.arrow_back, size: 20, color: Color(0xFF111111)),
                   ),
                   Expanded(
                     child: Center(
