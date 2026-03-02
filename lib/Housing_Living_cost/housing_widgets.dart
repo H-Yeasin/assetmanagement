@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui';
 import '../Home_Dashboard/widgets.dart';
+import '../Loan_Screen/loan_widgets.dart';
 import 'models/housing_cost_model.dart';
 import 'services/housing_api_service.dart';
 
@@ -351,6 +353,210 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
                   child: _isProcessing 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC61C36)))
                       : const Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Housing Reminder Modal ──────────────────────────────────────────────────
+
+class HousingReminderModal extends StatefulWidget {
+  final HousingCost cost;
+  const HousingReminderModal({super.key, required this.cost});
+
+  @override
+  State<HousingReminderModal> createState() => _HousingReminderModalState();
+}
+
+class _HousingReminderModalState extends State<HousingReminderModal> {
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+  TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
+  bool _isSaving = false;
+  final HousingApiService _apiService = HousingApiService();
+
+  void _openCalendar() async {
+    final DateTime? result = await showDialog<DateTime>(
+      context: context,
+      useRootNavigator: true,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          Center(
+            child: Material(
+              color: Colors.transparent,
+              child: SizedBox(
+                width: 343,
+                child: CustomCalendarModal(initialDate: _selectedDate),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      setState(() => _selectedDate = result);
+    }
+  }
+
+  void _openTimePicker() async {
+    final TimeOfDay? result = await showTimePicker(
+      context: context,
+      useRootNavigator: true,
+      initialTime: _selectedTime,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: Color(0xFFC61C36)),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() => _selectedTime = result);
+    }
+  }
+
+  void _onSave() async {
+    setState(() => _isSaving = true);
+    try {
+      final remindAt = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime.hour,
+        _selectedTime.minute,
+      );
+
+      await _apiService.createReminder(
+        itemId: widget.cost.id!,
+        itemType: 'housing',
+        title: 'Payment Reminder: ${widget.cost.name}',
+        remindAt: remindAt,
+        note: 'Reminder for ${widget.cost.category} payment.',
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reminder set successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String formattedDate = DateFormat('MMMM dd, yyyy').format(_selectedDate);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Set Reminder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          GestureDetector(
+            onTap: _openCalendar,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Pick Date', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(formattedDate, style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                    const Icon(Icons.calendar_today, color: Color(0xFFC61C36), size: 18),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(height: 1, color: const Color(0xFFEEEEEE)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          GestureDetector(
+            onTap: _openTimePicker,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Pick Time', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_selectedTime.hourOfPeriod.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${_selectedTime.period == DayPeriod.am ? 'AM' : 'PM'}',
+                      style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500),
+                    ),
+                    const Icon(Icons.access_time, color: Color(0xFFC61C36), size: 18),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(height: 1, color: const Color(0xFFEEEEEE)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel', style: TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _onSave,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFDE7E9),
+                    foregroundColor: const Color(0xFFC61C36),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: _isSaving 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC61C36)))
+                    : const Text('Set Reminder', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 ),
               ),
             ],

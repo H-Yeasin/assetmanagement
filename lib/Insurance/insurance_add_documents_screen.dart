@@ -55,7 +55,11 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
-      final documentFile = await _apiService.uploadDocument(file);
+      final documentFile = await _apiService.uploadDocument(
+        file,
+        relatedType: 'insurance',
+        relatedId: widget.policy?.id,
+      );
       
       setState(() {
         _documents.add({

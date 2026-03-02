@@ -392,7 +392,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         final result = await Navigator.push(
           context, 
           MaterialPageRoute(
-            builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments)
+            builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments, module: 'loans')
           )
         );
         if (result != null && result is List<Map<String, dynamic>>) {
@@ -597,9 +597,9 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
       final pDate = DateTime(now.year, now.month, day);
 
       final loan = Loan(
-        userId: 'test-user', // In real app, get from auth service
+        userId: '', // Let backend handle or provide via auth provider
         name: _nameController.text,
-        category: _selectedCategory,
+        category: _selectedCategory == 'business' ? 'other' : _selectedCategory,
         monthlyPayment: monthly,
         paymentDate: pDate,
         autoPay: _autoPayment,
@@ -618,7 +618,18 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         completedPayments: isMortgage ? (int.tryParse(_completedPaymentsController.text) ?? 0) : (int.tryParse(_completedPaymentsController.text) ?? 0),
       );
 
-      await _apiService.createLoan(loan);
+      final createdLoan = await _apiService.createLoan(loan);
+      
+      if (_autoPayment && createdLoan.id != null) {
+        // As per UI, "Every 15th of the month" is shown. Using pDate which is calculated as 15th of month.
+        await _apiService.createReminder(
+          itemType: 'loan',
+          itemId: createdLoan.id!,
+          remindAt: pDate,
+          title: 'Loan Payment: ${createdLoan.name}',
+          note: 'Automatic reminder for your loan payment.',
+        );
+      }
       
       if (mounted) {
         Navigator.pop(context, true);

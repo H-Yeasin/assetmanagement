@@ -177,4 +177,28 @@ class HousingApiService {
       throw Exception('Failed to upload document: $resBody');
     }
   }
+
+  Future<void> createReminder({
+    required String itemId,
+    required String itemType,
+    required String title,
+    required DateTime remindAt,
+    String? note,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reminders'),
+      headers: _headers,
+      body: json.encode({
+        'itemId': itemId,
+        'itemType': itemType,
+        'title': title,
+        'remindAt': remindAt.toIso8601String(),
+        'note': note,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to create reminder: ${response.body}');
+    }
+  }
 }

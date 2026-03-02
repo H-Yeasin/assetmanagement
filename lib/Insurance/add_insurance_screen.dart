@@ -6,6 +6,7 @@ import 'models/insurance_model.dart';
 import 'services/insurance_api_service.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'dart:ui';
+import '../Loan_Screen/add_documents_screen.dart';
 
 class AddInsuranceScreen extends StatefulWidget {
   const AddInsuranceScreen({super.key});
@@ -39,7 +40,9 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   String _coverageType = 'Comprehensive';
   String? _personalInsuranceType;
   bool _isSaving = false;
-  List<String> _documentIds = [];
+  bool _isAutoPay = true;
+  String _paymentDay = 'Every 15th of the month';
+  List<Map<String, dynamic>> _uploadedDocuments = [];
 
   final List<String> _categories = ['Personal', 'Pet', 'Home', 'Appliance', 'Auto', 'Other'];
   final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Yearly'];
@@ -162,7 +165,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         applianceName: applianceName,
         manufacturer: _selectedCategory == 'Appliance' ? _manufacturerController.text : null,
         policyNumber: _selectedCategory != 'Home' ? _policyNumberController.text : null,
-        documents: _documentIds,
+        documents: _uploadedDocuments.map((d) => d['id'] as String).toList(),
         vehicleModel: _selectedCategory == 'Auto' ? _vehicleModelController.text : null,
         timeLeft: _selectedCategory == 'Auto' ? _timeLeftController.text : null,
         paymentsCompleted: _selectedCategory == 'Auto' ? int.tryParse(_paymentsCompletedController.text) : null,
@@ -175,7 +178,22 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         personalInsuranceType: _personalInsuranceType,
       );
 
-      await _apiService.createInsurance(policy);
+      final createdPolicy = await _apiService.createInsurance(policy);
+      
+      if (_isAutoPay && createdPolicy.id != null) {
+        // Using "Every 15th of the month" logic as per UI placeholder
+        final now = DateTime.now();
+        final pDate = DateTime(now.year, now.month, 15);
+
+        await _apiService.createReminder(
+          itemId: createdPolicy.id!,
+          itemType: 'insurance',
+          title: 'Insurance Renewal: ${_nameController.text}',
+          remindAt: pDate,
+          note: 'Automatic renewal reminder for your insurance policy.',
+        );
+      }
+
       if (mounted) context.pop(true);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -343,6 +361,10 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : const Text('Add', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
             ),
+            const SizedBox(height: 24),
+            const Text('Reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+            const SizedBox(height: 16),
+            _buildRemindersSection(),
             const SizedBox(height: 48),
           ],
         ),
@@ -769,10 +791,15 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
       padding: const EdgeInsets.only(bottom: 16),
       child: OutlinedButton(
         onPressed: () async {
-          final result = await context.push('/insurance-add-documents', extra: {'initialDocuments': <Map<String, dynamic>>[]});
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments, module: 'insurance'),
+            ),
+          );
           if (result != null && result is List<Map<String, dynamic>>) {
             setState(() {
-              _documentIds = result.map((d) => d['id'] as String).toList();
+              _uploadedDocuments = result;
             });
           }
         },
@@ -784,13 +811,83 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
           elevation: 0,
         ),
         child: Text(
-          _documentIds.isEmpty ? '+Add Documents' : '+${_documentIds.length} Documents Added', 
+          _uploadedDocuments.isEmpty ? '+Add Documents' : '+${_uploadedDocuments.length} Documents Added',
           style: const TextStyle(color: brandRed, fontSize: 13, fontWeight: FontWeight.w600)
         ),
       ),
     );
   }
 
+
+  Widget _buildRemindersSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEBEBEB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: brandRed.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Icon(Icons.repeat, color: brandRed, size: 24),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Auto-payment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                    const SizedBox(height: 2),
+                    const Text('Pay automatic every month', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+              Transform.scale(
+                scale: 0.8,
+                child: Switch(
+                  value: _isAutoPay,
+                  onChanged: (v) => setState(() => _isAutoPay = v),
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: brandRed,
+                  trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Text('Payment Date', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F1F1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_paymentDay, style: const TextStyle(color: Color(0xFF555555), fontSize: 13, fontWeight: FontWeight.w500)),
+                const Icon(Icons.calendar_today_outlined, color: Color(0xFF555555), size: 18),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildLabel(String label) {
     return Padding(

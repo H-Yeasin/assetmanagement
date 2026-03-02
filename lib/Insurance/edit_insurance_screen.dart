@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'models/insurance_model.dart';
 import 'services/insurance_api_service.dart';
+import '../Loan_Screen/add_documents_screen.dart';
 
 class EditInsuranceScreen extends StatefulWidget {
   final InsurancePolicy policy;
@@ -38,6 +39,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   bool _isSaving = false;
   bool _isAutoPay = true;
   String _paymentDay = 'Every 15th of the month';
+  List<Map<String, dynamic>> _uploadedDocuments = [];
 
   final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Yearly'];
   final List<String> _personalTypes = ['Disability', 'Travel', 'Group', 'Critical Illness'];
@@ -83,6 +85,16 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     } else {
       _paymentType = 'Monthly';
     }
+
+    _uploadedDocuments = widget.policy.documents.map((doc) {
+      if (doc is Map<String, dynamic>) return doc;
+      return {
+        'id': doc is String ? doc : (doc as dynamic).id,
+        'name': 'Document',
+        'type': 'pdf',
+        'date': DateTime.now(),
+      };
+    }).toList();
   }
 
   @override
@@ -146,11 +158,26 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         isAutoPay: _isAutoPay,
         paymentDay: _paymentDay,
         personalInsuranceType: _personalInsuranceType,
-        documents: widget.policy.documents,
+        documents: _uploadedDocuments.map((d) => d['id']).toList(),
       );
 
       final packedUpdates = tempPolicy.toJson();
       await _apiService.updateInsurance(widget.policy.id!, packedUpdates);
+
+      if (_isAutoPay) {
+        // Using "Every 15th of the month" logic as per UI placeholder
+        final now = DateTime.now();
+        final pDate = DateTime(now.year, now.month, 15);
+
+        await _apiService.createReminder(
+          itemId: widget.policy.id!,
+          itemType: 'insurance',
+          title: 'Insurance Renewal: ${_nameController.text}',
+          remindAt: pDate,
+          note: 'Automatic renewal reminder for your insurance policy.',
+        );
+      }
+      
       if (mounted) context.pop(true);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -673,7 +700,19 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: OutlinedButton(
-        onPressed: () {}, // Implement document management
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments, module: 'insurance'),
+            ),
+          );
+          if (result != null && result is List<Map<String, dynamic>>) {
+            setState(() {
+              _uploadedDocuments = result;
+            });
+          }
+        },
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(double.infinity, 48),
           side: const BorderSide(color: brandRed, width: 1.2),

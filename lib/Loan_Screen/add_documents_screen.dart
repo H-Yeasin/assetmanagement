@@ -12,7 +12,8 @@ import 'models/loan_model.dart';
 class AddDocumentsScreen extends StatefulWidget {
   final Loan? loan;
   final List<Map<String, dynamic>>? initialDocuments;
-  const AddDocumentsScreen({super.key, this.loan, this.initialDocuments});
+  final String module;
+  const AddDocumentsScreen({super.key, this.loan, this.initialDocuments, this.module = 'loans'});
 
   @override
   State<AddDocumentsScreen> createState() => _AddDocumentsScreenState();
@@ -56,7 +57,7 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
-      final documentFile = await _apiService.uploadDocument(file);
+      final documentFile = await _apiService.uploadDocument(file, module: widget.module);
       
       setState(() {
         _documents.add({

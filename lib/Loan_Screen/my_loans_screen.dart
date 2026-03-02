@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'loan_widgets.dart';
-import 'add_loan_screen.dart';
-import 'loan_detail_screen.dart';
-import 'upcoming_actions_screen.dart';
-import 'upcoming_actions_screen.dart';
-import 'completed_loans_screen.dart';
 import 'models/loan_model.dart';
 import 'services/loan_api_service.dart';
 import 'package:intl/intl.dart';

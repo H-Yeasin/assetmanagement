@@ -5,6 +5,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'models/housing_cost_model.dart';
 import 'services/housing_api_service.dart';
+import '../Loan_Screen/add_documents_screen.dart';
 
 class AddHousingCostScreen extends StatefulWidget {
   const AddHousingCostScreen({super.key});
@@ -23,6 +24,7 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
   bool _reminderEnabled = true;
   String _reminderTiming = 'Same day';
   bool _isSaving = false;
+  List<Map<String, dynamic>> _uploadedDocuments = [];
 
   final List<String> _reminderTimings = [
     'Same day',
@@ -102,11 +104,31 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
         category: _selectedCategory,
         amount: amount,
         dueDate: dueDate,
-        autoPay: false,
-        notes: '',
+        autoPay: _reminderEnabled, // Using reminder toggle as autoPay hint if no specific toggle
+        notes: _nameController.text, // Using name as notes for now or check if notes controller exists
+        documents: _uploadedDocuments.map((d) => d['id']).toList(),
       );
 
-      await _apiService.createHousingCost(cost);
+      final createdCost = await _apiService.createHousingCost(cost);
+
+      if (_reminderEnabled && createdCost.id != null && dueDate != null) {
+        DateTime remindAt = dueDate;
+        if (_reminderTiming == '1 day before') {
+          remindAt = dueDate.subtract(const Duration(days: 1));
+        } else if (_reminderTiming == '3 days before') {
+          remindAt = dueDate.subtract(const Duration(days: 3));
+        } else if (_reminderTiming == '1 week before') {
+          remindAt = dueDate.subtract(const Duration(days: 7));
+        }
+
+        await _apiService.createReminder(
+          itemId: createdCost.id!,
+          itemType: 'housing',
+          title: 'Payment Reminder: ${createdCost.name}',
+          remindAt: remindAt,
+          note: 'Automatic reminder for your housing cost.',
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -273,6 +295,11 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
                         ],
                       ),
                     ),
+                  const SizedBox(height: 24),
+
+                  // ── Documents Section ──
+                  _buildAddDocumentsButton(),
+                  const SizedBox(height: 12),
                   ],
                 ),
               ),
@@ -286,8 +313,7 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
                   // Add Another Entry (non-housing)
                   if (!_isHousingCategory) ...[
                     GestureDetector(
-                      onTap: () {
-                        // Save current and reset form
+                      onTap: () async {
                         _saveCost();
                       },
                       child: Container(
@@ -424,9 +450,50 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
               ),
             );
           }).toList(),
-          onChanged: (val) {
-            setState(() => _selectedCategory = val!);
-          },
+          onChanged: (val) => setState(() => _selectedCategory = val!),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddDocumentsButton() {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments, module: 'housing'),
+          ),
+        );
+        if (result != null && result is List<Map<String, dynamic>>) {
+          setState(() {
+            _uploadedDocuments = result;
+          });
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _uploadedDocuments.isEmpty ? brandRed : Colors.green),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add, color: _uploadedDocuments.isEmpty ? brandRed : Colors.green, size: 20),
+            const SizedBox(width: 4),
+            Text(
+              _uploadedDocuments.isEmpty ? 'Add Documents' : '${_uploadedDocuments.length} Documents Added',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _uploadedDocuments.isEmpty ? brandRed : Colors.green,
+              ),
+            ),
+          ],
         ),
       ),
     );

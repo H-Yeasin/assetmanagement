@@ -24,8 +24,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
     {
       'image': 'assets/images/onbording2.png',
-      'title': 'Store What Matters.\n',
-      'highlight': 'Safely.',
+      'title': 'Store What Matters\n',
+      'highlight': 'Safely',
       'suffix': '',
       'desc': 'Your important documents protected, organized, and always within reach in your Vault.'
     },

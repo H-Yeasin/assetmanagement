@@ -56,7 +56,11 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
-      final documentFile = await _apiService.uploadDocument(file);
+      final documentFile = await _apiService.uploadDocument(
+        file,
+        relatedType: 'housing',
+        relatedId: widget.cost?.id,
+      );
       
       setState(() {
         _documents.add({

@@ -452,7 +452,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         final result = await Navigator.push(
           context, 
           MaterialPageRoute(
-            builder: (_) => AddDocumentsScreen(initialDocuments: _documents)
+            builder: (_) => AddDocumentsScreen(initialDocuments: _documents, module: 'loans')
           )
         );
         if (result != null && result is List<Map<String, dynamic>>) {
@@ -638,16 +638,15 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
       final day = int.tryParse(_paymentDateController.text) ?? 15;
       final now = DateTime.now();
-      final pDate = DateTime(now.year, now.month, day);
 
       final Map<String, dynamic> updates = {
         'name': _nameController.text,
-        'category': _selectedCategory,
+        'category': _selectedCategory == 'business' ? 'other' : _selectedCategory,
         'monthlyPayment': monthly,
         'paymentDate': DateTime(
-          widget.loan.paymentDate?.year ?? DateTime.now().year,
-          widget.loan.paymentDate?.month ?? DateTime.now().month,
-          int.tryParse(_paymentDateController.text) ?? 15,
+          widget.loan.paymentDate?.year ?? now.year,
+          widget.loan.paymentDate?.month ?? now.month,
+          day,
         ).toIso8601String(),
         'autoPay': _autoPayment,
         'totalAmount': totalAmount,
@@ -666,6 +665,21 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
       };
 
       await _apiService.updateLoan(widget.loan.id!, updates);
+
+      if (_autoPayment) {
+        // Using the same 15th of the month logic as per UI display
+        final day = int.tryParse(_paymentDateController.text) ?? 15;
+        final now = DateTime.now();
+        final pDate = DateTime(now.year, now.month, day);
+
+        await _apiService.createReminder(
+          itemType: 'loan',
+          itemId: widget.loan.id!,
+          remindAt: pDate,
+          title: 'Loan Payment Updates: ${_nameController.text}',
+          note: 'Updated automatic reminder for your loan payment.',
+        );
+      }
       
       if (mounted) {
         Navigator.pop(context, true);

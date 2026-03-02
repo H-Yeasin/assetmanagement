@@ -5,6 +5,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'models/housing_cost_model.dart';
 import 'services/housing_api_service.dart';
+import '../Loan_Screen/add_documents_screen.dart';
 
 class EditHousingCostScreen extends StatefulWidget {
   final HousingCost cost;
@@ -24,6 +25,7 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
   late String _selectedCategory;
   late bool _autoPay;
   bool _isSaving = false;
+  List<Map<String, dynamic>> _uploadedDocuments = [];
 
   @override
   void initState() {
@@ -36,6 +38,15 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
     _notesController = TextEditingController(text: widget.cost.notes ?? '');
     _selectedCategory = widget.cost.category;
     _autoPay = widget.cost.autoPay;
+    _uploadedDocuments = widget.cost.documents.map((doc) {
+      if (doc is Map<String, dynamic>) return doc;
+      return {
+        'id': doc is String ? doc : (doc as dynamic).id,
+        'name': 'Document',
+        'type': 'pdf',
+        'date': DateTime.now(),
+      };
+    }).toList();
   }
 
   @override
@@ -112,12 +123,27 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
         'amount': amount,
         'autoPay': _autoPay,
         'notes': _notesController.text,
+        'documents': _uploadedDocuments.map((d) => d['id']).toList(),
       };
       if (dueDate != null) {
         updates['dueDate'] = dueDate.toIso8601String();
       }
 
       await _apiService.updateHousingCost(widget.cost.id!, updates);
+
+      if (_autoPay) {
+        // Using "Every 15th of the month" logic consistent with other screens if not specified otherwise
+        final now = DateTime.now();
+        final pDate = DateTime(now.year, now.month, 15);
+
+        await _apiService.createReminder(
+          itemId: widget.cost.id!,
+          itemType: 'housing',
+          title: 'Housing Payment Update: ${_nameController.text}',
+          remindAt: pDate,
+          note: 'Updated automatic reminder for your housing cost.',
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -269,6 +295,9 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    _buildAddDocumentsButton(),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -387,6 +416,49 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
             );
           }).toList(),
           onChanged: (val) => setState(() => _selectedCategory = val!),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddDocumentsButton() {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments, module: 'housing'),
+          ),
+        );
+        if (result != null && result is List<Map<String, dynamic>>) {
+          setState(() {
+            _uploadedDocuments = result;
+          });
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _uploadedDocuments.isEmpty ? brandRed : Colors.green),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add, color: _uploadedDocuments.isEmpty ? brandRed : Colors.green, size: 20),
+            const SizedBox(width: 4),
+            Text(
+              _uploadedDocuments.isEmpty ? 'Add Documents' : '${_uploadedDocuments.length} Documents Added',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _uploadedDocuments.isEmpty ? brandRed : Colors.green,
+              ),
+            ),
+          ],
         ),
       ),
     );

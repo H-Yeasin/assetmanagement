@@ -91,12 +91,12 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
               child: Container(color: Colors.transparent),
             ),
           ),
-          const Center(
+          Center(
             child: Material(
               color: Colors.transparent,
               child: SizedBox(
                 width: 343,
-                child: ReminderModal(),
+                child: HousingReminderModal(cost: _cost),
               ),
             ),
           ),

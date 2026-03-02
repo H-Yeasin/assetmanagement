@@ -30,8 +30,7 @@ class _InsuranceUpcomingActionsScreenState extends State<InsuranceUpcomingAction
       _error = null;
     });
     try {
-      // Fetching all policies to match the dashboard's "Upcoming Actions" section behavior
-      final policies = await _apiService.fetchInsurances();
+      final policies = await _apiService.fetchUpcomingRenewals();
       setState(() {
         _upcomingPolicies = policies;
         _isLoading = false;
