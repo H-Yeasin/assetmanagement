@@ -1,3 +1,6 @@
+import 'package:anick_giroux/Home_Profile/subscription/subscription_plan_screen.dart';
+import 'package:anick_giroux/Home_Profile/subscription/choose_payment_screen.dart';
+import 'package:anick_giroux/Home_Profile/subscription/payment_status_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:anick_giroux/Splash_Screen/splash_screen.dart';
@@ -57,7 +60,8 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/',
-      builder: (BuildContext context, GoRouterState state) => const SplashScreen(),
+      builder: (BuildContext context, GoRouterState state) =>
+          const SplashScreen(),
     ),
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
@@ -133,6 +137,22 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const DataSecurityScreen(),
     ),
     GoRoute(
+      path: '/subscription-plan',
+      builder: (context, state) => const SubscriptionPlanScreen(),
+    ),
+    GoRoute(
+      path: '/choose-payment',
+      builder: (context, state) => const ChoosePaymentScreen(),
+    ),
+    GoRoute(
+      path: '/payment-success',
+      builder: (context, state) => const PaymentStatusScreen(isSuccess: true),
+    ),
+    GoRoute(
+      path: '/payment-failed',
+      builder: (context, state) => const PaymentStatusScreen(isSuccess: false),
+    ),
+    GoRoute(
       path: '/change-password',
       builder: (context, state) => const ChangePasswordScreen(),
     ),
@@ -156,10 +176,7 @@ final GoRouter appRouter = GoRouter(
       path: '/pin-locked',
       builder: (context, state) => const PincodeLocked(),
     ),
-    GoRoute(
-      path: '/faq',
-      builder: (context, state) => const FaqScreen(),
-    ),
+    GoRoute(path: '/faq', builder: (context, state) => const FaqScreen()),
     GoRoute(
       path: '/two-factor',
       builder: (context, state) => const TwoFactorScreen(),
@@ -209,8 +226,10 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const AddInsuranceScreen(),
     ),
     GoRoute(
-      path: '/main', // Fallback for direct MainShell navigation if used previously
-      builder: (context, state) => const MainShell(child: HomeDashboardScreen()), 
+      path:
+          '/main', // Fallback for direct MainShell navigation if used previously
+      builder: (context, state) =>
+          const MainShell(child: HomeDashboardScreen()),
     ),
     GoRoute(
       path: '/edit-insurance',
@@ -225,7 +244,8 @@ final GoRouter appRouter = GoRouter(
         final extra = state.extra as Map<String, dynamic>?;
         return InsuranceAddDocumentsScreen(
           policy: extra?['policy'] as InsurancePolicy?,
-          initialDocuments: extra?['initialDocuments'] as List<Map<String, dynamic>>?,
+          initialDocuments:
+              extra?['initialDocuments'] as List<Map<String, dynamic>>?,
         );
       },
     ),

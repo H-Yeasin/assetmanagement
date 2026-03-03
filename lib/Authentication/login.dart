@@ -4,8 +4,6 @@ import 'shared_widgets.dart';
 import 'sign_in.dart';
 import 'verification_code.dart';
 
-
-
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -106,7 +104,8 @@ class _LoginState extends State<Login> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const VerificationCodeScreen()),
+                        builder: (_) => const VerificationCodeScreen(),
+                      ),
                     ),
                     child: const Text(
                       'Forgot your password?',
@@ -140,10 +139,7 @@ class _LoginState extends State<Login> {
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'Or continue with',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFFAAAAAA),
-                      ),
+                      style: TextStyle(fontSize: 13, color: Color(0xFFAAAAAA)),
                     ),
                   ),
                   const Expanded(child: Divider(color: Color(0xFFE0E0E0))),
@@ -189,7 +185,7 @@ class _LoginState extends State<Login> {
                 children: [
                   const Text(
                     "Don't have an account? ",
-                    style: TextStyle(fontSize: 14, color: Color(0xFF81E1E1E)),
+                    style: TextStyle(fontSize: 14, color: Color(0xff81e1e1e)),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.push(
