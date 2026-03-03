@@ -4,21 +4,18 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/insurance_model.dart';
 import '../../Loan_Screen/models/document_model.dart';
+import '../../services/storage_service.dart';
 
 class InsuranceApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
 
-  String? _authToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTg2ZjQyM2RiNjE4NzBjZjdjOTMyOWEiLCJlbWFpbCI6InNhcmFoa2hhbjFAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzE2OTU0ODUsImV4cCI6MTgwMzIzMTQ4NX0.7i2hTglBTmRTAx6Z60buzCgRVbMHlW7Gd-L4z6C34dE';
-
-  void setToken(String token) {
-    _authToken = token;
+  Future<Map<String, String>> getHeaders() async {
+    final token = await StorageService.getAccessToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
   }
-
-  Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-  };
 
   Future<List<InsurancePolicy>> fetchInsurances({String? category}) async {
     String query = '';
@@ -26,7 +23,7 @@ class InsuranceApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/insurance$query'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -41,7 +38,7 @@ class InsuranceApiService {
   Future<InsurancePolicy> getInsurance(String id) async {
     final response = await http.get(
       Uri.parse('$baseUrl/insurance/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -55,7 +52,7 @@ class InsuranceApiService {
   Future<InsurancePolicy> createInsurance(InsurancePolicy policy) async {
     final response = await http.post(
       Uri.parse('$baseUrl/insurance'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode(policy.toJson()),
     );
 
@@ -73,7 +70,7 @@ class InsuranceApiService {
   ) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/insurance/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode(updates),
     );
 
@@ -88,7 +85,7 @@ class InsuranceApiService {
   Future<void> deleteInsurance(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/insurance/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -107,7 +104,7 @@ class InsuranceApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/insurance/upcoming$query'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -123,7 +120,7 @@ class InsuranceApiService {
   Future<void> deleteDocument(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -134,7 +131,7 @@ class InsuranceApiService {
   Future<void> renameDocument(String id, String newName) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode({'displayName': newName}),
     );
 
@@ -155,9 +152,10 @@ class InsuranceApiService {
       'POST',
       Uri.parse('$baseUrl/documents/upload'),
     );
-    request.headers.addAll({
-      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-    });
+    final token = await StorageService.getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
 
     request.fields['module'] = module;
     if (folderId != null) request.fields['folderId'] = folderId;
@@ -203,7 +201,7 @@ class InsuranceApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/reminders'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode({
         'itemId': itemId,
         'itemType': itemType,
@@ -229,7 +227,7 @@ class InsuranceApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/reminders/upcoming$query'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {

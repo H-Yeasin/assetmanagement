@@ -4,22 +4,18 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/housing_cost_model.dart';
 import '../../Loan_Screen/models/document_model.dart';
+import '../../services/storage_service.dart';
 
 class HousingApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
 
-  // Reuse the same auth token as LoanApiService
-  String? _authToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTg2ZjQyM2RiNjE4NzBjZjdjOTMyOWEiLCJlbWFpbCI6InNhcmFoa2hhbjFAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzE2OTU0ODUsImV4cCI6MTgwMzIzMTQ4NX0.7i2hTglBTmRTAx6Z60buzCgRVbMHlW7Gd-L4z6C34dE';
-
-  void setToken(String token) {
-    _authToken = token;
+  Future<Map<String, String>> getHeaders() async {
+    final token = await StorageService.getAccessToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
   }
-
-  Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-  };
 
   Future<List<HousingCost>> fetchHousingCosts({String? category}) async {
     String query = '';
@@ -27,7 +23,7 @@ class HousingApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/housing$query'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -42,7 +38,7 @@ class HousingApiService {
   Future<HousingCost> getHousingCost(String id) async {
     final response = await http.get(
       Uri.parse('$baseUrl/housing/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -56,7 +52,7 @@ class HousingApiService {
   Future<HousingCost> createHousingCost(HousingCost cost) async {
     final response = await http.post(
       Uri.parse('$baseUrl/housing'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode(cost.toJson()),
     );
 
@@ -74,7 +70,7 @@ class HousingApiService {
   ) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/housing/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode(updates),
     );
 
@@ -89,7 +85,7 @@ class HousingApiService {
   Future<void> deleteHousingCost(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/housing/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -108,7 +104,7 @@ class HousingApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/housing/upcoming$query'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -126,7 +122,7 @@ class HousingApiService {
   Future<void> deleteDocument(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -137,7 +133,7 @@ class HousingApiService {
   Future<void> renameDocument(String id, String newName) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode({'displayName': newName}),
     );
 
@@ -158,9 +154,10 @@ class HousingApiService {
       'POST',
       Uri.parse('$baseUrl/documents/upload'),
     );
-    request.headers.addAll({
-      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-    });
+    final token = await StorageService.getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
 
     request.fields['module'] = module;
     if (folderId != null) request.fields['folderId'] = folderId;
@@ -205,7 +202,7 @@ class HousingApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/reminders'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode({
         'itemId': itemId,
         'itemType': itemType,

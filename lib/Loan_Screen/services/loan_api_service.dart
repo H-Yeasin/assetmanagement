@@ -3,29 +3,26 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/loan_model.dart';
 import '../models/document_model.dart';
+import '../../services/storage_service.dart';
 
 class LoanApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
 
-  // For now, using a test token for demonstration.
-  String? _authToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTg2ZjQyM2RiNjE4NzBjZjdjOTMyOWEiLCJlbWFpbCI6InNhcmFoa2hhbjFAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzE2OTU0ODUsImV4cCI6MTgwMzIzMTQ4NX0.7i2hTglBTmRTAx6Z60buzCgRVbMHlW7Gd-L4z6C34dE';
-
-  void setToken(String token) {
-    _authToken = token;
+  Future<Map<String, String>> getHeaders() async {
+    final token = await StorageService.getAccessToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
   }
-
-  Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-  };
 
   Future<List<Loan>> fetchLoans({String? status}) async {
     final queryParams = status != null ? '?status=$status' : '';
     final url = '$baseUrl/loans$queryParams';
     print('GET REQUEST: $url');
-    print('HEADERS: $_headers');
-    final response = await http.get(Uri.parse(url), headers: _headers);
+    final hdrs = await getHeaders();
+    print('HEADERS: $hdrs');
+    final response = await http.get(Uri.parse(url), headers: hdrs);
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -39,7 +36,7 @@ class LoanApiService {
   Future<Loan> getLoan(String id) async {
     final response = await http.get(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -53,7 +50,7 @@ class LoanApiService {
   Future<Loan> createLoan(Loan loan) async {
     final response = await http.post(
       Uri.parse('$baseUrl/loans'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode(loan.toJson()),
     );
 
@@ -68,7 +65,7 @@ class LoanApiService {
   Future<Loan> updateLoan(String id, Map<String, dynamic> updates) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode(updates),
     );
 
@@ -83,7 +80,7 @@ class LoanApiService {
   Future<void> deleteLoan(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -94,7 +91,7 @@ class LoanApiService {
   Future<void> deleteDocument(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -105,7 +102,7 @@ class LoanApiService {
   Future<void> renameDocument(String id, String newName) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode({'displayName': newName}),
     );
 
@@ -117,7 +114,7 @@ class LoanApiService {
   Future<Loan> markCompleted(String id) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/loans/$id/complete'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -139,7 +136,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/loans/upcoming$query'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -163,9 +160,10 @@ class LoanApiService {
       'POST',
       Uri.parse('$baseUrl/documents/upload'),
     );
-    request.headers.addAll({
-      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-    });
+    final token = await StorageService.getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
 
     request.fields['module'] = module;
     if (folderId != null) request.fields['folderId'] = folderId;
@@ -203,7 +201,10 @@ class LoanApiService {
 
   // ── Past Activities ──────────────────────────────────────────────────────
 
-  Future<List<dynamic>> fetchPastActivities({DateTime? from, DateTime? to}) async {
+  Future<List<dynamic>> fetchPastActivities({
+    DateTime? from,
+    DateTime? to,
+  }) async {
     String query = '';
     if (from != null) query += 'from=${from.toIso8601String()}&';
     if (to != null) query += 'to=${to.toIso8601String()}';
@@ -211,7 +212,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/loans/past$query'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -241,7 +242,7 @@ class LoanApiService {
 
     final response = await http.post(
       Uri.parse('$baseUrl/reminders'),
-      headers: _headers,
+      headers: await getHeaders(),
       body: json.encode(body),
     );
 
@@ -253,7 +254,10 @@ class LoanApiService {
     }
   }
 
-  Future<List<dynamic>> fetchUpcomingReminders({DateTime? from, DateTime? to}) async {
+  Future<List<dynamic>> fetchUpcomingReminders({
+    DateTime? from,
+    DateTime? to,
+  }) async {
     String query = '';
     if (from != null) query += 'from=${from.toIso8601String()}&';
     if (to != null) query += 'to=${to.toIso8601String()}';
@@ -261,7 +265,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/reminders/upcoming$query'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -275,7 +279,7 @@ class LoanApiService {
   Future<void> markReminderDone(String id) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/reminders/$id/done'),
-      headers: _headers,
+      headers: await getHeaders(),
     );
 
     if (response.statusCode != 200) {
