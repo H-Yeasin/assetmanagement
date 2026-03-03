@@ -4,28 +4,28 @@ import 'package:http/http.dart' as http;
 import '../models/loan_model.dart';
 import '../models/document_model.dart';
 
+import '../../services/storage_service.dart';
+
 class LoanApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
 
-  // For now, using a test token for demonstration.
-  String? _authToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTg2ZjQyM2RiNjE4NzBjZjdjOTMyOWEiLCJlbWFpbCI6InNhcmFoa2hhbjFAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzE2OTU0ODUsImV4cCI6MTgwMzIzMTQ4NX0.7i2hTglBTmRTAx6Z60buzCgRVbMHlW7Gd-L4z6C34dE';
-
-  void setToken(String token) {
-    _authToken = token;
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = await StorageService.getAccessToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
   }
-
-  Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-  };
 
   Future<List<Loan>> fetchLoans({String? status}) async {
     final queryParams = status != null ? '?status=$status' : '';
     final url = '$baseUrl/loans$queryParams';
     print('GET REQUEST: $url');
-    print('HEADERS: $_headers');
-    final response = await http.get(Uri.parse(url), headers: _headers);
+    print('HEADERS: await _getHeaders()');
+    final response = await http.get(
+      Uri.parse(url),
+      headers: await _getHeaders(),
+    );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -39,7 +39,7 @@ class LoanApiService {
   Future<Loan> getLoan(String id) async {
     final response = await http.get(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: _headers,
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -53,7 +53,7 @@ class LoanApiService {
   Future<Loan> createLoan(Loan loan) async {
     final response = await http.post(
       Uri.parse('$baseUrl/loans'),
-      headers: _headers,
+      headers: await _getHeaders(),
       body: json.encode(loan.toJson()),
     );
 
@@ -68,7 +68,7 @@ class LoanApiService {
   Future<Loan> updateLoan(String id, Map<String, dynamic> updates) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: _headers,
+      headers: await _getHeaders(),
       body: json.encode(updates),
     );
 
@@ -83,7 +83,7 @@ class LoanApiService {
   Future<void> deleteLoan(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: _headers,
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -94,7 +94,7 @@ class LoanApiService {
   Future<void> deleteDocument(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: _headers,
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -105,7 +105,7 @@ class LoanApiService {
   Future<void> renameDocument(String id, String newName) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: _headers,
+      headers: await _getHeaders(),
       body: json.encode({'displayName': newName}),
     );
 
@@ -117,7 +117,7 @@ class LoanApiService {
   Future<Loan> markCompleted(String id) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/loans/$id/complete'),
-      headers: _headers,
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -139,7 +139,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/loans/upcoming$query'),
-      headers: _headers,
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -163,8 +163,9 @@ class LoanApiService {
       'POST',
       Uri.parse('$baseUrl/documents/upload'),
     );
+    final token = await StorageService.getAccessToken();
     request.headers.addAll({
-      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      if (token != null) 'Authorization': 'Bearer $token',
     });
 
     request.fields['module'] = module;
