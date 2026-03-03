@@ -27,7 +27,11 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         backgroundColor: const Color(0xFFF8F6F6),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 18, color: Color(0xFF111111)),
+          icon: const Icon(
+            Icons.arrow_back,
+            size: 18,
+            color: Color(0xFF111111),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -142,7 +146,10 @@ class _InputField extends StatelessWidget {
         style: const TextStyle(fontSize: 15, color: Color(0xFF555555)),
         decoration: InputDecoration(
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           hintText: hintText,
           hintStyle: const TextStyle(color: Color(0xFFCCCCCC)),
         ),

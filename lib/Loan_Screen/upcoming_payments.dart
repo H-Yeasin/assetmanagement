@@ -56,8 +56,8 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
         title: const Text(
           'Upcoming Payments',
           style: TextStyle(
-            fontSize: 18, 
-            fontWeight: FontWeight.w700, 
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
             color: Color(0xFF111111),
           ),
         ),
@@ -71,67 +71,48 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
             const SizedBox(height: 10),
             // Interactive Calendar
             const CalendarWidget(),
-            
+
             const SizedBox(height: 32),
-            
+
             // Payment List Section
             const Text(
               'Upcoming',
               style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.w700, 
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
                 color: Color(0xFF111111),
               ),
             ),
             const SizedBox(height: 20),
-            
-            // Live API data
-            if (_isLoading)
-              const Center(child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: CircularProgressIndicator(color: brandRed),
-              ))
-            else if (_error != null)
-              Center(child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Column(
-                  children: [
-                    Text('Error loading payments', style: TextStyle(color: Colors.grey.shade600)),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _loadUpcoming,
-                      child: const Text('Tap to retry', style: TextStyle(color: brandRed, fontWeight: FontWeight.w600)),
-                    ),
-                  ],
-                ),
-              ))
-            else if (_upcomingGroups.isEmpty)
-              const Center(child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Text('No upcoming payments', style: TextStyle(color: Colors.grey)),
-              ))
-            else
-              ..._upcomingGroups.map((group) {
-                final date = DateTime.parse(group['date']);
-                final items = group['items'] as List;
-                return Column(
-                  children: items.map((item) {
-                    return PaymentCard(
-                      month: DateFormat('MMM').format(date),
-                      day: DateFormat('dd').format(date),
-                      title: item['name'] ?? 'Unnamed Loan',
-                      amount: NumberFormat.simpleCurrency().format(
-                        (item['monthlyPayment'] is num) ? item['monthlyPayment'].toDouble() : 0.0,
-                      ),
-                      status: (item['autoPay'] == true) ? 'Paid Automatically' : 'Manual Payment Required',
-                      isPaid: item['autoPay'] == true,
-                    );
-                  }).toList(),
-                );
-              }),
+
+            // Dummy Payment Data aligned with Calendar Markers (Jan 2025)
+            const PaymentCard(
+              month: 'Jan',
+              day: '11',
+              title: 'Home Loan',
+              amount: '\$2,460.00',
+              status: 'Paid Automatically',
+              isPaid: true,
+            ),
+            const PaymentCard(
+              month: 'Jan',
+              day: '17',
+              title: 'Car Loan',
+              amount: '\$2,230.00',
+              status: 'Manual Payment Required',
+              isPaid: false,
+            ),
+            const PaymentCard(
+              month: 'Jan',
+              day: '22',
+              title: 'Student Loan',
+              amount: '\$1,300.00',
+              status: 'Paid Automatically',
+              isPaid: true,
+            ),
 
             const SizedBox(height: 24),
-            
+
             // View Past Activity Button
             Center(
               child: GestureDetector(
@@ -146,9 +127,9 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
                     Text(
                       'View Past Activity',
                       style: TextStyle(
-                        fontSize: 14, 
-                        fontWeight: FontWeight.w600, 
-                        color: brandRed, 
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: brandRed,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -158,10 +139,10 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
             ),
 
             const SizedBox(height: 48),
-            
+
             // Notification Toggle Section
             const NotificationToggle(),
-            
+
             const SizedBox(height: 40),
           ],
         ),

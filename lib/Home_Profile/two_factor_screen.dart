@@ -10,8 +10,10 @@ class TwoFactorScreen extends StatefulWidget {
 }
 
 class _TwoFactorScreenState extends State<TwoFactorScreen> {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   @override
@@ -108,7 +110,11 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         backgroundColor: const Color(0xFFF8F6F6),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 18, color: Color(0xFF111111)),
+          icon: const Icon(
+            Icons.arrow_back,
+            size: 18,
+            color: Color(0xFF111111),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -194,14 +200,21 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: brandRed, width: 2),
+                          borderSide: const BorderSide(
+                            color: brandRed,
+                            width: 2,
+                          ),
                         ),
                       ),
                       onChanged: (val) {
                         if (val.isNotEmpty && i < 5) {
-                          FocusScope.of(context).requestFocus(_focusNodes[i + 1]);
+                          FocusScope.of(
+                            context,
+                          ).requestFocus(_focusNodes[i + 1]);
                         } else if (val.isEmpty && i > 0) {
-                          FocusScope.of(context).requestFocus(_focusNodes[i - 1]);
+                          FocusScope.of(
+                            context,
+                          ).requestFocus(_focusNodes[i - 1]);
                         }
                       },
                     ),

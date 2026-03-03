@@ -11,13 +11,19 @@ import 'models/insurance_model.dart';
 class InsuranceAddDocumentsScreen extends StatefulWidget {
   final InsurancePolicy? policy;
   final List<Map<String, dynamic>>? initialDocuments;
-  const InsuranceAddDocumentsScreen({super.key, this.policy, this.initialDocuments});
+  const InsuranceAddDocumentsScreen({
+    super.key,
+    this.policy,
+    this.initialDocuments,
+  });
 
   @override
-  State<InsuranceAddDocumentsScreen> createState() => _InsuranceAddDocumentsScreenState();
+  State<InsuranceAddDocumentsScreen> createState() =>
+      _InsuranceAddDocumentsScreenState();
 }
 
-class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScreen> {
+class _InsuranceAddDocumentsScreenState
+    extends State<InsuranceAddDocumentsScreen> {
   late final List<Map<String, dynamic>> _documents;
   final ImagePicker _picker = ImagePicker();
   final InsuranceApiService _apiService = InsuranceApiService();
@@ -26,8 +32,8 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
   @override
   void initState() {
     super.initState();
-    _documents = widget.initialDocuments != null 
-        ? List.from(widget.initialDocuments!) 
+    _documents = widget.initialDocuments != null
+        ? List.from(widget.initialDocuments!)
         : [];
   }
 
@@ -55,12 +61,8 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
-      final documentFile = await _apiService.uploadDocument(
-        file,
-        relatedType: 'insurance',
-        relatedId: widget.policy?.id,
-      );
-      
+      final documentFile = await _apiService.uploadDocument(file);
+
       setState(() {
         _documents.add({
           'id': documentFile.id,
@@ -70,7 +72,7 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
           'path': documentFile.path,
         });
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Document uploaded successfully')),
@@ -94,8 +96,14 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
         title: const Text('Delete Document'),
         content: const Text('Are you sure you want to delete this document?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -108,11 +116,15 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
           _documents.removeAt(index);
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document deleted')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Document deleted')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: ${e.toString()}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Delete failed: ${e.toString()}')),
+          );
         }
       } finally {
         if (mounted) setState(() => _isUploading = false);
@@ -120,8 +132,14 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
     }
   }
 
-  Future<void> _renameDocument(String docId, int index, String currentName) async {
-    final TextEditingController controller = TextEditingController(text: currentName);
+  Future<void> _renameDocument(
+    String docId,
+    int index,
+    String currentName,
+  ) async {
+    final TextEditingController controller = TextEditingController(
+      text: currentName,
+    );
     final String? newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -132,7 +150,10 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
             child: const Text('Rename'),
@@ -149,11 +170,15 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
           _documents[index]['name'] = newName;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document renamed')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Document renamed')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Rename failed: ${e.toString()}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Rename failed: ${e.toString()}')),
+          );
         }
       } finally {
         if (mounted) setState(() => _isUploading = false);
@@ -175,13 +200,21 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context, _documents),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Text(
                       'Add Documents',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 24),
@@ -201,7 +234,14 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
                         const SizedBox(height: 16),
 
                         // ── Add New Files ──
-                        const Text('Add New Files', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Add New Files',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -234,22 +274,42 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Documents', 
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))
+                              'Documents',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111111),
+                              ),
                             ),
                             GestureDetector(
                               onTap: _pickFile,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: const Color(0xFFC61C36)),
+                                  border: Border.all(
+                                    color: const Color(0xFFC61C36),
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.add, color: Color(0xFFC61C36), size: 16),
+                                    Icon(
+                                      Icons.add,
+                                      color: Color(0xFFC61C36),
+                                      size: 16,
+                                    ),
                                     SizedBox(width: 4),
-                                    Text('Add Documents', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFFC61C36))),
+                                    Text(
+                                      'Add Documents',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFFC61C36),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -262,7 +322,10 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Text('No documents uploaded yet', style: TextStyle(color: Colors.grey)),
+                              child: Text(
+                                'No documents uploaded yet',
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ),
                           )
                         else
@@ -270,33 +333,54 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _documents.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final doc = _documents[index];
-                                return _buildDocumentCard(
-                                  icon: _getIconForType(doc['type']),
-                                  iconColor: _getColorForType(doc['type']),
-                                  title: doc['name'],
-                                  subtitle: doc['subtitle'] ?? 'Uploaded on ${DateFormat('MMM dd, yyyy').format(doc['date'])}',
-                                  onDelete: () => _deleteDocument(doc['id'], index),
-                                  onRename: () => _renameDocument(doc['id'], index, doc['name']),
-                                  onTap: () async {
-                                    if (doc['path'] != null) {
-                                      final baseUrl = InsuranceApiService.baseUrl.replaceFirst('/api/v1', '');
-                                      final url = Uri.parse('$baseUrl/${doc['path']}');
-                                      if (await canLaunchUrl(url)) {
-                                        await launchUrl(url, mode: LaunchMode.externalApplication);
-                                      }
+                              return _buildDocumentCard(
+                                icon: _getIconForType(doc['type']),
+                                iconColor: _getColorForType(doc['type']),
+                                title: doc['name'],
+                                subtitle:
+                                    doc['subtitle'] ??
+                                    'Uploaded on ${DateFormat('MMM dd, yyyy').format(doc['date'])}',
+                                onDelete: () =>
+                                    _deleteDocument(doc['id'], index),
+                                onRename: () => _renameDocument(
+                                  doc['id'],
+                                  index,
+                                  doc['name'],
+                                ),
+                                onTap: () async {
+                                  if (doc['path'] != null) {
+                                    final baseUrl = InsuranceApiService.baseUrl
+                                        .replaceFirst('/api/v1', '');
+                                    final url = Uri.parse(
+                                      '$baseUrl/${doc['path']}',
+                                    );
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(
+                                        url,
+                                        mode: LaunchMode.externalApplication,
+                                      );
                                     }
-                                  },
-                                );
+                                  }
+                                },
+                              );
                             },
                           ),
 
                         const SizedBox(height: 28),
 
                         // ── Notes Section ──
-                        const Text('Notes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Notes',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         Container(
                           width: double.infinity,
@@ -307,8 +391,13 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
                             border: Border.all(color: const Color(0xFFF0F0F0)),
                           ),
                           child: Text(
-                            widget.policy?.coverageNotes ?? 'No notes provided.',
-                            style: const TextStyle(fontSize: 13, color: Color(0xFF888888), height: 1.5),
+                            widget.policy?.coverageNotes ??
+                                'No notes provided.',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF888888),
+                              height: 1.5,
+                            ),
                           ),
                         ),
 
@@ -337,10 +426,19 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
                   onPressed: () => Navigator.pop(context, _documents),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFC61C36),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text('Save Documents', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                  child: const Text(
+                    'Save Documents',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -362,7 +460,14 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
         children: [
           Icon(icon, color: const Color(0xFFC61C36), size: 28),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
         ],
       ),
     );
@@ -395,8 +500,18 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
           ),
           child: Icon(icon, color: iconColor, size: 24),
         ),
-        title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF111111),
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+        ),
         trailing: PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert, color: Color(0xFF111111)),
           onSelected: (value) {
@@ -405,7 +520,10 @@ class _InsuranceAddDocumentsScreenState extends State<InsuranceAddDocumentsScree
           },
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'rename', child: Text('Rename')),
-            const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
           ],
         ),
       ),

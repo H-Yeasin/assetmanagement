@@ -9,7 +9,8 @@ class HousingApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
 
   // Reuse the same auth token as LoanApiService
-  String? _authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTg2ZjQyM2RiNjE4NzBjZjdjOTMyOWEiLCJlbWFpbCI6InNhcmFoa2hhbjFAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzE2OTU0ODUsImV4cCI6MTgwMzIzMTQ4NX0.7i2hTglBTmRTAx6Z60buzCgRVbMHlW7Gd-L4z6C34dE';
+  String? _authToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTg2ZjQyM2RiNjE4NzBjZjdjOTMyOWEiLCJlbWFpbCI6InNhcmFoa2hhbjFAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzE2OTU0ODUsImV4cCI6MTgwMzIzMTQ4NX0.7i2hTglBTmRTAx6Z60buzCgRVbMHlW7Gd-L4z6C34dE';
 
   void setToken(String token) {
     _authToken = token;
@@ -67,7 +68,10 @@ class HousingApiService {
     }
   }
 
-  Future<HousingCost> updateHousingCost(String id, Map<String, dynamic> updates) async {
+  Future<HousingCost> updateHousingCost(
+    String id,
+    Map<String, dynamic> updates,
+  ) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/housing/$id'),
       headers: _headers,
@@ -93,7 +97,10 @@ class HousingApiService {
     }
   }
 
-  Future<List<HousingCost>> fetchUpcomingHousingCosts({DateTime? from, DateTime? to}) async {
+  Future<List<HousingCost>> fetchUpcomingHousingCosts({
+    DateTime? from,
+    DateTime? to,
+  }) async {
     String query = '';
     if (from != null) query += 'from=${from.toIso8601String()}&';
     if (to != null) query += 'to=${to.toIso8601String()}';
@@ -109,7 +116,9 @@ class HousingApiService {
       final List<dynamic> list = data['data'];
       return list.map((json) => HousingCost.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to load upcoming housing costs: ${response.body}');
+      throw Exception(
+        'Failed to load upcoming housing costs: ${response.body}',
+      );
     }
   }
 
@@ -137,14 +146,18 @@ class HousingApiService {
     }
   }
 
-  Future<DocumentFile> uploadDocument(File file, {
+  Future<DocumentFile> uploadDocument(
+    File file, {
     String module = 'housing',
     String? folderId,
     String? relatedType,
     String? relatedId,
     String? displayName,
   }) async {
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/documents/upload'));
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/documents/upload'),
+    );
     request.headers.addAll({
       if (_authToken != null) 'Authorization': 'Bearer $_authToken',
     });
@@ -157,19 +170,24 @@ class HousingApiService {
 
     final extension = file.path.split('.').last.toLowerCase();
     String mimeType = 'application/octet-stream';
-    if (extension == 'pdf') mimeType = 'application/pdf';
-    else if (extension == 'png') mimeType = 'image/png';
-    else if (extension == 'jpg' || extension == 'jpeg') mimeType = 'image/jpeg';
+    if (extension == 'pdf') {
+      mimeType = 'application/pdf';
+    } else if (extension == 'png')
+      mimeType = 'image/png';
+    else if (extension == 'jpg' || extension == 'jpeg')
+      mimeType = 'image/jpeg';
 
-    request.files.add(await http.MultipartFile.fromPath(
-      'file', 
-      file.path,
-      contentType: MediaType.parse(mimeType),
-    ));
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file',
+        file.path,
+        contentType: MediaType.parse(mimeType),
+      ),
+    );
 
     var response = await request.send();
     final resBody = await response.stream.bytesToString();
-    
+
     if (response.statusCode == 201) {
       final Map<String, dynamic> data = json.decode(resBody);
       return DocumentFile.fromJson(data['data']);

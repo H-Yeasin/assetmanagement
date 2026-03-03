@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../Home_Dashboard/widgets.dart';
+import '../services/storage_service.dart';
+import '../services/user_service.dart';
+import '../services/security_service.dart';
+import '../services/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -10,11 +16,236 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  final _nameController = TextEditingController(text: 'Anick Giroux');
-  final _emailController =
-      TextEditingController(text: 'anick.giroux@email.com');
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  File? _imageFile;
+  bool _isLoading = false;
   // ← starts OFF; toggling ON navigates to two-factor email screen
   bool _twoFactor = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final name = await StorageService.getUserName() ?? '';
+    final email = await StorageService.getUserEmail() ?? '';
+    final is2fa = await SecurityService.is2faEnabled();
+    if (mounted) {
+      setState(() {
+        _nameController.text = name;
+        _emailController.text = email;
+        _twoFactor = is2fa;
+      });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() => _isLoading = true);
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token == null) return;
+
+      final res = await UserService.updateProfile(
+        token: token,
+        fullName: _nameController.text.trim(),
+        imageFile: _imageFile,
+      );
+
+      if (!mounted) return;
+
+      if (res['success'] == true) {
+        // Update local storage name & avatar
+        final userAvatar = res['data']?['avatar']?['url'] as String?;
+        await StorageService.saveSession(
+          accessToken: token,
+          refreshToken: await StorageService.getRefreshToken() ?? '',
+          userId: await StorageService.getUserId() ?? '',
+          email: _emailController
+              .text, // User email reading from field but backend may ignore
+          name: _nameController.text.trim(),
+          avatar: userAvatar,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile saved successfully!'),
+            backgroundColor: brandRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Failed to update profile'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Network error. Is the backend running?'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _disableTwoFactor() async {
+    final passwordCtrl = TextEditingController();
+    bool isDisabling = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text(
+                'Disable Two-Factor',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Please enter your password to disable 2FA.',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF555555)),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: passwordCtrl,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      filled: true,
+                      fillColor: const Color(0xFFF9F9F9),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFE3003F),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                if (!isDisabling)
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Color(0xFF888888)),
+                    ),
+                  ),
+                ElevatedButton(
+                  onPressed: isDisabling
+                      ? null
+                      : () async {
+                          final pass = passwordCtrl.text.trim();
+                          if (pass.isEmpty) return;
+
+                          setDialogState(() => isDisabling = true);
+                          final token = await StorageService.getAccessToken();
+                          if (token == null) {
+                            if (mounted) Navigator.pop(ctx, false);
+                            return;
+                          }
+
+                          try {
+                            final res = await AuthService.disableTwoFactor(
+                              password: pass,
+                              token: token,
+                            );
+                            if (res['success'] == true) {
+                              if (mounted) Navigator.pop(ctx, true);
+                            } else {
+                              if (mounted) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      res['message'] ?? 'Failed to disable 2FA',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                setDialogState(() => isDisabling = false);
+                              }
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              setDialogState(() => isDisabling = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE3003F),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isDisabling
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Disable'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true) {
+      await SecurityService.set2faEnabled(false);
+      setState(() => _twoFactor = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Two-factor authentication disabled.'),
+            backgroundColor: Color(0xFF333333),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -31,8 +262,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: const Color(0xFFF8F6F6),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back,
-              size: 18, color: Color(0xFF111111)),
+          icon: const Icon(
+            Icons.arrow_back,
+            size: 18,
+            color: Color(0xFF111111),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -51,7 +285,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 24),
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -69,36 +305,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   color: const Color(0xFFEEEEEE),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                      color: Colors.white, width: 3),
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
                                 ),
                                 child: ClipOval(
-                                  child: Icon(Icons.person,
-                                      size: 56,
-                                      color: const Color(0xFF999999)),
+                                  child: _imageFile != null
+                                      ? Image.file(
+                                          _imageFile!,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : const Icon(
+                                          Icons.person,
+                                          size: 56,
+                                          color: Color(0xFF999999),
+                                        ),
                                 ),
                               ),
                               Positioned(
                                 bottom: 2,
                                 right: 2,
-                                child: Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: const BoxDecoration(
-                                    color: brandRed,
-                                    shape: BoxShape.circle,
+                                child: GestureDetector(
+                                  onTap: _pickImage,
+                                  child: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: const BoxDecoration(
+                                      color: brandRed,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      size: 14,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                  child: const Icon(Icons.camera_alt,
-                                      size: 14, color: Colors.white),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
                           GestureDetector(
-                            onTap: () {},
+                            onTap: _pickImage,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 8),
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFCECEE),
                                 borderRadius: BorderRadius.circular(20),
@@ -141,9 +394,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _InputField(
+                    TextField(
                       controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                      readOnly: true, // Make email non-editable
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF888888),
+                      ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF0F0F0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 28),
 
@@ -160,27 +429,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     // Update Password
                     _SecurityCard(
-                      iconPath:
-                          'assets/images/icon/lock_icon.png',
+                      iconPath: 'assets/images/icon/lock_icon.png',
                       title: 'Update Password',
                       subtitle: 'Last updated 3 months ago',
                       onTap: () => context.push('/change-password'),
-                      trailing: const Icon(Icons.chevron_right,
-                          size: 20, color: Color(0xFFBBBBBB)),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Color(0xFFBBBBBB),
+                      ),
                     ),
                     const SizedBox(height: 10),
 
                     // Delete Account
                     _SecurityCard(
-                      iconPath:
-                          'assets/images/icon/delete_icon.png',
+                      iconPath: 'assets/images/icon/delete_icon.png',
                       title: 'Delete Your Account',
-                      subtitle:
-                          'You can delete your all information',
-                      onTap: () =>
-                          context.push('/delete-account'),
-                      trailing: const Icon(Icons.chevron_right,
-                          size: 20, color: Color(0xFFBBBBBB)),
+                      subtitle: 'You can delete your all information',
+                      onTap: () => context.push('/delete-account'),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Color(0xFFBBBBBB),
+                      ),
                     ),
                     const SizedBox(height: 10),
 
@@ -190,39 +461,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       title: 'FAQ',
                       subtitle: 'Your Questions Answered',
                       onTap: () => context.push('/faq'),
-                      trailing: const Icon(Icons.chevron_right,
-                          size: 20, color: Color(0xFFBBBBBB)),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Color(0xFFBBBBBB),
+                      ),
                     ),
                     const SizedBox(height: 10),
 
                     // Two-Factor Authentication
                     _SecurityCard(
-                      iconPath:
-                          'assets/images/icon/tow_factor_icon.png',
+                      iconPath: 'assets/images/icon/tow_factor_icon.png',
                       title: 'Two-Factor Authentication',
                       subtitle: 'Recommended for extra safety',
-                      onTap: () {
+                      onTap: () async {
                         if (!_twoFactor) {
                           // Navigate to two-factor email screen when turning ON
-                          GoRouter.of(context).push('/two-factor-email');
+                          await GoRouter.of(context).push('/two-factor-email');
+                          _loadData();
+                        } else {
+                          // Disable 2FA
+                          await _disableTwoFactor();
                         }
                       },
                       trailing: Switch(
                         value: _twoFactor,
-                        onChanged: (val) {
-                          setState(() => _twoFactor = val);
+                        onChanged: (val) async {
                           if (val) {
                             // Navigate to two-factor email screen when toggled ON
-                            GoRouter.of(context).push('/two-factor-email');
+                            await GoRouter.of(
+                              context,
+                            ).push('/two-factor-email');
+                            _loadData();
+                          } else {
+                            // Prompt to disable 2FA
+                            await _disableTwoFactor();
                           }
                         },
                         activeThumbColor: Colors.white,
                         activeTrackColor: brandRed,
                         inactiveThumbColor: Colors.white,
-                        inactiveTrackColor:
-                            const Color(0xFFCCCCCC),
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
+                        inactiveTrackColor: const Color(0xFFCCCCCC),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -234,22 +514,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             // ── Save Changes button (pinned at bottom) ────────────────────
             Container(
               color: const Color(0xFFF8F6F6),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profile saved successfully!'),
-                        backgroundColor: brandRed,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
+                  onPressed: _isLoading ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandRed,
                     foregroundColor: Colors.white,
@@ -258,11 +528,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -285,8 +566,7 @@ class _InputField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style:
-          const TextStyle(fontSize: 15, color: Color(0xFF111111)),
+      style: const TextStyle(fontSize: 15, color: Color(0xFF111111)),
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
@@ -296,11 +576,12 @@ class _InputField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: brandRed, width: 1.5),
+          borderSide: const BorderSide(color: brandRed, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 16),
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
     );
   }
@@ -328,8 +609,7 @@ class _SecurityCard extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
@@ -351,8 +631,7 @@ class _SecurityCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
-                child:
-                    Image.asset(iconPath, width: 22, height: 22),
+                child: Image.asset(iconPath, width: 22, height: 22),
               ),
             ),
             const SizedBox(width: 14),

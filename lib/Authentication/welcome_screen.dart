@@ -27,9 +27,9 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 40),
-            
+
             // Content
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -55,21 +55,30 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                 RichText(
-  text: TextSpan(
-    style: const TextStyle(fontSize: 16, color: Color(0xFF888888), height: 1.5),
-    children: [
-      const TextSpan(text: 'Clarify, control, and peace of mind.\n'),
-      const TextSpan(text: 'All in '),
-      TextSpan(
-        text: 'One Place.',
-        style: TextStyle(color: brandRed, fontWeight: FontWeight.w600),
-      ),
-    ],
-  ),
-  ),
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF888888),
+                        height: 1.5,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text: 'Clarify, control, and peace of mind.\n',
+                        ),
+                        const TextSpan(text: 'All in '),
+                        TextSpan(
+                          text: 'One Place.',
+                          style: TextStyle(
+                            color: brandRed,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 48),
-                  
+
                   // Buttons
                   AppPrimaryButton(
                     label: 'Sign up',

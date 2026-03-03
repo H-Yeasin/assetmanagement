@@ -27,13 +27,21 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Text(
                       'Additional Details',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 24),
@@ -44,14 +52,21 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
             // ── Content ──
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Category Subtitle ──
                     Text(
                       categoryLabel,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                     const SizedBox(height: 20),
 
@@ -72,27 +87,33 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
                                 value: cost.name,
                               ),
                               _DetailCard(
-                                iconPath: 'assets/images/icon/Property_Taxes.png',
+                                iconPath:
+                                    'assets/images/icon/Property_Taxes.png',
                                 iconColor: const Color(0xFF888888), // greyish
                                 title: 'Property Taxes',
-                                value: '\$ ${NumberFormat('#,##0.00').format(cost.amount * 0.12)}',
+                                value:
+                                    '\$ ${NumberFormat('#,##0.00').format(cost.amount * 0.12)}',
                               ),
                               _DetailCard(
                                 iconPath: 'assets/images/icon/condo.png',
                                 iconColor: const Color(0xFF2196F3), // blue
                                 title: 'Condo/HOA',
-                                value: '\$ ${NumberFormat('#,##0.00').format(cost.amount * 0.11)}',
+                                value:
+                                    '\$ ${NumberFormat('#,##0.00').format(cost.amount * 0.11)}',
                               ),
                               _DetailCard(
                                 iconPath: 'assets/images/icon/installment.png',
                                 iconColor: const Color(0xFF4CAF50), // green
                                 title: 'Monthly Cost',
-                                value: '\$ ${NumberFormat('#,##0.00').format(cost.amount)}',
+                                value:
+                                    '\$ ${NumberFormat('#,##0.00').format(cost.amount)}',
                               ),
                             ]
                           : [
                               _DetailCard(
-                                iconPath: HousingCost.iconForCategory(cost.category),
+                                iconPath: HousingCost.iconForCategory(
+                                  cost.category,
+                                ),
                                 iconColor: _colorForCategory(cost.category),
                                 title: categoryLabel,
                                 value: cost.name,
@@ -101,13 +122,16 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
                                 iconPath: 'assets/images/icon/installment.png',
                                 iconColor: const Color(0xFF2196F3), // blue
                                 title: 'Installment',
-                                value: '\$${NumberFormat('#,##0.00').format(cost.amount)} (Monthly)',
+                                value:
+                                    '\$${NumberFormat('#,##0.00').format(cost.amount)} (Monthly)',
                               ),
                               _DetailCard(
                                 iconPath: 'assets/images/icon/due_date.png',
                                 iconColor: const Color(0xFF9C27B0), // purple
                                 title: 'Due Date',
-                                value: cost.dueDate != null ? DateFormat('d MMMM').format(cost.dueDate!) : 'Not set',
+                                value: cost.dueDate != null
+                                    ? DateFormat('d MMMM').format(cost.dueDate!)
+                                    : 'Not set',
                               ),
                             ],
                     ),
@@ -131,8 +155,13 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
                             ),
                             child: Image.asset(
                               'assets/images/icon/remind.png',
-                              width: 20, height: 20,
-                              errorBuilder: (c, e, s) => const Icon(Icons.notifications, size: 20, color: Color(0xFFC61C36)),
+                              width: 20,
+                              height: 20,
+                              errorBuilder: (c, e, s) => const Icon(
+                                Icons.notifications,
+                                size: 20,
+                                color: Color(0xFFC61C36),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -140,22 +169,50 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Payment Reminders', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
-                                Text('4 days before date', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                const Text(
+                                  'Payment Reminders',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF111111),
+                                  ),
+                                ),
+                                Text(
+                                  '4 days before date',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              border: Border.all(color: const Color(0xFFEEEEEE)),
+                              border: Border.all(
+                                color: const Color(0xFFEEEEEE),
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
                               children: [
-                                const Text('Same day', style: TextStyle(fontSize: 12, color: Color(0xFF555555))),
+                                const Text(
+                                  'Same day',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF555555),
+                                  ),
+                                ),
                                 const SizedBox(width: 4),
-                                const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF888888)),
+                                const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  size: 16,
+                                  color: Color(0xFF888888),
+                                ),
                               ],
                             ),
                           ),
@@ -171,7 +228,10 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
                               alignment: Alignment.centerRight,
                               child: Padding(
                                 padding: EdgeInsets.only(right: 2),
-                                child: CircleAvatar(radius: 10, backgroundColor: Colors.white),
+                                child: CircleAvatar(
+                                  radius: 10,
+                                  backgroundColor: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -190,13 +250,20 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
 
   Color _colorForCategory(String category) {
     switch (category) {
-      case 'housing': return const Color(0xFF2196F3);
-      case 'utilities': return const Color(0xFFFFC107);
-      case 'internet': return const Color(0xFF4CAF50);
-      case 'transportation': return const Color(0xFF3F51B5);
-      case 'insurance': return const Color(0xFFFF9800);
-      case 'maintenance': return const Color(0xFF9C27B0);
-      default: return brandRed;
+      case 'housing':
+        return const Color(0xFF2196F3);
+      case 'utilities':
+        return const Color(0xFFFFC107);
+      case 'internet':
+        return const Color(0xFF4CAF50);
+      case 'transportation':
+        return const Color(0xFF3F51B5);
+      case 'insurance':
+        return const Color(0xFFFF9800);
+      case 'maintenance':
+        return const Color(0xFF9C27B0);
+      default:
+        return brandRed;
     }
   }
 }
@@ -229,7 +296,8 @@ class _DetailCard extends StatelessWidget {
             iconPath,
             width: 32,
             height: 32,
-            errorBuilder: (context, error, stackTrace) => Icon(Icons.info_outline, size: 32, color: iconColor),
+            errorBuilder: (context, error, stackTrace) =>
+                Icon(Icons.info_outline, size: 32, color: iconColor),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -239,14 +307,21 @@ class _DetailCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 10, color: Color(0xFF888888)),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF888888),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

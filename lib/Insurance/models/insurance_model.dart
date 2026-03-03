@@ -23,7 +23,7 @@ class InsurancePolicy {
   final String? propertyAddress;
   final String? applianceName;
   final String? manufacturer;
-  
+
   // New Figma Fields
   final String? vehicleModel;
   final String? timeLeft;
@@ -74,7 +74,7 @@ class InsurancePolicy {
       try {
         final jsonStr = rawNotes.substring(6);
         extraData = jsonDecode(jsonStr);
-        displayNotes = extraData['notes']; 
+        displayNotes = extraData['notes'];
       } catch (e) {
         debugPrint('Error parsing extra data: $e');
       }
@@ -88,12 +88,18 @@ class InsurancePolicy {
       premium: (json['premium'] ?? 0).toDouble(),
       paymentFrequency: json['paymentFrequency'],
       provider: json['provider'],
-      renewalDate: json['renewalDate'] != null ? DateTime.parse(json['renewalDate']) : null,
+      renewalDate: json['renewalDate'] != null
+          ? DateTime.parse(json['renewalDate'])
+          : null,
       coverageNotes: displayNotes,
       documents: json['documents'] != null ? (json['documents'] as List) : [],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : null,
+
       policyNumber: json['policyNumber'] ?? extraData['policyNumber'],
       coverageType: json['coverageType'] ?? extraData['coverageType'],
       petName: json['petName'] ?? extraData['petName'],
@@ -102,15 +108,23 @@ class InsurancePolicy {
       manufacturer: json['manufacturer'] ?? extraData['manufacturer'],
       vehicleModel: json['vehicleModel'] ?? extraData['vehicleModel'],
       timeLeft: json['timeLeft'] ?? extraData['timeLeft'],
-      paymentsCompleted: json['paymentsCompleted'] ?? extraData['paymentsCompleted'],
+      paymentsCompleted:
+          json['paymentsCompleted'] ?? extraData['paymentsCompleted'],
       totalPayments: json['totalPayments'] ?? extraData['totalPayments'],
-      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : 
-                 (extraData['startDate'] != null ? DateTime.parse(extraData['startDate']) : null),
-      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : 
-               (extraData['endDate'] != null ? DateTime.parse(extraData['endDate']) : null),
+      startDate: json['startDate'] != null
+          ? DateTime.parse(json['startDate'])
+          : (extraData['startDate'] != null
+                ? DateTime.parse(extraData['startDate'])
+                : null),
+      endDate: json['endDate'] != null
+          ? DateTime.parse(json['endDate'])
+          : (extraData['endDate'] != null
+                ? DateTime.parse(extraData['endDate'])
+                : null),
       isAutoPay: json['isAutoPay'] ?? extraData['isAutoPay'],
       paymentDay: json['paymentDay'] ?? extraData['paymentDay'],
-      personalInsuranceType: json['personalInsuranceType'] ?? extraData['personalInsuranceType'],
+      personalInsuranceType:
+          json['personalInsuranceType'] ?? extraData['personalInsuranceType'],
     );
   }
 
@@ -144,8 +158,14 @@ class InsurancePolicy {
       'coverageNotes': '@DATA:${jsonEncode(extraData)}',
       'documents': documents.map((doc) {
         if (doc is String) return doc;
-        try { return doc.id; } catch (_) {
-          try { return doc['_id'] ?? doc['id']; } catch (_) { return doc.toString(); }
+        try {
+          return doc.id;
+        } catch (_) {
+          try {
+            return doc['_id'] ?? doc['id'];
+          } catch (_) {
+            return doc.toString();
+          }
         }
       }).toList(),
     };

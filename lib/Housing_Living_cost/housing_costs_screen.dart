@@ -87,20 +87,30 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => context.go('/home'),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Text(
                       'Housing/Living Costs',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   GestureDetector(
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const AddHousingCostScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const AddHousingCostScreen(),
+                        ),
                       );
                       if (result == true) {
                         _loadCosts();
@@ -109,8 +119,15 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                     child: Container(
                       width: 32,
                       height: 32,
-                      decoration: const BoxDecoration(color: brandRed, shape: BoxShape.circle),
-                      child: const Icon(Icons.add, color: Colors.white, size: 20),
+                      decoration: const BoxDecoration(
+                        color: brandRed,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ],
@@ -141,12 +158,20 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                           children: [
                             const Text(
                               'Total Monthly Payment:',
-                              style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF888888),
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '\$ ${NumberFormat('#,##0.00').format(_totalMonthlyPayment)}',
-                              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Color(0xFF111111), letterSpacing: -0.5),
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111111),
+                                letterSpacing: -0.5,
+                              ),
                             ),
                           ],
                         ),
@@ -160,7 +185,10 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.all(32),
-                          child: Text('No housing costs found', style: TextStyle(color: Color(0xFF888888))),
+                          child: Text(
+                            'No housing costs found',
+                            style: TextStyle(color: Color(0xFF888888)),
+                          ),
                         ),
                       )
                     else
@@ -168,27 +196,38 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Column(
                           children: _costs.map((cost) {
-                            final iconPath = HousingCost.iconForCategory(cost.category);
-                            final iconBgColor = HousingCost.iconBgColorForCategory(cost.category);
-                            // Find the display label for this category
-                            final catInfo = HousingCost.displayCategories.firstWhere(
-                              (c) => c['id'] == cost.category,
-                              orElse: () => {'label': cost.category},
+                            final iconPath = HousingCost.iconForCategory(
+                              cost.category,
                             );
+                            final iconBgColor =
+                                HousingCost.iconBgColorForCategory(
+                                  cost.category,
+                                );
+                            // Find the display label for this category
+                            final catInfo = HousingCost.displayCategories
+                                .firstWhere(
+                                  (c) => c['id'] == cost.category,
+                                  orElse: () => {'label': cost.category},
+                                );
 
                             return HousingCostListItem(
                               iconPath: iconPath,
                               iconBgColor: iconBgColor,
                               title: cost.name,
                               subtitle: catInfo['label'] ?? cost.category,
-                              amount: NumberFormat.simpleCurrency(decimalDigits: cost.amount % 1 == 0 ? 0 : 2).format(cost.amount),
-                              status: cost.autoPay ? 'Auto Payment' : 'Manual payment required',
+                              amount: NumberFormat.simpleCurrency(
+                                decimalDigits: cost.amount % 1 == 0 ? 0 : 2,
+                              ).format(cost.amount),
+                              status: cost.autoPay
+                                  ? 'Auto Payment'
+                                  : 'Manual payment required',
                               isPaid: cost.autoPay,
                               onTap: () async {
                                 final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => HousingCostDetailScreen(cost: cost),
+                                    builder: (_) =>
+                                        HousingCostDetailScreen(cost: cost),
                                   ),
                                 );
                                 if (result == true) {

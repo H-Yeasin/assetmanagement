@@ -8,7 +8,8 @@ class UpcomingRemindersScreen extends StatefulWidget {
   const UpcomingRemindersScreen({super.key});
 
   @override
-  State<UpcomingRemindersScreen> createState() => _UpcomingRemindersScreenState();
+  State<UpcomingRemindersScreen> createState() =>
+      _UpcomingRemindersScreenState();
 }
 
 class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
@@ -67,8 +68,8 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
         title: const Text(
           'Upcoming Reminders',
           style: TextStyle(
-            fontSize: 18, 
-            fontWeight: FontWeight.w700, 
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
             color: Color(0xFF111111),
           ),
         ),
@@ -83,48 +84,45 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
             const Text(
               'Upcoming',
               style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.w700, 
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
                 color: Color(0xFF111111),
               ),
             ),
             const SizedBox(height: 20),
-            
-            if (_isLoading)
-              const Center(child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: CircularProgressIndicator(color: brandRed),
-              ))
-            else if (_error != null)
-              Center(child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Column(
-                  children: [
-                    Text('Error: $_error', style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(onPressed: _loadReminders, child: const Text('Retry')),
-                  ],
-                ),
-              ))
-            else if (_reminders.isEmpty)
-              const Center(child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Text('No upcoming reminders'),
-              ))
-            else
-              ..._reminders.map((reminder) {
-                final date = DateTime.parse(reminder['remindAt']);
-                return ReminderCard(
-                  month: DateFormat('MMM').format(date), 
-                  day: DateFormat('dd').format(date), 
-                  title: reminder['title'] ?? 'Reminder', 
-                  dueInfo: reminder['note'] ?? 'Time: ${DateFormat.jm().format(date)}',
-                  onTap: () => _markAsDone(reminder['_id']),
-                );
-              }),
+
+            // Dummy Reminders
+            ReminderCard(
+              month: 'Jan',
+              day: '01',
+              title: 'Apartment Rent Due',
+              dueInfo: 'Due in 3 days',
+              onTap: () {},
+            ),
+            ReminderCard(
+              month: 'Feb',
+              day: '20',
+              title: 'Car Insurance Renewal',
+              dueInfo: 'February 20, 2025',
+              onTap: () {},
+            ),
+            ReminderCard(
+              month: 'Mar',
+              day: '15',
+              title: 'Health Insurance Premium',
+              dueInfo: 'March 15, 2025',
+              onTap: () {},
+            ),
+            ReminderCard(
+              month: 'Apr',
+              day: '10',
+              title: 'Property Tax Installment',
+              dueInfo: 'April 10, 2025',
+              onTap: () {},
+            ),
 
             const SizedBox(height: 24),
-            
+
             // View Past Activity Button
             Center(
               child: GestureDetector(
@@ -139,9 +137,9 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
                     Text(
                       'View Past Activity',
                       style: TextStyle(
-                        fontSize: 14, 
-                        fontWeight: FontWeight.w600, 
-                        color: brandRed, 
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: brandRed,
                         decoration: TextDecoration.underline,
                       ),
                     ),

@@ -46,7 +46,9 @@ class _FaqScreenState extends State<FaqScreen> {
     ),
   ];
 
-  final Set<int> _expanded = {0}; // First item expanded by default based on screenshot
+  final Set<int> _expanded = {
+    0,
+  }; // First item expanded by default based on screenshot
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +58,11 @@ class _FaqScreenState extends State<FaqScreen> {
         backgroundColor: const Color(0xFFF8F6F6),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 18, color: Color(0xFF111111)),
+          icon: const Icon(
+            Icons.arrow_back,
+            size: 18,
+            color: Color(0xFF111111),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -76,7 +82,7 @@ class _FaqScreenState extends State<FaqScreen> {
           itemBuilder: (context, i) {
             final _FaqData item = _items[i];
             final isOpen = _expanded.contains(i);
-            
+
             return _FaqListItem(
               item: item,
               isOpen: isOpen,

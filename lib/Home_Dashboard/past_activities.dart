@@ -55,8 +55,8 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
         title: const Text(
           'View Past Activities',
           style: TextStyle(
-            fontSize: 18, 
-            fontWeight: FontWeight.w700, 
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
             color: Color(0xFF111111),
           ),
         ),
@@ -65,48 +65,29 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _isLoading 
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFFC61C36)))
-              : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Error: $_error', style: const TextStyle(color: Colors.red)),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadActivities,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _activityGroups.isEmpty
-                  ? const Center(child: Text('No past activities found'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                      itemCount: _activityGroups.length,
-                      itemBuilder: (context, index) {
-                        final group = _activityGroups[index];
-                        final date = DateTime.parse(group['date']);
-                        final items = group['items'] as List;
-                        
-                        return Column(
-                          children: items.map((item) {
-                            return PaymentCard(
-                              month: DateFormat('MMM').format(date), 
-                              day: DateFormat('dd').format(date), 
-                              title: item['name'] ?? 'Loan Payment', 
-                              amount: '\$${(item['monthlyPayment'] ?? 0).toStringAsFixed(2)}', 
-                              status: 'Paid', 
-                              isPaid: true,
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              children: const [
+                PaymentCard(
+                  month: 'Sept',
+                  day: '22',
+                  title: 'Student Loan',
+                  amount: '\$1,300.00',
+                  status: 'Paid',
+                  isPaid: true,
+                ),
+                PaymentCard(
+                  month: 'Sept',
+                  day: '17',
+                  title: 'Car Loan',
+                  amount: '\$2,230.00',
+                  status: 'Manual payment required',
+                  isPaid: false,
+                ),
+              ],
+            ),
           ),
-          
+
           // Data Deletion Notice
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
@@ -114,7 +95,7 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
               'All data will be deleted within 14 days.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 12, 
+                fontSize: 12,
                 color: Color(0xFFBBBBBB),
                 fontWeight: FontWeight.w400,
               ),

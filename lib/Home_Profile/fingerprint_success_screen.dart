@@ -16,7 +16,7 @@ class _FingerprintSuccessScreenState extends State<FingerprintSuccessScreen> {
     // Auto navigate back to profile after 2.5 seconds
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
-        context.go('/profile');
+        context.go('/data-security');
       }
     });
   }

@@ -90,22 +90,34 @@ class Loan extends HiveObject {
       name: json['name'] ?? '',
       category: json['category'] ?? 'other',
       monthlyPayment: (json['monthlyPayment'] ?? 0).toDouble(),
-      paymentDate: json['paymentDate'] != null ? DateTime.parse(json['paymentDate']) : null,
+      paymentDate: json['paymentDate'] != null
+          ? DateTime.parse(json['paymentDate'])
+          : null,
       autoPay: json['autoPay'] ?? false,
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
       interestRate: (json['interestRate'] ?? 0).toDouble(),
-      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : null,
+      startDate: json['startDate'] != null
+          ? DateTime.parse(json['startDate'])
+          : null,
       endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
       remainingBalance: (json['remainingBalance'] ?? 0).toDouble(),
       lender: json['lender'],
       notes: json['notes'],
       status: json['status'] ?? 'active',
-      completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
-      documents: json['documents'] != null 
-          ? (json['documents'] as List).map((doc) => doc is String ? doc : DocumentFile.fromJson(doc)).toList() 
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'])
+          : null,
+      documents: json['documents'] != null
+          ? (json['documents'] as List)
+                .map((doc) => doc is String ? doc : DocumentFile.fromJson(doc))
+                .toList()
           : [],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : null,
       propertyAddress: json['propertyAddress'],
       apartmentName: json['apartmentName'],
       amortizationPeriod: json['amortizationPeriod'],
@@ -134,7 +146,9 @@ class Loan extends HiveObject {
       'amortizationPeriod': amortizationPeriod,
       'totalPayments': totalPayments,
       'completedPayments': completedPayments,
-      'documents': documents.map((doc) => doc is String ? doc : (doc as DocumentFile).id).toList(),
+      'documents': documents
+          .map((doc) => doc is String ? doc : (doc as DocumentFile).id)
+          .toList(),
     };
   }
 }

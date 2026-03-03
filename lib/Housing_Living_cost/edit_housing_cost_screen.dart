@@ -31,9 +31,13 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.cost.name);
-    _amountController = TextEditingController(text: widget.cost.amount.toStringAsFixed(2));
+    _amountController = TextEditingController(
+      text: widget.cost.amount.toStringAsFixed(2),
+    );
     _dueDateController = TextEditingController(
-      text: widget.cost.dueDate != null ? DateFormat('MM/dd/yy').format(widget.cost.dueDate!) : '',
+      text: widget.cost.dueDate != null
+          ? DateFormat('MM/dd/yy').format(widget.cost.dueDate!)
+          : '',
     );
     _notesController = TextEditingController(text: widget.cost.notes ?? '');
     _selectedCategory = widget.cost.category;
@@ -58,7 +62,10 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+  Future<void> _selectDate(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
     DateTime initialDate = widget.cost.dueDate ?? DateTime.now();
     if (controller.text.isNotEmpty) {
       try {
@@ -100,16 +107,20 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
 
   Future<void> _saveChanges() async {
     if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a cost name')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a cost name')));
       return;
     }
 
     setState(() => _isSaving = true);
 
     try {
-      final amount = double.tryParse(_amountController.text.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
+      final amount =
+          double.tryParse(
+            _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
+          ) ??
+          0.0;
       DateTime? dueDate;
       if (_dueDateController.text.isNotEmpty) {
         try {
@@ -146,16 +157,16 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Housing cost updated!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Housing cost updated!')));
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -176,12 +187,20 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Text(
                     'Edit Housing Cost',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                 ],
               ),
@@ -198,7 +217,10 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
 
                     // Cost Name
                     _buildLabel('Cost Name'),
-                    _buildInputField(controller: _nameController, hint: 'Cost name'),
+                    _buildInputField(
+                      controller: _nameController,
+                      hint: 'Cost name',
+                    ),
                     const SizedBox(height: 20),
 
                     // Amount + Category
@@ -209,7 +231,11 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildLabel('Amount'),
-                              _buildInputField(controller: _amountController, hint: '\$0.00', isNumber: true),
+                              _buildInputField(
+                                controller: _amountController,
+                                hint: '\$0.00',
+                                isNumber: true,
+                              ),
                             ],
                           ),
                         ),
@@ -247,12 +273,21 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                       child: TextField(
                         controller: _notesController,
                         maxLines: 4,
-                        style: const TextStyle(fontSize: 15, color: Color(0xFF111111)),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF111111),
+                        ),
                         decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           border: InputBorder.none,
                           hintText: 'Add notes...',
-                          hintStyle: TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
+                          hintStyle: TextStyle(
+                            color: Color(0xFFAAAAAA),
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ),
@@ -273,15 +308,32 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                               color: const Color(0xFFFDE7E9),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.repeat, color: Color(0xFFC61C36), size: 20),
+                            child: const Icon(
+                              Icons.repeat,
+                              color: Color(0xFFC61C36),
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Auto-payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
-                                Text('Pay automatic every month', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                const Text(
+                                  'Auto-payment',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF111111),
+                                  ),
+                                ),
+                                Text(
+                                  'Pay automatic every month',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -290,7 +342,9 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                             onChanged: (v) => setState(() => _autoPay = v),
                             activeThumbColor: Colors.white,
                             activeTrackColor: const Color(0xFFC61C36),
-                            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                            trackOutlineColor: WidgetStateProperty.all(
+                              Colors.transparent,
+                            ),
                           ),
                         ],
                       ),
@@ -317,10 +371,21 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                   ),
                   child: Center(
                     child: _isSaving
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Text(
                             'Save Changes',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
                   ),
                 ),
@@ -335,7 +400,14 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF444444))),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF444444),
+        ),
+      ),
     );
   }
 
@@ -359,11 +431,20 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
           keyboardType: isNumber ? TextInputType.number : TextInputType.text,
           style: const TextStyle(fontSize: 15, color: Color(0xFF111111)),
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: InputBorder.none,
             hintText: hint,
             hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
-            suffixIcon: isDate ? const Icon(Icons.calendar_today_outlined, size: 18, color: Color(0xFF888888)) : null,
+            suffixIcon: isDate
+                ? const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 18,
+                    color: Color(0xFF888888),
+                  )
+                : null,
           ),
         ),
       ),
@@ -399,8 +480,10 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                     ),
                     child: Image.asset(
                       cat['icon']!,
-                      width: 18, height: 18,
-                      errorBuilder: (c, e, s) => const Icon(Icons.category, size: 18),
+                      width: 18,
+                      height: 18,
+                      errorBuilder: (c, e, s) =>
+                          const Icon(Icons.category, size: 18),
                     ),
                   ),
                   const SizedBox(width: 10),

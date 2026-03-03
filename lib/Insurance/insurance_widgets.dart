@@ -31,22 +31,26 @@ class InsuranceListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final freqLower = frequency.toLowerCase();
-    final bool isYearly = freqLower.contains('yearly') || freqLower.contains('annually');
+    final bool isYearly =
+        freqLower.contains('yearly') || freqLower.contains('annually');
     final bool isQuarterly = freqLower.contains('quarterly');
-    
-    final frequencyColor = isYearly 
-        ? const Color(0xFFFFA726) 
+
+    final frequencyColor = isYearly
+        ? const Color(0xFFFFA726)
         : (isQuarterly ? const Color(0xFF906AF9) : const Color(0xFFBA68C8));
-        
-    final frequencyBgColor = isYearly 
-        ? const Color(0xFFFFF7E6) 
-        : (isQuarterly ? const Color(0xFFF2E7FF) : frequencyColor.withValues(alpha: 0.1));
-        
+
+    final frequencyBgColor = isYearly
+        ? const Color(0xFFFFF7E6)
+        : (isQuarterly
+              ? const Color(0xFFF2E7FF)
+              : frequencyColor.withValues(alpha: 0.1));
+
     String displayFrequency = frequency.replaceAll('(', '').replaceAll(')', '');
     if (isYearly) {
       displayFrequency = 'Yearly';
     } else if (displayFrequency.isNotEmpty) {
-      displayFrequency = displayFrequency[0].toUpperCase() + displayFrequency.substring(1);
+      displayFrequency =
+          displayFrequency[0].toUpperCase() + displayFrequency.substring(1);
     }
 
     return GestureDetector(
@@ -73,8 +77,15 @@ class InsuranceListItem extends StatelessWidget {
                 iconPath,
                 errorBuilder: (c, e, s) => Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                  child: const Icon(Icons.security, size: 24, color: Colors.white70),
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.security,
+                    size: 24,
+                    color: Colors.white70,
+                  ),
                 ),
               ),
             ),
@@ -89,14 +100,22 @@ class InsuranceListItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Text(
                         amount,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111111),
+                        ),
                       ),
                     ],
                   ),
@@ -106,10 +125,16 @@ class InsuranceListItem extends StatelessWidget {
                     children: [
                       Text(
                         subtitle,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF888888),
+                        ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: frequencyBgColor,
                           borderRadius: BorderRadius.circular(12),
@@ -184,8 +209,22 @@ class UpcomingActionItem extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(month, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w600)),
-                Text(day, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: statusColor)),
+                Text(
+                  month,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  day,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
               ],
             ),
           ),
@@ -195,18 +234,37 @@ class UpcomingActionItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF111111)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: statusBgColor, borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Flexible(
                         child: Text(
-                          status, 
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor),
+                          status,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: statusColor,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -218,7 +276,14 @@ class UpcomingActionItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(amount, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+          Text(
+            amount,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111111),
+            ),
+          ),
         ],
       ),
     );
@@ -231,7 +296,11 @@ class InsurancePaymentModal extends StatefulWidget {
   final InsurancePolicy policy;
   final VoidCallback? onPaymentConfirmed;
 
-  const InsurancePaymentModal({super.key, required this.policy, this.onPaymentConfirmed});
+  const InsurancePaymentModal({
+    super.key,
+    required this.policy,
+    this.onPaymentConfirmed,
+  });
 
   @override
   State<InsurancePaymentModal> createState() => _InsurancePaymentModalState();
@@ -243,14 +312,26 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
   final TextEditingController _amountController = TextEditingController();
 
   final List<String> _months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   @override
   void initState() {
     super.initState();
-    _amountController.text = NumberFormat('#,##0.00').format(widget.policy.premium);
+    _amountController.text = NumberFormat(
+      '#,##0.00',
+    ).format(widget.policy.premium);
     _selectedMonth = DateFormat('MMMM').format(DateTime.now());
   }
 
@@ -264,7 +345,7 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
     setState(() => _isProcessing = true);
     try {
       final newCompleted = (widget.policy.paymentsCompleted ?? 0) + 1;
-      
+
       final tempPolicy = InsurancePolicy(
         userId: widget.policy.userId,
         name: widget.policy.name,
@@ -292,7 +373,10 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
         documents: widget.policy.documents,
       );
 
-      await InsuranceApiService().updateInsurance(widget.policy.id!, tempPolicy.toJson());
+      await InsuranceApiService().updateInsurance(
+        widget.policy.id!,
+        tempPolicy.toJson(),
+      );
 
       if (mounted) {
         Navigator.pop(context);
@@ -303,9 +387,9 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -330,11 +414,19 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
             children: [
               const Text(
                 'Payment Details',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
               ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+                child: const Icon(
+                  Icons.close,
+                  size: 24,
+                  color: Color(0xFF111111),
+                ),
               ),
             ],
           ),
@@ -359,12 +451,20 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
               children: [
                 const Text(
                   'Payment Amount',
-                  style: TextStyle(fontSize: 18, color: Color(0xFFC61C36), fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Color(0xFFC61C36),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   NumberFormat.simpleCurrency().format(widget.policy.premium),
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
                 ),
               ],
             ),
@@ -372,7 +472,14 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
           const SizedBox(height: 10),
 
           // Amount Input
-          const Text('Amount', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          const Text(
+            'Amount',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -394,7 +501,14 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
           const SizedBox(height: 10),
 
           // Month Dropdown
-          const Text('Month', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          const Text(
+            'Month',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -406,10 +520,16 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
               child: DropdownButton<String>(
                 value: _selectedMonth,
                 isExpanded: true,
-                icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
+                icon: const Icon(
+                  Icons.arrow_drop_down,
+                  color: Color(0xFF111111),
+                ),
                 style: const TextStyle(fontSize: 15, color: Color(0xFF888888)),
                 items: _months.map((String month) {
-                  return DropdownMenuItem<String>(value: month, child: Text(month));
+                  return DropdownMenuItem<String>(
+                    value: month,
+                    child: Text(month),
+                  );
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedMonth = val!),
               ),
@@ -423,7 +543,14 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
               Expanded(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF111111),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -434,12 +561,27 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
                     backgroundColor: const Color(0xFFFDE7E9),
                     foregroundColor: const Color(0xFFC61C36),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: _isProcessing 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC61C36)))
-                      : const Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: _isProcessing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFC61C36),
+                          ),
+                        )
+                      : const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -468,8 +610,11 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
   @override
   void initState() {
     super.initState();
-    if (widget.policy.renewalDate != null && widget.policy.renewalDate!.isAfter(DateTime.now())) {
-      _selectedDate = widget.policy.renewalDate!.subtract(const Duration(days: 1));
+    if (widget.policy.renewalDate != null &&
+        widget.policy.renewalDate!.isAfter(DateTime.now())) {
+      _selectedDate = widget.policy.renewalDate!.subtract(
+        const Duration(days: 1),
+      );
     }
   }
 
@@ -511,9 +656,9 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
       initialTime: _selectedTime,
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: brandRed),
-          ),
+          data: Theme.of(
+            context,
+          ).copyWith(colorScheme: const ColorScheme.light(primary: brandRed)),
           child: child!,
         );
       },
@@ -540,7 +685,8 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
         itemType: 'insurance',
         title: 'Insurance Renewal: ${widget.policy.name}',
         remindAt: remindAt,
-        note: 'Reminder for ${widget.policy.provider} policy ${widget.policy.policyNumber ?? ""}',
+        note:
+            'Reminder for ${widget.policy.provider} policy ${widget.policy.policyNumber ?? ""}',
       );
 
       if (mounted) {
@@ -550,7 +696,10 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
         );
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -573,10 +722,21 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Set Reminder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+              const Text(
+                'Set Reminder',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
+              ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+                child: const Icon(
+                  Icons.close,
+                  size: 24,
+                  color: Color(0xFF111111),
+                ),
               ),
             ],
           ),
@@ -588,12 +748,26 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Pick Date', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                const Text(
+                  'Pick Date',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF888888),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(formattedDate, style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                    Text(
+                      formattedDate,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF111111),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const Icon(Icons.calendar_today, color: brandRed, size: 18),
                   ],
                 ),
@@ -610,14 +784,25 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Pick Time', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                const Text(
+                  'Pick Time',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF888888),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       '${_selectedTime.hourOfPeriod.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${_selectedTime.period == DayPeriod.am ? 'AM' : 'PM'}',
-                      style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF111111),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const Icon(Icons.access_time, color: brandRed, size: 18),
                   ],
@@ -634,7 +819,14 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
               Expanded(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF111111),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -645,12 +837,27 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
                     backgroundColor: const Color(0xFFFDE7E9),
                     foregroundColor: brandRed,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: _isSaving 
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: brandRed))
-                    : const Text('Set Reminder', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: brandRed,
+                          ),
+                        )
+                      : const Text(
+                          'Set Reminder',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ],

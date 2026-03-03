@@ -33,7 +33,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
   late TextEditingController _lenderController;
   late TextEditingController _notesController;
   late TextEditingController _remainingBalanceController;
-  
+
   // Specific fields
   late TextEditingController _propertyAddressController;
   late TextEditingController _apartmentNameController;
@@ -43,12 +43,36 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
   late TextEditingController _timeLeftController;
 
   final List<Map<String, String>> _categories = [
-    {'id': 'mortgage', 'label': 'Home Mortgage', 'icon': 'assets/images/icon/home_morgarate.png'},
-    {'id': 'car', 'label': 'Car Loan', 'icon': 'assets/images/icon/car_loan.png'},
-    {'id': 'business', 'label': 'Business Loan', 'icon': 'assets/images/icon/custom_loan.png'},
-    {'id': 'student', 'label': 'Students Loan', 'icon': 'assets/images/icon/student_loan.png'},
-    {'id': 'personal', 'label': 'Personal Loan', 'icon': 'assets/images/icon/personal_loan.png'},
-    {'id': 'other', 'label': 'Custom Loan', 'icon': 'assets/images/icon/custom_loan.png'},
+    {
+      'id': 'mortgage',
+      'label': 'Home Mortgage',
+      'icon': 'assets/images/icon/home_morgarate.png',
+    },
+    {
+      'id': 'car',
+      'label': 'Car Loan',
+      'icon': 'assets/images/icon/car_loan.png',
+    },
+    {
+      'id': 'business',
+      'label': 'Business Loan',
+      'icon': 'assets/images/icon/custom_loan.png',
+    },
+    {
+      'id': 'student',
+      'label': 'Students Loan',
+      'icon': 'assets/images/icon/student_loan.png',
+    },
+    {
+      'id': 'personal',
+      'label': 'Personal Loan',
+      'icon': 'assets/images/icon/personal_loan.png',
+    },
+    {
+      'id': 'other',
+      'label': 'Custom Loan',
+      'icon': 'assets/images/icon/custom_loan.png',
+    },
   ];
 
   @override
@@ -58,25 +82,55 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
     _autoPayment = loan.autoPay;
     _selectedCategory = loan.category;
     _selectedAmortization = loan.amortizationPeriod ?? '';
-    
+
     _nameController = TextEditingController(text: loan.name);
-    _monthlyPaymentController = TextEditingController(text: loan.monthlyPayment.toString());
-    _paymentDateController = TextEditingController(text: loan.paymentDate?.day.toString() ?? '15');
-    _totalAmountController = TextEditingController(text: loan.totalAmount.toString());
-    _interestRateController = TextEditingController(text: loan.interestRate.toString());
-    _startDateController = TextEditingController(text: loan.startDate != null ? DateFormat('MM/dd/yy').format(loan.startDate!) : '');
-    _endDateController = TextEditingController(text: loan.endDate != null ? DateFormat('MM/dd/yy').format(loan.endDate!) : '');
+    _monthlyPaymentController = TextEditingController(
+      text: loan.monthlyPayment.toString(),
+    );
+    _paymentDateController = TextEditingController(
+      text: loan.paymentDate?.day.toString() ?? '15',
+    );
+    _totalAmountController = TextEditingController(
+      text: loan.totalAmount.toString(),
+    );
+    _interestRateController = TextEditingController(
+      text: loan.interestRate.toString(),
+    );
+    _startDateController = TextEditingController(
+      text: loan.startDate != null
+          ? DateFormat('MM/dd/yy').format(loan.startDate!)
+          : '',
+    );
+    _endDateController = TextEditingController(
+      text: loan.endDate != null
+          ? DateFormat('MM/dd/yy').format(loan.endDate!)
+          : '',
+    );
     _lenderController = TextEditingController(text: loan.lender ?? '');
     _notesController = TextEditingController(text: loan.notes ?? '');
-    _remainingBalanceController = TextEditingController(text: loan.remainingBalance.toString());
-    
-    _propertyAddressController = TextEditingController(text: loan.propertyAddress ?? '');
-    _apartmentNameController = TextEditingController(text: loan.apartmentName ?? '');
-    _totalPaymentsController = TextEditingController(text: loan.totalPayments.toString());
-    _completedPaymentsController = TextEditingController(text: loan.completedPayments.toString());
-    _annualPaymentController = TextEditingController(text: (loan.monthlyPayment * 12).toStringAsFixed(2));
-    _timeLeftController = TextEditingController(text: (loan.totalPayments - loan.completedPayments).toString());
-    
+    _remainingBalanceController = TextEditingController(
+      text: loan.remainingBalance.toString(),
+    );
+
+    _propertyAddressController = TextEditingController(
+      text: loan.propertyAddress ?? '',
+    );
+    _apartmentNameController = TextEditingController(
+      text: loan.apartmentName ?? '',
+    );
+    _totalPaymentsController = TextEditingController(
+      text: loan.totalPayments.toString(),
+    );
+    _completedPaymentsController = TextEditingController(
+      text: loan.completedPayments.toString(),
+    );
+    _annualPaymentController = TextEditingController(
+      text: (loan.monthlyPayment * 12).toStringAsFixed(2),
+    );
+    _timeLeftController = TextEditingController(
+      text: (loan.totalPayments - loan.completedPayments).toString(),
+    );
+
     _documents = loan.documents.map((doc) {
       if (doc is DocumentFile) {
         return {
@@ -124,7 +178,9 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
     final bool isCarLoan = _selectedCategory == 'car';
 
     return Scaffold(
-      backgroundColor: (isMortgage || isCarLoan) ? const Color(0xFFFDF5F5) : Colors.white,
+      backgroundColor: (isMortgage || isCarLoan)
+          ? const Color(0xFFFDF5F5)
+          : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -135,20 +191,34 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.close,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   Expanded(
                     child: Text(
-                      isMortgage ? 'Edit Agreement' : (isCarLoan ? 'Edit Car Loan' : 'Edit Loan'),
+                      isMortgage
+                          ? 'Edit Agreement'
+                          : (isCarLoan ? 'Edit Car Loan' : 'Edit Loan'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   GestureDetector(
                     onTap: _isSaving ? null : _saveLoan,
                     child: Text(
                       _isSaving ? 'Saving...' : 'Save',
-                      style: const TextStyle(color: brandRed, fontWeight: FontWeight.w600, fontSize: 14),
+                      style: const TextStyle(
+                        color: brandRed,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
@@ -161,9 +231,21 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
                 padding: const EdgeInsets.only(bottom: 24),
                 child: Column(
                   children: [
-                    Text(isMortgage ? 'Mortgage' : 'Car Loan', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+                    Text(
+                      isMortgage ? 'Mortgage' : 'Car Loan',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF111111),
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Container(height: 2, width: double.infinity, margin: const EdgeInsets.symmetric(horizontal: 16), color: brandRed),
+                    Container(
+                      height: 2,
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      color: brandRed,
+                    ),
                   ],
                 ),
               ),
@@ -173,7 +255,11 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: isMortgage ? _buildMortgageLayout() : (isCarLoan ? _buildCarLoanLayout() : _buildDefaultLayout()),
+                child: isMortgage
+                    ? _buildMortgageLayout()
+                    : (isCarLoan
+                          ? _buildCarLoanLayout()
+                          : _buildDefaultLayout()),
               ),
             ),
           ],
@@ -187,31 +273,52 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        
+
         // Loan Name
         _buildLabel('Loan Name'),
-        _buildInputField(controller: _nameController, hint: 'e.g., Tesla Model 3'),
-        
+        _buildInputField(
+          controller: _nameController,
+          hint: 'e.g., Tesla Model 3',
+        ),
+
         const SizedBox(height: 20),
-        
+
         // Loan Category
         _buildLabel('Loan Category'),
         _buildCategoryPicker(),
-        
+
         const SizedBox(height: 20),
-        
+
         // Monthly Payment + Payment Date
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Monthly Payment'),
-              _buildInputField(controller: _monthlyPaymentController, hint: '\$500', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Monthly Payment'),
+                  _buildInputField(
+                    controller: _monthlyPaymentController,
+                    hint: '\$500',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Payment Date'),
-              _buildInputField(controller: _paymentDateController, hint: 'dd', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Payment Date'),
+                  _buildInputField(
+                    controller: _paymentDateController,
+                    hint: 'dd',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
 
@@ -219,25 +326,53 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildAutoPayToggle(),
 
         const SizedBox(height: 32),
-        const Text('Additional Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+        const Text(
+          'Additional Details',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
+          ),
+        ),
         const SizedBox(height: 20),
 
         _buildLabel('Total Amount'),
-        _buildInputField(controller: _totalAmountController, hint: '\$15,000.00', isNumber: true),
+        _buildInputField(
+          controller: _totalAmountController,
+          hint: '\$15,000.00',
+          isNumber: true,
+        ),
 
         const SizedBox(height: 20),
 
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Interest Rate (%)'),
-              _buildInputField(controller: _interestRateController, hint: '4.5', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Interest Rate (%)'),
+                  _buildInputField(
+                    controller: _interestRateController,
+                    hint: '4.5',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Lending Bank'),
-              _buildInputField(controller: _lenderController, hint: 'e.g. Citi Bank'),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Lending Bank'),
+                  _buildInputField(
+                    controller: _lenderController,
+                    hint: 'e.g. Citi Bank',
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
 
@@ -245,15 +380,33 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Start Date'),
-              _buildInputField(controller: _startDateController, hint: 'mm/dd/yy', isDate: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Start Date'),
+                  _buildInputField(
+                    controller: _startDateController,
+                    hint: 'mm/dd/yy',
+                    isDate: true,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('End Date'),
-              _buildInputField(controller: _endDateController, hint: 'mm/dd/yy', isDate: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('End Date'),
+                  _buildInputField(
+                    controller: _endDateController,
+                    hint: 'mm/dd/yy',
+                    isDate: true,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
 
@@ -261,15 +414,33 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Completed Payments'),
-              _buildInputField(controller: _completedPaymentsController, hint: '10', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Completed Payments'),
+                  _buildInputField(
+                    controller: _completedPaymentsController,
+                    hint: '10',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Total Payments'),
-              _buildInputField(controller: _totalPaymentsController, hint: '60', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Total Payments'),
+                  _buildInputField(
+                    controller: _totalPaymentsController,
+                    hint: '60',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
 
@@ -278,7 +449,11 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         const SizedBox(height: 20),
 
         _buildLabel('Notes'),
-        _buildInputField(controller: _notesController, hint: 'Optional notes...', maxLines: 3),
+        _buildInputField(
+          controller: _notesController,
+          hint: 'Optional notes...',
+          maxLines: 3,
+        ),
 
         const SizedBox(height: 40),
       ],
@@ -295,47 +470,99 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         const SizedBox(height: 24),
 
         _buildLabel('Monthly Payment'),
-        _buildInputField(controller: _monthlyPaymentController, hint: '\$260', isNumber: true),
+        _buildInputField(
+          controller: _monthlyPaymentController,
+          hint: '\$260',
+          isNumber: true,
+        ),
         const SizedBox(height: 20),
 
         _buildLabel('Time Left (months)'),
-        _buildInputField(controller: _timeLeftController, hint: '18', isNumber: true),
+        _buildInputField(
+          controller: _timeLeftController,
+          hint: '18',
+          isNumber: true,
+        ),
         const SizedBox(height: 20),
 
         _buildLabel('Payment completed'),
-        _buildInputField(controller: _completedPaymentsController, hint: '12', isNumber: true),
+        _buildInputField(
+          controller: _completedPaymentsController,
+          hint: '12',
+          isNumber: true,
+        ),
         const SizedBox(height: 20),
 
         _buildLabel('Total payments'),
-        _buildInputField(controller: _totalPaymentsController, hint: '60', isNumber: true),
+        _buildInputField(
+          controller: _totalPaymentsController,
+          hint: '60',
+          isNumber: true,
+        ),
         const SizedBox(height: 20),
 
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Start Date'),
-              _buildInputField(controller: _startDateController, hint: '12 April 2025', isDate: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Start Date'),
+                  _buildInputField(
+                    controller: _startDateController,
+                    hint: '12 April 2025',
+                    isDate: true,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('End Date'),
-              _buildInputField(controller: _endDateController, hint: '12 Oct 2026', isDate: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('End Date'),
+                  _buildInputField(
+                    controller: _endDateController,
+                    hint: '12 Oct 2026',
+                    isDate: true,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
 
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Original Loan'),
-              _buildInputField(controller: _totalAmountController, hint: '15,00,000', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Original Loan'),
+                  _buildInputField(
+                    controller: _totalAmountController,
+                    hint: '15,00,000',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Remaining Loan'),
-              _buildInputField(controller: _remainingBalanceController, hint: '15,00,000', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Remaining Loan'),
+                  _buildInputField(
+                    controller: _remainingBalanceController,
+                    hint: '15,00,000',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -345,11 +572,19 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         const SizedBox(height: 20),
 
         _buildLabel('Installment'),
-        _buildInputField(controller: _monthlyPaymentController, hint: '\$260.00', isNumber: true),
+        _buildInputField(
+          controller: _monthlyPaymentController,
+          hint: '\$260.00',
+          isNumber: true,
+        ),
         const SizedBox(height: 20),
 
         _buildLabel('Interest rate'),
-        _buildInputField(controller: _interestRateController, hint: '4.5%', isNumber: true),
+        _buildInputField(
+          controller: _interestRateController,
+          hint: '4.5%',
+          isNumber: true,
+        ),
         const SizedBox(height: 24),
 
         _buildAddDocumentsButton(),
@@ -378,54 +613,113 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         const SizedBox(height: 20),
 
         _buildLabel('Property Address'),
-        _buildInputField(controller: _propertyAddressController, hint: 'Property Address'),
+        _buildInputField(
+          controller: _propertyAddressController,
+          hint: 'Property Address',
+        ),
         const SizedBox(height: 20),
 
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Mortgage Start Date'),
-              _buildInputField(controller: _startDateController, hint: 'mm/dd/yy', isDate: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Mortgage Start Date'),
+                  _buildInputField(
+                    controller: _startDateController,
+                    hint: 'mm/dd/yy',
+                    isDate: true,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Renewal Date'),
-              _buildInputField(controller: _endDateController, hint: 'mm/dd/yy', isDate: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Renewal Date'),
+                  _buildInputField(
+                    controller: _endDateController,
+                    hint: 'mm/dd/yy',
+                    isDate: true,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
 
         _buildLabel('Annual Payments'),
-        _buildInputField(controller: _annualPaymentController, hint: '\$2,400', isNumber: true),
+        _buildInputField(
+          controller: _annualPaymentController,
+          hint: '\$2,400',
+          isNumber: true,
+        ),
         const SizedBox(height: 20),
 
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Completed Payments'),
-              _buildInputField(controller: _completedPaymentsController, hint: '24', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Completed Payments'),
+                  _buildInputField(
+                    controller: _completedPaymentsController,
+                    hint: '24',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Total Payments'),
-              _buildInputField(controller: _totalPaymentsController, hint: '60', isNumber: true),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Total Payments'),
+                  _buildInputField(
+                    controller: _totalPaymentsController,
+                    hint: '60',
+                    isNumber: true,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
 
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Apartment name'),
-              _buildInputField(controller: _apartmentNameController, hint: 'Apartment name'),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Apartment name'),
+                  _buildInputField(
+                    controller: _apartmentNameController,
+                    hint: 'Apartment name',
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Lending Bank'),
-              _buildInputField(controller: _lenderController, hint: 'Bank name'),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Lending Bank'),
+                  _buildInputField(
+                    controller: _lenderController,
+                    hint: 'Bank name',
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -437,7 +731,14 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildAddDocumentsButton(isMortgage: true),
         const SizedBox(height: 24),
 
-        const Text('Reminders', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+        const Text(
+          'Reminders',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF111111),
+          ),
+        ),
         const SizedBox(height: 16),
         _buildRemindersSection(),
 
@@ -450,10 +751,10 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
     return GestureDetector(
       onTap: () async {
         final result = await Navigator.push(
-          context, 
+          context,
           MaterialPageRoute(
-            builder: (_) => AddDocumentsScreen(initialDocuments: _documents, module: 'loans')
-          )
+            builder: (_) => AddDocumentsScreen(initialDocuments: _documents),
+          ),
         );
         if (result != null && result is List<Map<String, dynamic>>) {
           setState(() {
@@ -467,20 +768,28 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         decoration: BoxDecoration(
           color: isMortgage ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _documents.isEmpty ? brandRed : Colors.green),
+          border: Border.all(
+            color: _documents.isEmpty ? brandRed : Colors.green,
+          ),
         ),
         alignment: Alignment.center,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, color: _documents.isEmpty ? brandRed : Colors.green, size: 20),
+            Icon(
+              Icons.add,
+              color: _documents.isEmpty ? brandRed : Colors.green,
+              size: 20,
+            ),
             const SizedBox(width: 4),
             Text(
-              _documents.isEmpty ? 'Add Documents' : '${_documents.length} Documents Added',
+              _documents.isEmpty
+                  ? 'Add Documents'
+                  : '${_documents.length} Documents Added',
               style: TextStyle(
-                fontSize: 14, 
-                fontWeight: FontWeight.w600, 
-                color: _documents.isEmpty ? brandRed : Colors.green
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _documents.isEmpty ? brandRed : Colors.green,
               ),
             ),
           ],
@@ -496,7 +805,11 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, spreadRadius: 1),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
         ],
       ),
       child: Column(
@@ -506,7 +819,10 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: const Color(0xFFFDF1F2), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDF1F2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 child: const Icon(Icons.sync, color: brandRed, size: 20),
               ),
               const SizedBox(width: 12),
@@ -514,9 +830,19 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text('Auto-payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                    Text(
+                      'Auto-payment',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
+                    ),
                     SizedBox(height: 2),
-                    Text('Pay automatic every month', style: TextStyle(fontSize: 11, color: Color(0xFF888888))),
+                    Text(
+                      'Pay automatic every month',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
+                    ),
                   ],
                 ),
               ),
@@ -537,8 +863,15 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [
-                Text('Every 15th of the month', style: TextStyle(fontSize: 14, color: Color(0xFF888888))),
-                Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF888888)),
+                Text(
+                  'Every 15th of the month',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                ),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 20,
+                  color: Color(0xFF888888),
+                ),
               ],
             ),
           ),
@@ -580,20 +913,35 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
   Widget _buildAutoPayToggle() {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: const Color(0xFFF8F8F8), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEBEE),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: const Icon(Icons.sync_rounded, color: brandRed, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-              Text('Auto-payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              Text('Pay automatically every month', style: TextStyle(fontSize: 11, color: Color(0xFF888888))),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Auto-payment',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  'Pay automatically every month',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
+                ),
+              ],
+            ),
           ),
           Switch(
             value: _autoPayment,
@@ -605,10 +953,11 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
     );
   }
 
-
   Future<void> _saveLoan() async {
     if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter loan name')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter loan name')));
       return;
     }
 
@@ -620,28 +969,41 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
       double monthly;
       if (isMortgage) {
-        final annualStr = _annualPaymentController.text.replaceAll(RegExp(r'[^\d.]'), '');
+        final annualStr = _annualPaymentController.text.replaceAll(
+          RegExp(r'[^\d.]'),
+          '',
+        );
         final annual = double.tryParse(annualStr) ?? 0.0;
         monthly = annual / 12;
       } else {
-        final monthlyStr = _monthlyPaymentController.text.replaceAll(RegExp(r'[^\d.]'), '');
+        final monthlyStr = _monthlyPaymentController.text.replaceAll(
+          RegExp(r'[^\d.]'),
+          '',
+        );
         monthly = double.tryParse(monthlyStr) ?? 0.0;
       }
-      
-      final totalStr = _totalAmountController.text.replaceAll(RegExp(r'[^\d.]'), '');
+
+      final totalStr = _totalAmountController.text.replaceAll(
+        RegExp(r'[^\d.]'),
+        '',
+      );
       final totalAmount = double.tryParse(totalStr) ?? 0.0;
 
       final totalP = int.tryParse(_totalPaymentsController.text) ?? 1;
       final completedP = int.tryParse(_completedPaymentsController.text) ?? 0;
-      
-      final remaining = isMortgage ? 0.0 : (totalAmount - (completedP * monthly));
+
+      final remaining = isMortgage
+          ? 0.0
+          : (totalAmount - (completedP * monthly));
 
       final day = int.tryParse(_paymentDateController.text) ?? 15;
       final now = DateTime.now();
 
       final Map<String, dynamic> updates = {
         'name': _nameController.text,
-        'category': _selectedCategory == 'business' ? 'other' : _selectedCategory,
+        'category': _selectedCategory == 'business'
+            ? 'other'
+            : _selectedCategory,
         'monthlyPayment': monthly,
         'paymentDate': DateTime(
           widget.loan.paymentDate?.year ?? now.year,
@@ -653,9 +1015,15 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         'totalPayments': totalP,
         'completedPayments': completedP,
         'interestRate': double.tryParse(_interestRateController.text) ?? 0.0,
-        'startDate': DateFormat('MM/dd/yy').tryParse(_startDateController.text)?.toIso8601String(),
-        'endDate': DateFormat('MM/dd/yy').tryParse(_endDateController.text)?.toIso8601String(),
-        'remainingBalance': isCarLoan ? (double.tryParse(_remainingBalanceController.text) ?? 0.0) : remaining,
+        'startDate': DateFormat(
+          'MM/dd/yy',
+        ).tryParse(_startDateController.text)?.toIso8601String(),
+        'endDate': DateFormat(
+          'MM/dd/yy',
+        ).tryParse(_endDateController.text)?.toIso8601String(),
+        'remainingBalance': isCarLoan
+            ? (double.tryParse(_remainingBalanceController.text) ?? 0.0)
+            : remaining,
         'lender': _lenderController.text,
         'notes': _notesController.text,
         'propertyAddress': isMortgage ? _propertyAddressController.text : null,
@@ -666,34 +1034,26 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
       await _apiService.updateLoan(widget.loan.id!, updates);
 
-      if (_autoPayment) {
-        // Using the same 15th of the month logic as per UI display
-        final day = int.tryParse(_paymentDateController.text) ?? 15;
-        final now = DateTime.now();
-        final pDate = DateTime(now.year, now.month, day);
-
-        await _apiService.createReminder(
-          itemType: 'loan',
-          itemId: widget.loan.id!,
-          remindAt: pDate,
-          title: 'Loan Payment Updates: ${_nameController.text}',
-          note: 'Updated automatic reminder for your loan payment.',
-        );
-      }
-      
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Loan updated successfully')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Loan updated successfully')),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
         setState(() => _isSaving = false);
       }
     }
   }
 
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+  Future<void> _selectDate(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -721,8 +1081,15 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8), 
-      child: Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF444444)))
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF444444),
+        ),
+      ),
     );
   }
 
@@ -748,11 +1115,20 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
           maxLines: maxLines,
           style: const TextStyle(fontSize: 15, color: Color(0xFF111111)),
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: InputBorder.none,
             hintText: hint,
             hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
-            suffixIcon: isDate ? const Icon(Icons.calendar_today_outlined, size: 18, color: Color(0xFF888888)) : null,
+            suffixIcon: isDate
+                ? const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 18,
+                    color: Color(0xFF888888),
+                  )
+                : null,
           ),
         ),
       ),
@@ -765,18 +1141,25 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         showModalBottomSheet(
           context: context,
           backgroundColor: Colors.white,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
           builder: (_) => Padding(
             padding: const EdgeInsets.all(24),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              ...['5y', '10y', '15y', '20y', '25y', 'Custom'].map((opt) => ListTile(
-                title: Text(opt),
-                onTap: () {
-                  setState(() => _selectedAmortization = opt);
-                  Navigator.pop(context);
-                },
-              )),
-            ]),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...['5y', '10y', '15y', '20y', '25y', 'Custom'].map(
+                  (opt) => ListTile(
+                    title: Text(opt),
+                    onTap: () {
+                      setState(() => _selectedAmortization = opt);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -788,11 +1171,23 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: const Color(0xFFEBEBEB)),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(_selectedAmortization.isEmpty ? 'Select how many years' : _selectedAmortization, 
-              style: TextStyle(fontSize: 15, color: _selectedAmortization.isEmpty ? const Color(0xFFAAAAAA) : Colors.black)),
-          const Icon(Icons.keyboard_arrow_down, color: Color(0xFF111111)),
-        ]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _selectedAmortization.isEmpty
+                  ? 'Select how many years'
+                  : _selectedAmortization,
+              style: TextStyle(
+                fontSize: 15,
+                color: _selectedAmortization.isEmpty
+                    ? const Color(0xFFAAAAAA)
+                    : Colors.black,
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down, color: Color(0xFF111111)),
+          ],
+        ),
       ),
     );
   }

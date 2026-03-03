@@ -31,6 +31,7 @@ import 'package:anick_giroux/Home_Profile/faq_screen.dart';
 import 'package:anick_giroux/Home_Profile/change_password_screen.dart';
 import 'package:anick_giroux/Home_Profile/delete_account_screen.dart';
 import 'package:anick_giroux/Home_Profile/fingerprint_success_screen.dart';
+import 'package:anick_giroux/Home_Profile/pin_verify_screen.dart';
 import 'package:anick_giroux/Home_Dashboard/past_activities.dart';
 import 'package:anick_giroux/Loan_Screen/additional_details.dart';
 import 'package:anick_giroux/Loan_Screen/upcoming_payments.dart';
@@ -47,6 +48,9 @@ import 'package:anick_giroux/Insurance/edit_insurance_screen.dart';
 import 'package:anick_giroux/Insurance/insurance_add_documents_screen.dart';
 import 'package:anick_giroux/Insurance/insurance_upcoming_actions_screen.dart';
 import 'package:anick_giroux/Insurance/models/insurance_model.dart';
+import 'package:anick_giroux/Authentication/forgot_password.dart';
+import 'package:anick_giroux/Authentication/verification_code.dart';
+import 'package:anick_giroux/Authentication/reset_password.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -190,6 +194,10 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const TwoFactorOtpScreen(),
     ),
     GoRoute(
+      path: '/pin-verify',
+      builder: (context, state) => const PinVerifyScreen(),
+    ),
+    GoRoute(
       path: '/add-housing-cost',
       builder: (context, state) => const AddHousingCostScreen(),
     ),
@@ -275,6 +283,31 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final categoryName = state.extra as String;
         return VaultCreateSubfolderScreen(categoryName: categoryName);
+      },
+    ),
+    // ── Auth flow routes ──────────────────────────────────────────────────────
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPassword(),
+    ),
+    GoRoute(
+      path: '/verify-otp',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return VerificationCodeScreen(
+          email: extra['email'] as String? ?? '',
+          flow: extra['flow'] as String? ?? 'register',
+        );
+      },
+    ),
+    GoRoute(
+      path: '/reset-password',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return ResetPassword(
+          email: extra['email'] as String? ?? '',
+          otp: extra['otp'] as String? ?? '',
+        );
       },
     ),
   ],

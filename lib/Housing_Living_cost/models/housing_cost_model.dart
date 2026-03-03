@@ -38,8 +38,12 @@ class HousingCost {
       autoPay: json['autoPay'] ?? false,
       notes: json['notes'],
       documents: json['documents'] != null ? (json['documents'] as List) : [],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : null,
     );
   }
 
@@ -51,7 +55,9 @@ class HousingCost {
       'dueDate': dueDate?.toIso8601String(),
       'autoPay': autoPay,
       'notes': notes,
-      'documents': documents.map((doc) => doc is String ? doc : doc.id).toList(),
+      'documents': documents
+          .map((doc) => doc is String ? doc : doc.id)
+          .toList(),
     };
   }
 
@@ -82,13 +88,41 @@ class HousingCost {
 
   /// Maps Figma display categories to backend categories
   static const List<Map<String, String>> displayCategories = [
-    {'id': 'housing', 'label': 'Housing', 'icon': 'assets/images/icon/home_morgarate.png'},
-    {'id': 'utilities', 'label': 'Utilities', 'icon': 'assets/images/icon/gas_bill.png'},
-    {'id': 'internet', 'label': 'Connectivity', 'icon': 'assets/images/icon/wifi_bill.png'},
-    {'id': 'transportation', 'label': 'Transportation', 'icon': 'assets/images/icon/transport_bill.png'},
-    {'id': 'insurance', 'label': 'Credit & Revolving', 'icon': 'assets/images/icon/cradit_resolving.png'},
-    {'id': 'maintenance', 'label': 'Family & Personal', 'icon': 'assets/images/icon/family_personal.png'},
-    {'id': 'other', 'label': 'Other Services', 'icon': 'assets/images/icon/other_services.png'},
+    {
+      'id': 'housing',
+      'label': 'Housing',
+      'icon': 'assets/images/icon/home_morgarate.png',
+    },
+    {
+      'id': 'utilities',
+      'label': 'Utilities',
+      'icon': 'assets/images/icon/gas_bill.png',
+    },
+    {
+      'id': 'internet',
+      'label': 'Connectivity',
+      'icon': 'assets/images/icon/wifi_bill.png',
+    },
+    {
+      'id': 'transportation',
+      'label': 'Transportation',
+      'icon': 'assets/images/icon/transport_bill.png',
+    },
+    {
+      'id': 'insurance',
+      'label': 'Credit & Revolving',
+      'icon': 'assets/images/icon/cradit_resolving.png',
+    },
+    {
+      'id': 'maintenance',
+      'label': 'Family & Personal',
+      'icon': 'assets/images/icon/family_personal.png',
+    },
+    {
+      'id': 'other',
+      'label': 'Other Services',
+      'icon': 'assets/images/icon/other_services.png',
+    },
   ];
 
   /// Background color for the icon circle

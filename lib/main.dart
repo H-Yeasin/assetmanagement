@@ -12,10 +12,5 @@ void main() async {
   Hive.registerAdapter(LoanAdapter());
   Hive.registerAdapter(DocumentFileAdapter());
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
-

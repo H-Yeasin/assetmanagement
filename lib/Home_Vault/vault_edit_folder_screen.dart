@@ -45,7 +45,11 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, size: 20, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 20,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Center(
@@ -92,14 +96,21 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
                         color: Color(0xFF111111),
                       ),
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFDDDDDD),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFDDDDDD),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -199,8 +210,16 @@ class _EditFileRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: fileType == 'pdf'
-                  ? Image.asset('assets/images/pdficon.png', width: 22, height: 22)
-                  : const Icon(Icons.image_rounded, color: Color(0xFF2196F3), size: 22),
+                  ? Image.asset(
+                      'assets/images/pdficon.png',
+                      width: 22,
+                      height: 22,
+                    )
+                  : const Icon(
+                      Icons.image_rounded,
+                      color: Color(0xFF2196F3),
+                      size: 22,
+                    ),
             ),
             const SizedBox(width: 14),
             Expanded(

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/storage_service.dart';
+import '../services/user_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -12,6 +15,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _currentController = TextEditingController();
   final _newController = TextEditingController();
   final _confirmController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -19,6 +23,61 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     _newController.dispose();
     _confirmController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleChangePassword() async {
+    final currentPass = _currentController.text.trim();
+    final newPass = _newController.text.trim();
+    final confirmPass = _confirmController.text.trim();
+
+    if (currentPass.isEmpty || newPass.isEmpty || confirmPass.isEmpty) {
+      _showSnackBar('Please fill all fields');
+      return;
+    }
+    if (newPass != confirmPass) {
+      _showSnackBar('New passwords do not match');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token == null) {
+        _showSnackBar('Session expired. Please log in again.');
+        return;
+      }
+
+      final result = await UserService.changePassword(
+        token: token,
+        currentPassword: currentPass,
+        newPassword: newPass,
+        confirmPassword: confirmPass,
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        _showSnackBar('Password changed successfully!', isSuccess: true);
+        Navigator.pop(context);
+      } else {
+        _showSnackBar(result['message'] ?? 'Failed to change password');
+      }
+    } catch (e) {
+      _showSnackBar('Network error. Please try again later.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnackBar(String message, {bool isSuccess = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isSuccess ? Colors.green : brandRed,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -29,7 +88,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         backgroundColor: const Color(0xFFF8F6F6),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 18, color: Color(0xFF111111)),
+          icon: const Icon(
+            Icons.arrow_back,
+            size: 18,
+            color: Color(0xFF111111),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -63,7 +126,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    context.push('/forgot-password');
+                  },
                   child: const Text(
                     'Forgot your password?',
                     style: TextStyle(
@@ -81,16 +146,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Password changed successfully!'),
-                        backgroundColor: brandRed,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
+                  onPressed: _isLoading ? null : _handleChangePassword,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandRed,
                     foregroundColor: Colors.white,
@@ -99,10 +155,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(color: Colors.white),
+                        )
+                      : const Text(
+                          'Save',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -146,7 +211,10 @@ class _PasswordInputField extends StatelessWidget {
         style: const TextStyle(fontSize: 15, color: Color(0xFF111111)),
         decoration: InputDecoration(
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           hintText: '••••••',
           hintStyle: const TextStyle(color: Color(0xFFCCCCCC)),
         ),

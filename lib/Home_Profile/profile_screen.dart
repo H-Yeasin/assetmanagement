@@ -1,9 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/storage_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String _userName = 'Loading...';
+  String _userEmail = 'Loading...';
+  String? _userAvatar;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final name = await StorageService.getUserName() ?? 'User';
+    final email = await StorageService.getUserEmail() ?? '';
+    final avatar = await StorageService.getUserAvatar();
+    if (mounted) {
+      setState(() {
+        _userName = name;
+        _userEmail = email;
+        _userAvatar = (avatar != null && avatar.isNotEmpty) ? avatar : null;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,27 +57,40 @@ class ProfileScreen extends StatelessWidget {
                       border: Border.all(color: Colors.white, width: 3),
                     ),
                     child: ClipOval(
-                      child: Icon(
-                        Icons.person,
-                        size: 60,
-                        color: const Color(0xFF999999),
-                      ),
+                      child: _userAvatar != null
+                          ? Image.network(
+                              _userAvatar!,
+                              fit: BoxFit.cover,
+                              width: 100,
+                              height: 100,
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Color(0xFF999999),
+                            ),
                     ),
                   ),
                   Positioned(
                     bottom: 2,
                     right: 2,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: const BoxDecoration(
-                        color: brandRed,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        size: 15,
-                        color: Colors.white,
+                    child: GestureDetector(
+                      onTap: () async {
+                        await context.push('/edit-profile');
+                        _loadUserData();
+                      },
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: const BoxDecoration(
+                          color: brandRed,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit,
+                          size: 15,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -57,9 +99,9 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 14),
 
               // ── Name ──────────────────────────────────────────────────
-              const Text(
-                'Anick Giroux',
-                style: TextStyle(
+              Text(
+                _userName,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF111111),
@@ -68,9 +110,9 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 4),
 
               // ── Email in red ──────────────────────────────────────────
-              const Text(
-                'anick.giroux@email.com',
-                style: TextStyle(
+              Text(
+                _userEmail,
+                style: const TextStyle(
                   fontSize: 13,
                   color: brandRed,
                   fontWeight: FontWeight.w500,
@@ -87,7 +129,10 @@ class ProfileScreen extends StatelessWidget {
                     iconPath: 'assets/images/icon/setting_icon.png',
                     title: 'Account Settings',
                     subtitle: 'Manage your personal information',
-                    onTap: () => context.push('/edit-profile'),
+                    onTap: () async {
+                      await context.push('/edit-profile');
+                      _loadUserData();
+                    },
                   ),
                 ],
               ),
@@ -107,6 +152,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 15),
+              _MenuCard(
               _MenuCard(
                 children: [
                   _MenuItem(
@@ -144,7 +190,14 @@ class ProfileScreen extends StatelessWidget {
                             'Log Out',
                             style: TextStyle(fontWeight: FontWeight.w700),
                           ),
+                          title: const Text(
+                            'Log Out',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
                           content: const Text(
+                            'Are you sure you want to log out?',
+                            style: TextStyle(color: Color(0xFF555555)),
+                          ),
                             'Are you sure you want to log out?',
                             style: TextStyle(color: Color(0xFF555555)),
                           ),
@@ -155,12 +208,24 @@ class ProfileScreen extends StatelessWidget {
                                 'Cancel',
                                 style: TextStyle(color: Color(0xFF888888)),
                               ),
-                            ),
-                            TextButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                context.go('/');
                               },
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(color: Color(0xFF888888)),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.pop(ctx);
+                                await StorageService.clearSession();
+                                if (context.mounted) context.go('/');
+                              },
+                              child: const Text(
+                                'Log Out',
+                                style: TextStyle(color: brandRed),
+                              ),
                               child: const Text(
                                 'Log Out',
                                 style: TextStyle(color: brandRed),
@@ -264,6 +329,7 @@ class _MenuItem extends StatelessWidget {
               ),
               child: Center(
                 child: Image.asset(iconPath, width: 22, height: 22),
+                child: Image.asset(iconPath, width: 22, height: 22),
               ),
             ),
             const SizedBox(width: 14),
@@ -291,6 +357,7 @@ class _MenuItem extends StatelessWidget {
                 ],
               ),
             ),
+            const Icon(Icons.chevron_right, size: 20, color: Color(0xFFBBBBBB)),
             const Icon(Icons.chevron_right, size: 20, color: Color(0xFFBBBBBB)),
           ],
         ),

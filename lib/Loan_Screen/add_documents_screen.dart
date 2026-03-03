@@ -6,14 +6,18 @@ import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'services/loan_api_service.dart';
-import 'models/document_model.dart';
 import 'models/loan_model.dart';
 
 class AddDocumentsScreen extends StatefulWidget {
   final Loan? loan;
   final List<Map<String, dynamic>>? initialDocuments;
   final String module;
-  const AddDocumentsScreen({super.key, this.loan, this.initialDocuments, this.module = 'loans'});
+  const AddDocumentsScreen({
+    super.key,
+    this.loan,
+    this.initialDocuments,
+    this.module = 'loans',
+  });
 
   @override
   State<AddDocumentsScreen> createState() => _AddDocumentsScreenState();
@@ -28,8 +32,8 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
   @override
   void initState() {
     super.initState();
-    _documents = widget.initialDocuments != null 
-        ? List.from(widget.initialDocuments!) 
+    _documents = widget.initialDocuments != null
+        ? List.from(widget.initialDocuments!)
         : [];
   }
 
@@ -57,8 +61,8 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
-      final documentFile = await _apiService.uploadDocument(file, module: widget.module);
-      
+      final documentFile = await _apiService.uploadDocument(file);
+
       setState(() {
         _documents.add({
           'id': documentFile.id,
@@ -68,7 +72,7 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
           'path': documentFile.path,
         });
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Document uploaded successfully')),
@@ -92,8 +96,14 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
         title: const Text('Delete Document'),
         content: const Text('Are you sure you want to delete this document?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -106,11 +116,15 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
           _documents.removeAt(index);
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document deleted')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Document deleted')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: ${e.toString()}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Delete failed: ${e.toString()}')),
+          );
         }
       } finally {
         if (mounted) setState(() => _isUploading = false);
@@ -118,8 +132,14 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
     }
   }
 
-  Future<void> _renameDocument(String docId, int index, String currentName) async {
-    final TextEditingController controller = TextEditingController(text: currentName);
+  Future<void> _renameDocument(
+    String docId,
+    int index,
+    String currentName,
+  ) async {
+    final TextEditingController controller = TextEditingController(
+      text: currentName,
+    );
     final String? newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -130,7 +150,10 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
             child: const Text('Rename'),
@@ -147,11 +170,15 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
           _documents[index]['name'] = newName;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document renamed')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Document renamed')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Rename failed: ${e.toString()}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Rename failed: ${e.toString()}')),
+          );
         }
       } finally {
         if (mounted) setState(() => _isUploading = false);
@@ -173,13 +200,21 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context, _documents),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Text(
                       'Add Documents',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 24),
@@ -199,7 +234,14 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                         const SizedBox(height: 16),
 
                         // ── Add New Files ──
-                        const Text('Add New Files', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Add New Files',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -232,22 +274,42 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Documents', 
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))
+                              'Documents',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111111),
+                              ),
                             ),
                             GestureDetector(
                               onTap: _pickFile,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: const Color(0xFFC61C36)),
+                                  border: Border.all(
+                                    color: const Color(0xFFC61C36),
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.add, color: Color(0xFFC61C36), size: 16),
+                                    Icon(
+                                      Icons.add,
+                                      color: Color(0xFFC61C36),
+                                      size: 16,
+                                    ),
                                     SizedBox(width: 4),
-                                    Text('Add Documents', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFFC61C36))),
+                                    Text(
+                                      'Add Documents',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFFC61C36),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -260,7 +322,10 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Text('No documents uploaded yet', style: TextStyle(color: Colors.grey)),
+                              child: Text(
+                                'No documents uploaded yet',
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ),
                           )
                         else
@@ -268,40 +333,68 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _documents.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final doc = _documents[index];
-                                return _buildDocumentCard(
-                                  icon: _getIconForType(doc['type']),
-                                  iconColor: _getColorForType(doc['type']),
-                                  title: doc['name'],
-                                  subtitle: doc['subtitle'] ?? 'Uploaded on ${DateFormat('MMM dd, yyyy').format(doc['date'])}',
-                                  onDelete: () => _deleteDocument(doc['id'], index),
-                                  onRename: () => _renameDocument(doc['id'], index, doc['name']),
-                                  onTap: () async {
-                                    if (doc['path'] != null) {
-                                      final baseUrl = LoanApiService.baseUrl.replaceFirst('/api/v1', '');
-                                      final url = Uri.parse('$baseUrl/${doc['path']}');
-                                      if (await canLaunchUrl(url)) {
-                                        await launchUrl(url, mode: LaunchMode.externalApplication);
-                                      }
+                              return _buildDocumentCard(
+                                icon: _getIconForType(doc['type']),
+                                iconColor: _getColorForType(doc['type']),
+                                title: doc['name'],
+                                subtitle:
+                                    doc['subtitle'] ??
+                                    'Uploaded on ${DateFormat('MMM dd, yyyy').format(doc['date'])}',
+                                onDelete: () =>
+                                    _deleteDocument(doc['id'], index),
+                                onRename: () => _renameDocument(
+                                  doc['id'],
+                                  index,
+                                  doc['name'],
+                                ),
+                                onTap: () async {
+                                  if (doc['path'] != null) {
+                                    final baseUrl = LoanApiService.baseUrl
+                                        .replaceFirst('/api/v1', '');
+                                    final url = Uri.parse(
+                                      '$baseUrl/${doc['path']}',
+                                    );
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(
+                                        url,
+                                        mode: LaunchMode.externalApplication,
+                                      );
                                     }
-                                  },
-                                );
+                                  }
+                                },
+                              );
                             },
                           ),
 
                         const SizedBox(height: 28),
 
                         // ── Reminders Section ──
-                        const Text('Reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Reminders',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         _buildReminderCard(),
 
                         const SizedBox(height: 28),
 
                         // ── Notes Section ──
-                        const Text('Notes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Notes',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         Container(
                           width: double.infinity,
@@ -313,7 +406,11 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                           ),
                           child: Text(
                             widget.loan?.notes ?? 'No notes provided.',
-                            style: const TextStyle(fontSize: 13, color: Color(0xFF888888), height: 1.5),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF888888),
+                              height: 1.5,
+                            ),
                           ),
                         ),
 
@@ -342,10 +439,19 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                   onPressed: () => Navigator.pop(context, _documents),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFC61C36),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text('Save Documents', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                  child: const Text(
+                    'Save Documents',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -367,7 +473,14 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
         children: [
           Icon(icon, color: const Color(0xFFC61C36), size: 28),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
         ],
       ),
     );
@@ -400,8 +513,18 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
           ),
           child: Icon(icon, color: iconColor, size: 24),
         ),
-        title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF111111),
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+        ),
         trailing: PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert, color: Color(0xFF111111)),
           onSelected: (value) {
@@ -410,7 +533,10 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
           },
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'rename', child: Text('Rename')),
-            const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
           ],
         ),
       ),
@@ -435,18 +561,34 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
               color: const Color(0xFFC61C36).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.notifications_outlined, color: Color(0xFFC61C36), size: 24),
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: Color(0xFFC61C36),
+              size: 24,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Payment Reminders', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+                const Text(
+                  'Payment Reminders',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111111),
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
-                  loan?.paymentDate != null ? DateFormat('MMMM dd, yyyy').format(loan!.paymentDate!) : 'N/A',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                  loan?.paymentDate != null
+                      ? DateFormat('MMMM dd, yyyy').format(loan!.paymentDate!)
+                      : 'N/A',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF888888),
+                  ),
                 ),
               ],
             ),
@@ -455,15 +597,24 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF9F9F9),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFE0E0E0)),
                 ),
                 child: Text(
-                  NumberFormat.simpleCurrency(decimalDigits: 2).format(loan?.monthlyPayment ?? 0),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                  NumberFormat.simpleCurrency(
+                    decimalDigits: 2,
+                  ).format(loan?.monthlyPayment ?? 0),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
                 ),
               ),
               if (loan?.autoPay ?? false)
@@ -471,7 +622,11 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                   padding: EdgeInsets.only(top: 4),
                   child: Text(
                     'Paid automatically',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blue),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                    ),
                   ),
                 ),
             ],

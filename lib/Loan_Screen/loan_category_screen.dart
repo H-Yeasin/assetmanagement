@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../Home_Dashboard/widgets.dart';
 
 class LoanCategoryScreen extends StatelessWidget {
   const LoanCategoryScreen({super.key});
@@ -17,7 +16,11 @@ class LoanCategoryScreen extends StatelessWidget {
         ),
         title: const Text(
           'Loan Category',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
+          ),
         ),
         centerTitle: true,
       ),
@@ -97,7 +100,11 @@ class _CategoryItem extends StatelessWidget {
             const SizedBox(width: 14),
             Text(
               label,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF111111)),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF111111),
+              ),
             ),
           ],
         ),
