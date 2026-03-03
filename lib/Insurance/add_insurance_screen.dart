@@ -6,7 +6,6 @@ import 'models/insurance_model.dart';
 import 'services/insurance_api_service.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'dart:ui';
-import '../Loan_Screen/add_documents_screen.dart';
 
 class AddInsuranceScreen extends StatefulWidget {
   const AddInsuranceScreen({super.key});
@@ -42,9 +41,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   String _coverageType = 'Comprehensive';
   String? _personalInsuranceType;
   bool _isSaving = false;
-  bool _isAutoPay = true;
-  String _paymentDay = 'Every 15th of the month';
-  List<Map<String, dynamic>> _uploadedDocuments = [];
+  List<String> _documentIds = [];
 
   final List<String> _categories = [
     'Personal',
@@ -217,22 +214,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         personalInsuranceType: _personalInsuranceType,
       );
 
-      final createdPolicy = await _apiService.createInsurance(policy);
-
-      if (_isAutoPay && createdPolicy.id != null) {
-        // Using "Every 15th of the month" logic as per UI placeholder
-        final now = DateTime.now();
-        final pDate = DateTime(now.year, now.month, 15);
-
-        await _apiService.createReminder(
-          itemId: createdPolicy.id!,
-          itemType: 'insurance',
-          title: 'Insurance Renewal: ${_nameController.text}',
-          remindAt: pDate,
-          note: 'Automatic renewal reminder for your insurance policy.',
-        );
-      }
-
+      await _apiService.createInsurance(policy);
       if (mounted) context.pop(true);
     } catch (e) {
       if (mounted)
@@ -490,17 +472,6 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                       ),
                     ),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Reminders',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111111),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildRemindersSection(),
             const SizedBox(height: 48),
           ],
         ),
@@ -1054,7 +1025,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
           );
           if (result != null && result is List<Map<String, dynamic>>) {
             setState(() {
-              _uploadedDocuments = result;
+              _documentIds = result.map((d) => d['id'] as String).toList();
             });
           }
         },

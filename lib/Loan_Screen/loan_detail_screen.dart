@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../Home_Dashboard/widgets.dart';
 import 'loan_widgets.dart';
 import 'add_documents_screen.dart';
 import 'edit_loan_screen.dart';
@@ -8,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'models/document_model.dart';
-import '../Home_Dashboard/widgets.dart';
 
 class LoanDetailScreen extends StatefulWidget {
   final Loan loan;
@@ -22,8 +22,7 @@ class LoanDetailScreen extends StatefulWidget {
 class _LoanDetailScreenState extends State<LoanDetailScreen> {
   late Loan _currentLoan;
   final LoanApiService _apiService = LoanApiService();
-  String _selectedReminder = 'Same day';
-  bool _isReminderEnabled = true;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -425,9 +424,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                         color: Colors.transparent,
                                         child: SizedBox(
                                           width: 343, // Fixed (343px)
-                                          child: ReminderModal(
-                                            loan: _currentLoan,
-                                          ),
+                                          child: ReminderModal(),
                                         ),
                                       ),
                                     ),

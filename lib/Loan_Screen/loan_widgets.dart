@@ -224,14 +224,7 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
       await _apiService.updateLoan(widget.loan.id!, {
         'completedPayments': completedP,
         'remainingBalance': remaining > 0 ? remaining : 0,
-      };
-
-      // Persist autoPay toggle if it changed
-      if (_isAutoPayment != widget.loan.autoPay) {
-        updates['autoPay'] = _isAutoPayment;
-      }
-
-      await _apiService.updateLoan(widget.loan.id!, updates);
+      });
 
       if (mounted) {
         Navigator.pop(context);
@@ -514,59 +507,15 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
 // ── Reminder Modal ──────────────────────────────────────────────────────────
 
 class ReminderModal extends StatefulWidget {
-  final Loan? loan;
-  const ReminderModal({super.key, this.loan});
+  const ReminderModal({super.key});
 
   @override
   State<ReminderModal> createState() => _ReminderModalState();
 }
 
 class _ReminderModalState extends State<ReminderModal> {
-  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+  DateTime _selectedDate = DateTime(2025, 1, 8);
   TimeOfDay _selectedTime = const TimeOfDay(hour: 14, minute: 0); // 2:00 PM
-  final LoanApiService _apiService = LoanApiService();
-  bool _isSaving = false;
-
-  Future<void> _saveReminder() async {
-    if (widget.loan?.id == null) {
-      Navigator.pop(context);
-      return;
-    }
-
-    setState(() => _isSaving = true);
-    try {
-      final remindAt = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        _selectedTime.hour,
-        _selectedTime.minute,
-      );
-
-      await _apiService.createReminder(
-        itemType: 'loan',
-        itemId: widget.loan!.id!,
-        remindAt: remindAt,
-        title: 'Payment reminder for ${widget.loan!.name}',
-      );
-
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reminder saved successfully')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save reminder: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
   void _openCalendar() async {
     final DateTime? result = await showDialog<DateTime>(
       context: context,
@@ -789,7 +738,7 @@ class _ReminderModalState extends State<ReminderModal> {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveReminder,
+                  onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFDE7E9),
                     foregroundColor: const Color(0xFFC61C36),

@@ -153,7 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 15),
               _MenuCard(
-              _MenuCard(
                 children: [
                   _MenuItem(
                     iconPath: 'assets/images/icon/security_icon.png',
@@ -190,24 +189,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             'Log Out',
                             style: TextStyle(fontWeight: FontWeight.w700),
                           ),
-                          title: const Text(
-                            'Log Out',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
                           content: const Text(
-                            'Are you sure you want to log out?',
-                            style: TextStyle(color: Color(0xFF555555)),
-                          ),
                             'Are you sure you want to log out?',
                             style: TextStyle(color: Color(0xFF555555)),
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(color: Color(0xFF888888)),
-                              ),
                               onPressed: () {
                                 Navigator.pop(ctx);
                               },
@@ -222,10 +209,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 await StorageService.clearSession();
                                 if (context.mounted) context.go('/');
                               },
-                              child: const Text(
-                                'Log Out',
-                                style: TextStyle(color: brandRed),
-                              ),
                               child: const Text(
                                 'Log Out',
                                 style: TextStyle(color: brandRed),
@@ -329,7 +312,6 @@ class _MenuItem extends StatelessWidget {
               ),
               child: Center(
                 child: Image.asset(iconPath, width: 22, height: 22),
-                child: Image.asset(iconPath, width: 22, height: 22),
               ),
             ),
             const SizedBox(width: 14),
@@ -357,7 +339,6 @@ class _MenuItem extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 20, color: Color(0xFFBBBBBB)),
             const Icon(Icons.chevron_right, size: 20, color: Color(0xFFBBBBBB)),
           ],
         ),
