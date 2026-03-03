@@ -25,13 +25,21 @@ class AdditionalDetailsScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Text(
                       'Additional Details',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 24), // Balance the back arrow
@@ -42,10 +50,15 @@ class AdditionalDetailsScreen extends StatelessWidget {
             // ── Content ──
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: isMortgage 
-                    ? _buildMortgageDetails() 
-                    : (isCarLoan ? _buildCarLoanDetails() : _buildDefaultDetails()),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                child: isMortgage
+                    ? _buildMortgageDetails()
+                    : (isCarLoan
+                          ? _buildCarLoanDetails()
+                          : _buildDefaultDetails()),
               ),
             ),
           ],
@@ -87,7 +100,9 @@ class AdditionalDetailsScreen extends StatelessWidget {
               iconPath: 'assets/images/icon/remaining.png',
               iconColor: const Color(0xFF4CAF50), // Green
               title: 'Remaining Loan',
-              value: NumberFormat.simpleCurrency().format(loan.remainingBalance),
+              value: NumberFormat.simpleCurrency().format(
+                loan.remainingBalance,
+              ),
             ),
             _DetailCard(
               iconPath: 'assets/images/icon/installment.png',
@@ -140,7 +155,9 @@ class AdditionalDetailsScreen extends StatelessWidget {
               iconPath: 'assets/images/icon/renewal_date.png',
               iconColor: const Color(0xFF673AB7), // Deep Purple
               title: 'Renewal Date',
-              value: loan.endDate != null ? DateFormat('MMM dd, yyyy').format(loan.endDate!) : 'N/A',
+              value: loan.endDate != null
+                  ? DateFormat('MMM dd, yyyy').format(loan.endDate!)
+                  : 'N/A',
             ),
           ],
         ),
@@ -186,7 +203,9 @@ class AdditionalDetailsScreen extends StatelessWidget {
           iconPath: 'assets/images/icon/remaining.png',
           iconColor: Colors.green,
           title: 'Balance Left',
-          value: NumberFormat.simpleCurrency().format(loan.totalAmount - (loan.completedPayments * loan.monthlyPayment)),
+          value: NumberFormat.simpleCurrency().format(
+            loan.totalAmount - (loan.completedPayments * loan.monthlyPayment),
+          ),
         ),
       ],
     );
@@ -227,7 +246,8 @@ class _DetailCard extends StatelessWidget {
               iconPath,
               width: 22,
               height: 22,
-              errorBuilder: (context, error, stackTrace) => Icon(Icons.info_outline, size: 22, color: iconColor),
+              errorBuilder: (context, error, stackTrace) =>
+                  Icon(Icons.info_outline, size: 22, color: iconColor),
             ),
           ),
           const SizedBox(width: 8),
@@ -238,14 +258,21 @@ class _DetailCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 10, color: Color(0xFF888888)),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF888888),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -292,7 +319,8 @@ class _FullWidthDetailCard extends StatelessWidget {
               iconPath,
               width: 24,
               height: 24,
-              errorBuilder: (context, error, stackTrace) => Icon(Icons.location_on_outlined, size: 24, color: iconColor),
+              errorBuilder: (context, error, stackTrace) =>
+                  Icon(Icons.location_on_outlined, size: 24, color: iconColor),
             ),
           ),
           const SizedBox(width: 16),
@@ -302,12 +330,19 @@ class _FullWidthDetailCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF888888),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
                 ),
               ],
             ),

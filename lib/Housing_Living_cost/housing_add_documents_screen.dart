@@ -6,16 +6,20 @@ import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'services/housing_api_service.dart';
-import '../Loan_Screen/models/document_model.dart';
 import 'models/housing_cost_model.dart';
 
 class HousingAddDocumentsScreen extends StatefulWidget {
   final HousingCost? cost;
   final List<Map<String, dynamic>>? initialDocuments;
-  const HousingAddDocumentsScreen({super.key, this.cost, this.initialDocuments});
+  const HousingAddDocumentsScreen({
+    super.key,
+    this.cost,
+    this.initialDocuments,
+  });
 
   @override
-  State<HousingAddDocumentsScreen> createState() => _HousingAddDocumentsScreenState();
+  State<HousingAddDocumentsScreen> createState() =>
+      _HousingAddDocumentsScreenState();
 }
 
 class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
@@ -27,8 +31,8 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
   @override
   void initState() {
     super.initState();
-    _documents = widget.initialDocuments != null 
-        ? List.from(widget.initialDocuments!) 
+    _documents = widget.initialDocuments != null
+        ? List.from(widget.initialDocuments!)
         : [];
   }
 
@@ -57,7 +61,7 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
     setState(() => _isUploading = true);
     try {
       final documentFile = await _apiService.uploadDocument(file);
-      
+
       setState(() {
         _documents.add({
           'id': documentFile.id,
@@ -67,7 +71,7 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
           'path': documentFile.path,
         });
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Document uploaded successfully')),
@@ -91,8 +95,14 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
         title: const Text('Delete Document'),
         content: const Text('Are you sure you want to delete this document?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -105,11 +115,15 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
           _documents.removeAt(index);
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document deleted')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Document deleted')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: ${e.toString()}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Delete failed: ${e.toString()}')),
+          );
         }
       } finally {
         if (mounted) setState(() => _isUploading = false);
@@ -117,8 +131,14 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
     }
   }
 
-  Future<void> _renameDocument(String docId, int index, String currentName) async {
-    final TextEditingController controller = TextEditingController(text: currentName);
+  Future<void> _renameDocument(
+    String docId,
+    int index,
+    String currentName,
+  ) async {
+    final TextEditingController controller = TextEditingController(
+      text: currentName,
+    );
     final String? newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -129,7 +149,10 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
             child: const Text('Rename'),
@@ -146,11 +169,15 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
           _documents[index]['name'] = newName;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document renamed')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Document renamed')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Rename failed: ${e.toString()}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Rename failed: ${e.toString()}')),
+          );
         }
       } finally {
         if (mounted) setState(() => _isUploading = false);
@@ -172,13 +199,21 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context, _documents),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Text(
                       'Add Documents',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 24),
@@ -198,7 +233,14 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                         const SizedBox(height: 16),
 
                         // ── Add New Files ──
-                        const Text('Add New Files', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Add New Files',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -231,22 +273,42 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Documents', 
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))
+                              'Documents',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111111),
+                              ),
                             ),
                             GestureDetector(
                               onTap: _pickFile,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: const Color(0xFFC61C36)),
+                                  border: Border.all(
+                                    color: const Color(0xFFC61C36),
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.add, color: Color(0xFFC61C36), size: 16),
+                                    Icon(
+                                      Icons.add,
+                                      color: Color(0xFFC61C36),
+                                      size: 16,
+                                    ),
                                     SizedBox(width: 4),
-                                    Text('Add Documents', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFFC61C36))),
+                                    Text(
+                                      'Add Documents',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFFC61C36),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -259,7 +321,10 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Text('No documents uploaded yet', style: TextStyle(color: Colors.grey)),
+                              child: Text(
+                                'No documents uploaded yet',
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ),
                           )
                         else
@@ -267,40 +332,68 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _documents.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final doc = _documents[index];
-                                return _buildDocumentCard(
-                                  icon: _getIconForType(doc['type']),
-                                  iconColor: _getColorForType(doc['type']),
-                                  title: doc['name'],
-                                  subtitle: doc['subtitle'] ?? 'Uploaded on ${DateFormat('MMM dd, yyyy').format(doc['date'])}',
-                                  onDelete: () => _deleteDocument(doc['id'], index),
-                                  onRename: () => _renameDocument(doc['id'], index, doc['name']),
-                                  onTap: () async {
-                                    if (doc['path'] != null) {
-                                      final baseUrl = HousingApiService.baseUrl.replaceFirst('/api/v1', '');
-                                      final url = Uri.parse('$baseUrl/${doc['path']}');
-                                      if (await canLaunchUrl(url)) {
-                                        await launchUrl(url, mode: LaunchMode.externalApplication);
-                                      }
+                              return _buildDocumentCard(
+                                icon: _getIconForType(doc['type']),
+                                iconColor: _getColorForType(doc['type']),
+                                title: doc['name'],
+                                subtitle:
+                                    doc['subtitle'] ??
+                                    'Uploaded on ${DateFormat('MMM dd, yyyy').format(doc['date'])}',
+                                onDelete: () =>
+                                    _deleteDocument(doc['id'], index),
+                                onRename: () => _renameDocument(
+                                  doc['id'],
+                                  index,
+                                  doc['name'],
+                                ),
+                                onTap: () async {
+                                  if (doc['path'] != null) {
+                                    final baseUrl = HousingApiService.baseUrl
+                                        .replaceFirst('/api/v1', '');
+                                    final url = Uri.parse(
+                                      '$baseUrl/${doc['path']}',
+                                    );
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(
+                                        url,
+                                        mode: LaunchMode.externalApplication,
+                                      );
                                     }
-                                  },
-                                );
+                                  }
+                                },
+                              );
                             },
                           ),
 
                         const SizedBox(height: 28),
 
                         // ── Reminders Section ──
-                        const Text('Reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Reminders',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         _buildReminderCard(),
 
                         const SizedBox(height: 28),
 
                         // ── Notes Section ──
-                        const Text('Notes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Notes',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         Container(
                           width: double.infinity,
@@ -312,7 +405,11 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                           ),
                           child: Text(
                             widget.cost?.notes ?? 'No notes provided.',
-                            style: const TextStyle(fontSize: 13, color: Color(0xFF888888), height: 1.5),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF888888),
+                              height: 1.5,
+                            ),
                           ),
                         ),
 
@@ -341,10 +438,19 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                   onPressed: () => Navigator.pop(context, _documents),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFC61C36),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text('Save Documents', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                  child: const Text(
+                    'Save Documents',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -366,7 +472,14 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
         children: [
           Icon(icon, color: const Color(0xFFC61C36), size: 28),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
         ],
       ),
     );
@@ -399,8 +512,18 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
           ),
           child: Icon(icon, color: iconColor, size: 24),
         ),
-        title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF111111),
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+        ),
         trailing: PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert, color: Color(0xFF111111)),
           onSelected: (value) {
@@ -409,7 +532,10 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
           },
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'rename', child: Text('Rename')),
-            const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
           ],
         ),
       ),
@@ -434,18 +560,34 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
               color: const Color(0xFFC61C36).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.notifications_outlined, color: Color(0xFFC61C36), size: 24),
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: Color(0xFFC61C36),
+              size: 24,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Payment Reminders', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+                const Text(
+                  'Payment Reminders',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111111),
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
-                  cost?.dueDate != null ? DateFormat('MMMM dd, yyyy').format(cost!.dueDate!) : 'N/A',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                  cost?.dueDate != null
+                      ? DateFormat('MMMM dd, yyyy').format(cost!.dueDate!)
+                      : 'N/A',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF888888),
+                  ),
                 ),
               ],
             ),
@@ -454,15 +596,24 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF9F9F9),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFE0E0E0)),
                 ),
                 child: Text(
-                  NumberFormat.simpleCurrency(decimalDigits: 2).format(cost?.amount ?? 0),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                  NumberFormat.simpleCurrency(
+                    decimalDigits: 2,
+                  ).format(cost?.amount ?? 0),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
                 ),
               ),
               if (cost?.autoPay ?? false)
@@ -470,7 +621,11 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                   padding: EdgeInsets.only(top: 4),
                   child: Text(
                     'Paid automatically',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blue),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                    ),
                   ),
                 ),
             ],

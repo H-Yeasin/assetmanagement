@@ -28,6 +28,7 @@ import 'package:anick_giroux/Home_Profile/faq_screen.dart';
 import 'package:anick_giroux/Home_Profile/change_password_screen.dart';
 import 'package:anick_giroux/Home_Profile/delete_account_screen.dart';
 import 'package:anick_giroux/Home_Profile/fingerprint_success_screen.dart';
+import 'package:anick_giroux/Home_Profile/pin_verify_screen.dart';
 import 'package:anick_giroux/Home_Dashboard/past_activities.dart';
 import 'package:anick_giroux/Loan_Screen/additional_details.dart';
 import 'package:anick_giroux/Loan_Screen/upcoming_payments.dart';
@@ -44,6 +45,9 @@ import 'package:anick_giroux/Insurance/edit_insurance_screen.dart';
 import 'package:anick_giroux/Insurance/insurance_add_documents_screen.dart';
 import 'package:anick_giroux/Insurance/insurance_upcoming_actions_screen.dart';
 import 'package:anick_giroux/Insurance/models/insurance_model.dart';
+import 'package:anick_giroux/Authentication/forgot_password.dart';
+import 'package:anick_giroux/Authentication/verification_code.dart';
+import 'package:anick_giroux/Authentication/reset_password.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -57,7 +61,8 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/',
-      builder: (BuildContext context, GoRouterState state) => const SplashScreen(),
+      builder: (BuildContext context, GoRouterState state) =>
+          const SplashScreen(),
     ),
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
@@ -156,10 +161,7 @@ final GoRouter appRouter = GoRouter(
       path: '/pin-locked',
       builder: (context, state) => const PincodeLocked(),
     ),
-    GoRoute(
-      path: '/faq',
-      builder: (context, state) => const FaqScreen(),
-    ),
+    GoRoute(path: '/faq', builder: (context, state) => const FaqScreen()),
     GoRoute(
       path: '/two-factor',
       builder: (context, state) => const TwoFactorScreen(),
@@ -171,6 +173,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/two-factor-otp',
       builder: (context, state) => const TwoFactorOtpScreen(),
+    ),
+    GoRoute(
+      path: '/pin-verify',
+      builder: (context, state) => const PinVerifyScreen(),
     ),
     GoRoute(
       path: '/add-housing-cost',
@@ -209,8 +215,10 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const AddInsuranceScreen(),
     ),
     GoRoute(
-      path: '/main', // Fallback for direct MainShell navigation if used previously
-      builder: (context, state) => const MainShell(child: HomeDashboardScreen()), 
+      path:
+          '/main', // Fallback for direct MainShell navigation if used previously
+      builder: (context, state) =>
+          const MainShell(child: HomeDashboardScreen()),
     ),
     GoRoute(
       path: '/edit-insurance',
@@ -225,7 +233,8 @@ final GoRouter appRouter = GoRouter(
         final extra = state.extra as Map<String, dynamic>?;
         return InsuranceAddDocumentsScreen(
           policy: extra?['policy'] as InsurancePolicy?,
-          initialDocuments: extra?['initialDocuments'] as List<Map<String, dynamic>>?,
+          initialDocuments:
+              extra?['initialDocuments'] as List<Map<String, dynamic>>?,
         );
       },
     ),
@@ -255,6 +264,31 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final categoryName = state.extra as String;
         return VaultCreateSubfolderScreen(categoryName: categoryName);
+      },
+    ),
+    // ── Auth flow routes ──────────────────────────────────────────────────────
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPassword(),
+    ),
+    GoRoute(
+      path: '/verify-otp',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return VerificationCodeScreen(
+          email: extra['email'] as String? ?? '',
+          flow: extra['flow'] as String? ?? 'register',
+        );
+      },
+    ),
+    GoRoute(
+      path: '/reset-password',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return ResetPassword(
+          email: extra['email'] as String? ?? '',
+          otp: extra['otp'] as String? ?? '',
+        );
       },
     ),
   ],

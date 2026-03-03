@@ -1,13 +1,100 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/security_service.dart';
+import '../services/biometric_service.dart';
 
-class VaultScreen extends StatelessWidget {
+class VaultScreen extends StatefulWidget {
   const VaultScreen({super.key});
 
   @override
+  State<VaultScreen> createState() => _VaultScreenState();
+}
+
+class _VaultScreenState extends State<VaultScreen> {
+  bool _unlocked = false;
+  bool _isChecking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkSecurity());
+  }
+
+  Future<void> _checkSecurity() async {
+    final biometricEnabled = await SecurityService.isBiometricEnabled();
+    final pinEnabled = await SecurityService.isPinSet();
+
+    if (!mounted) return;
+
+    if (!biometricEnabled && !pinEnabled) {
+      // No security set – open vault directly
+      setState(() {
+        _unlocked = true;
+        _isChecking = false;
+      });
+      return;
+    }
+
+    if (biometricEnabled) {
+      // Try biometric first
+      final reason = await BiometricService.unavailableReason();
+      if (reason == null) {
+        final success = await BiometricService.authenticate(
+          reason: 'Authenticate to open your FFP Vault',
+        );
+        if (!mounted) return;
+        if (success) {
+          setState(() {
+            _unlocked = true;
+            _isChecking = false;
+          });
+          return;
+        }
+        // Biometric failed/cancelled – fall through to PIN if set
+      }
+    }
+
+    if (pinEnabled) {
+      // Show PIN screen
+      if (!mounted) return;
+      setState(() => _isChecking = false);
+      final result = await context.push<bool>('/pin-verify');
+      if (mounted) {
+        if (result == true) {
+          setState(() => _unlocked = true);
+        } else {
+          // Navigated back without unlocking
+          context.go('/home');
+        }
+      }
+      return;
+    }
+
+    // No fallback available (biometric failed and no PIN) – back out
+    if (!mounted) return;
+    setState(() => _isChecking = false);
+    if (mounted) context.go('/home');
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isChecking) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: brandRed)),
+      );
+    }
+
+    if (!_unlocked) {
+      // Will be redirected to pin-verify – show blank
+      return const Scaffold(backgroundColor: Colors.white);
+    }
+
+    return _buildVaultContent(context);
+  }
+
+  Widget _buildVaultContent(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -20,7 +107,11 @@ class VaultScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => context.go('/home'),
-                    child: const Icon(Icons.arrow_back, size: 20, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 20,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Center(
@@ -54,13 +145,20 @@ class VaultScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: const Color(0xFFEEEEEE)),
                       ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.search, color: Color(0xFFBBBBBB), size: 22),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.search,
+                            color: Color(0xFFBBBBBB),
+                            size: 22,
+                          ),
                           SizedBox(width: 12),
                           Text(
                             'Search documents',
-                            style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 14),
+                            style: TextStyle(
+                              color: Color(0xFFBBBBBB),
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
@@ -82,28 +180,38 @@ class VaultScreen extends StatelessWidget {
                           title: 'Loans',
                           subtitle: '2 active',
                           iconColor: brandRed,
-                          onTap: () => context.push('/vault-category', extra: 'Loans'),
+                          onTap: () =>
+                              context.push('/vault-category', extra: 'Loans'),
                         ),
                         _VaultCategoryCard(
                           iconPath: 'assets/images/icon/housing.png',
                           title: 'Housing / Living Costs',
                           subtitle: 'up to date',
                           iconColor: const Color(0xFF9C27B0),
-                          onTap: () => context.push('/vault-category', extra: 'Housing / Living Costs'),
+                          onTap: () => context.push(
+                            '/vault-category',
+                            extra: 'Housing / Living Costs',
+                          ),
                         ),
                         _VaultCategoryCard(
                           iconPath: 'assets/images/icon/insurance.png',
                           title: 'Insurance',
                           subtitle: '3 policies',
                           iconColor: const Color(0xFF2196F3),
-                          onTap: () => context.push('/vault-category', extra: 'Insurance'),
+                          onTap: () => context.push(
+                            '/vault-category',
+                            extra: 'Insurance',
+                          ),
                         ),
                         _VaultCategoryCard(
                           iconPath: 'assets/images/icon/doccument.png',
                           title: 'Documents',
                           subtitle: '12 saved',
                           iconColor: const Color(0xFFFF9800),
-                          onTap: () => context.push('/vault-category', extra: 'Documents'),
+                          onTap: () => context.push(
+                            '/vault-category',
+                            extra: 'Documents',
+                          ),
                         ),
                       ],
                     ),
@@ -245,10 +353,7 @@ class _VaultCategoryCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF888888),
-              ),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
             ),
           ],
         ),

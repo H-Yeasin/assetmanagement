@@ -20,7 +20,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   late TextEditingController _amountController;
   late TextEditingController _dateController;
   late TextEditingController _notesController;
-  
+
   late TextEditingController _addressController;
   late TextEditingController _petNameController;
   late TextEditingController _manufacturerController;
@@ -40,38 +40,65 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   String _paymentDay = 'Every 15th of the month';
 
   final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Yearly'];
-  final List<String> _personalTypes = ['Disability', 'Travel', 'Group', 'Critical Illness'];
+  final List<String> _personalTypes = [
+    'Disability',
+    'Travel',
+    'Group',
+    'Critical Illness',
+  ];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.policy.name);
     _providerController = TextEditingController(text: widget.policy.provider);
-    _amountController = TextEditingController(text: widget.policy.premium.toString());
+    _amountController = TextEditingController(
+      text: widget.policy.premium.toString(),
+    );
     _dateController = TextEditingController(
-      text: widget.policy.renewalDate != null ? DateFormat('MM/dd/yyyy').format(widget.policy.renewalDate!) : ''
+      text: widget.policy.renewalDate != null
+          ? DateFormat('MM/dd/yyyy').format(widget.policy.renewalDate!)
+          : '',
     );
     _notesController = TextEditingController(text: widget.policy.coverageNotes);
-    
-    _addressController = TextEditingController(text: widget.policy.propertyAddress);
+
+    _addressController = TextEditingController(
+      text: widget.policy.propertyAddress,
+    );
     _petNameController = TextEditingController(text: widget.policy.petName);
-    _manufacturerController = TextEditingController(text: widget.policy.manufacturer);
-    _policyNumberController = TextEditingController(text: widget.policy.policyNumber);
-    _vehicleModelController = TextEditingController(text: widget.policy.vehicleModel);
+    _manufacturerController = TextEditingController(
+      text: widget.policy.manufacturer,
+    );
+    _policyNumberController = TextEditingController(
+      text: widget.policy.policyNumber,
+    );
+    _vehicleModelController = TextEditingController(
+      text: widget.policy.vehicleModel,
+    );
     _timeLeftController = TextEditingController(text: widget.policy.timeLeft);
-    _paymentsCompletedController = TextEditingController(text: widget.policy.paymentsCompleted?.toString() ?? '');
-    _totalPaymentsController = TextEditingController(text: widget.policy.totalPayments?.toString() ?? '');
+    _paymentsCompletedController = TextEditingController(
+      text: widget.policy.paymentsCompleted?.toString() ?? '',
+    );
+    _totalPaymentsController = TextEditingController(
+      text: widget.policy.totalPayments?.toString() ?? '',
+    );
     _startDateController = TextEditingController(
-      text: widget.policy.startDate != null ? DateFormat('MM/dd/yyyy').format(widget.policy.startDate!) : ''
+      text: widget.policy.startDate != null
+          ? DateFormat('MM/dd/yyyy').format(widget.policy.startDate!)
+          : '',
     );
     _endDateController = TextEditingController(
-      text: widget.policy.endDate != null ? DateFormat('MM/dd/yyyy').format(widget.policy.endDate!) : ''
+      text: widget.policy.endDate != null
+          ? DateFormat('MM/dd/yyyy').format(widget.policy.endDate!)
+          : '',
     );
-    
+
     _isAutoPay = widget.policy.isAutoPay ?? true;
     _paymentDay = widget.policy.paymentDay ?? 'Every 15th of the month';
     _coverageType = widget.policy.coverageType ?? 'Comprehensive';
-    _personalInsuranceType = widget.policy.personalInsuranceType; // Assuming this field exists in model
+    _personalInsuranceType = widget
+        .policy
+        .personalInsuranceType; // Assuming this field exists in model
 
     final freq = widget.policy.paymentFrequency?.toLowerCase();
     if (freq == 'monthly') {
@@ -108,23 +135,35 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   Future<void> _updatePolicy() async {
     setState(() => _isSaving = true);
     try {
-      final amount = double.tryParse(_amountController.text.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
+      final amount =
+          double.tryParse(
+            _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
+          ) ??
+          0.0;
       DateTime? renewalDate;
       if (_dateController.text.isNotEmpty) {
-        try { renewalDate = DateFormat('MM/dd/yyyy').parse(_dateController.text); } catch (_) {}
+        try {
+          renewalDate = DateFormat('MM/dd/yyyy').parse(_dateController.text);
+        } catch (_) {}
       }
       DateTime? startDate;
       if (_startDateController.text.isNotEmpty) {
-        try { startDate = DateFormat('MM/dd/yyyy').parse(_startDateController.text); } catch (_) {}
+        try {
+          startDate = DateFormat('MM/dd/yyyy').parse(_startDateController.text);
+        } catch (_) {}
       }
       DateTime? endDate;
       if (_endDateController.text.isNotEmpty) {
-        try { endDate = DateFormat('MM/dd/yyyy').parse(_endDateController.text); } catch (_) {}
+        try {
+          endDate = DateFormat('MM/dd/yyyy').parse(_endDateController.text);
+        } catch (_) {}
       }
 
       final tempPolicy = InsurancePolicy(
         userId: widget.policy.userId,
-        name: widget.policy.category == 'pet' ? _petNameController.text : _nameController.text,
+        name: widget.policy.category == 'pet'
+            ? _petNameController.text
+            : _nameController.text,
         category: widget.policy.category,
         premium: amount,
         paymentFrequency: _paymentType,
@@ -133,7 +172,9 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         coverageNotes: _notesController.text,
         petName: _petNameController.text,
         propertyAddress: _addressController.text,
-        applianceName: widget.policy.category == 'appliance' ? _nameController.text : null,
+        applianceName: widget.policy.category == 'appliance'
+            ? _nameController.text
+            : null,
         manufacturer: _manufacturerController.text,
         policyNumber: _policyNumberController.text,
         vehicleModel: _vehicleModelController.text,
@@ -153,7 +194,10 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       await _apiService.updateInsurance(widget.policy.id!, packedUpdates);
       if (mounted) context.pop(true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -161,7 +205,9 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String categoryDisp = widget.policy.category[0].toUpperCase() + widget.policy.category.substring(1);
+    final String categoryDisp =
+        widget.policy.category[0].toUpperCase() +
+        widget.policy.category.substring(1);
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
@@ -170,19 +216,39 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF111111), size: 24), 
+          icon: const Icon(Icons.close, color: Color(0xFF111111), size: 24),
           onPressed: () => context.pop(),
         ),
-        title: Text('Edit $categoryDisp Insurance', 
-          style: const TextStyle(color: Color(0xFF111111), fontSize: 16, fontWeight: FontWeight.w700)),
+        title: Text(
+          'Edit $categoryDisp Insurance',
+          style: const TextStyle(
+            color: Color(0xFF111111),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               if (!_isSaving) _updatePolicy();
             },
-            child: _isSaving 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: brandRed, strokeWidth: 2))
-              : const Text('Save', style: TextStyle(color: brandRed, fontSize: 16, fontWeight: FontWeight.w700)),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: brandRed,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Save',
+                    style: TextStyle(
+                      color: brandRed,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -191,24 +257,46 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.policy.category == 'auto') ..._buildAutoEditFields()
-            else if (widget.policy.category == 'personal') ..._buildPersonalEditFields()
-            else if (widget.policy.category == 'pet') ..._buildPetEditFields()
-            else if (widget.policy.category == 'home') ..._buildHomeEditFields()
-            else if (widget.policy.category == 'appliance') ..._buildWarrantyEditFields()
-            else ..._buildDefaultEditFields(),
+            if (widget.policy.category == 'auto')
+              ..._buildAutoEditFields()
+            else if (widget.policy.category == 'personal')
+              ..._buildPersonalEditFields()
+            else if (widget.policy.category == 'pet')
+              ..._buildPetEditFields()
+            else if (widget.policy.category == 'home')
+              ..._buildHomeEditFields()
+            else if (widget.policy.category == 'appliance')
+              ..._buildWarrantyEditFields()
+            else
+              ..._buildDefaultEditFields(),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _isSaving ? null : _updatePolicy,
               style: ElevatedButton.styleFrom(
                 backgroundColor: brandRed,
                 minimumSize: const Size(double.infinity, 54),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 elevation: 0,
               ),
-              child: _isSaving 
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('Save and Continue', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Save and Continue',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
             const SizedBox(height: 48),
           ],
@@ -224,7 +312,15 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Yearly', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(
+            child: _buildDropdownField(
+              _paymentTypes,
+              _paymentType,
+              'Yearly',
+              (v) => setState(() => _paymentType = v!),
+              isRed: true,
+            ),
+          ),
         ],
       ),
 
@@ -270,9 +366,16 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       _buildAddDocumentsButton(),
 
       const SizedBox(height: 24),
-      const Text('Reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+      const Text(
+        'Reminders',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF111111),
+        ),
+      ),
       const SizedBox(height: 16),
-      
+
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -301,26 +404,49 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Auto-payment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                      const Text(
+                        'Auto-payment',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111111),
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      const Text('Pay automatic every month', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w500)),
+                      const Text(
+                        'Pay automatic every month',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF888888),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Transform.scale(
                   scale: 0.8,
                   child: Switch(
-                    value: _isAutoPay, 
+                    value: _isAutoPay,
                     onChanged: (v) => setState(() => _isAutoPay = v),
                     activeThumbColor: Colors.white,
                     activeTrackColor: brandRed,
-                    trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                    trackOutlineColor: WidgetStateProperty.all(
+                      Colors.transparent,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            const Text('Payment Date', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+            const Text(
+              'Payment Date',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111111),
+              ),
+            ),
             const SizedBox(height: 10),
             GestureDetector(
               onTap: () {
@@ -328,7 +454,10 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
               },
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F1F1),
                   borderRadius: BorderRadius.circular(10),
@@ -336,8 +465,19 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(_paymentDay, style: const TextStyle(color: Color(0xFF555555), fontSize: 13, fontWeight: FontWeight.w500)),
-                    const Icon(Icons.calendar_today_outlined, color: Color(0xFF555555), size: 18),
+                    Text(
+                      _paymentDay,
+                      style: const TextStyle(
+                        color: Color(0xFF555555),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      color: Color(0xFF555555),
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -351,7 +491,12 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   List<Widget> _buildPersonalEditFields() {
     return [
       _buildLabel('Select Insurance Type'),
-      _buildDropdownField(_personalTypes, _personalInsuranceType, 'Select type', (v) => setState(() => _personalInsuranceType = v)),
+      _buildDropdownField(
+        _personalTypes,
+        _personalInsuranceType,
+        'Select type',
+        (v) => setState(() => _personalInsuranceType = v),
+      ),
 
       _buildLabel('Policy Name'),
       _buildTextField(_nameController, 'Policy Name'),
@@ -361,7 +506,15 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Yearly', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(
+            child: _buildDropdownField(
+              _paymentTypes,
+              _paymentType,
+              'Yearly',
+              (v) => setState(() => _paymentType = v!),
+              isRed: true,
+            ),
+          ),
         ],
       ),
 
@@ -419,7 +572,15 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Monthly', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(
+            child: _buildDropdownField(
+              _paymentTypes,
+              _paymentType,
+              'Monthly',
+              (v) => setState(() => _paymentType = v!),
+              isRed: true,
+            ),
+          ),
         ],
       ),
 
@@ -471,7 +632,15 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Monthly', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(
+            child: _buildDropdownField(
+              _paymentTypes,
+              _paymentType,
+              'Monthly',
+              (v) => setState(() => _paymentType = v!),
+              isRed: true,
+            ),
+          ),
         ],
       ),
 
@@ -528,7 +697,14 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 24),
-        const Text('Reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+        const Text(
+          'Reminders',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
+          ),
+        ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
@@ -558,9 +734,23 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Auto-payment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                        const Text(
+                          'Auto-payment',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        const Text('Pay automatic every month', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w500)),
+                        const Text(
+                          'Pay automatic every month',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF888888),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -571,19 +761,31 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
                       onChanged: (v) => setState(() => _isAutoPay = v),
                       activeThumbColor: Colors.white,
                       activeTrackColor: brandRed,
-                      trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                      trackOutlineColor: WidgetStateProperty.all(
+                        Colors.transparent,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              const Text('Payment Date', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+              const Text(
+                'Payment Date',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
+              ),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () {},
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F1F1),
                     borderRadius: BorderRadius.circular(10),
@@ -591,8 +793,19 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(_paymentDay, style: const TextStyle(color: Color(0xFF555555), fontSize: 13, fontWeight: FontWeight.w500)),
-                      const Icon(Icons.calendar_today_outlined, color: Color(0xFF555555), size: 18),
+                      Text(
+                        _paymentDay,
+                        style: const TextStyle(
+                          color: Color(0xFF555555),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        color: Color(0xFF555555),
+                        size: 18,
+                      ),
                     ],
                   ),
                 ),
@@ -614,7 +827,15 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         children: [
           Expanded(child: _buildTextField(_amountController, 'Amount')),
           const SizedBox(width: 16),
-          Expanded(child: _buildDropdownField(_paymentTypes, _paymentType, 'Yearly', (v) => setState(() => _paymentType = v!), isRed: true)),
+          Expanded(
+            child: _buildDropdownField(
+              _paymentTypes,
+              _paymentType,
+              'Yearly',
+              (v) => setState(() => _paymentType = v!),
+              isRed: true,
+            ),
+          ),
         ],
       ),
 
@@ -622,14 +843,21 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       _buildDateField(_dateController, 'mm/dd/yy'),
 
       const SizedBox(height: 24),
-      const Text('Additional Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+      const Text(
+        'Additional Details',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF111111),
+        ),
+      ),
       const SizedBox(height: 16),
 
       if (widget.policy.category == 'home') ...[
         _buildLabel('Property Address'),
         _buildTextField(_addressController, 'Address'),
       ],
-      
+
       _buildLabel('Provider'),
       _buildTextField(_providerController, 'Provider name'),
 
@@ -643,7 +871,13 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     ];
   }
 
-  Widget _buildDropdownField(List<String> items, String? currentValue, String hint, ValueChanged<String?> onChanged, {bool isRed = false}) {
+  Widget _buildDropdownField(
+    List<String> items,
+    String? currentValue,
+    String hint,
+    ValueChanged<String?> onChanged, {
+    bool isRed = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
@@ -657,11 +891,27 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: currentValue,
-            hint: Text(hint, style: TextStyle(color: isRed ? brandRed : const Color(0xFF888888), fontSize: 13, fontWeight: FontWeight.w400)),
+            hint: Text(
+              hint,
+              style: TextStyle(
+                color: isRed ? brandRed : const Color(0xFF888888),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
             isExpanded: true,
-            icon: Icon(Icons.keyboard_arrow_down, color: isRed ? brandRed : const Color(0xFF111111)),
-            style: TextStyle(color: isRed ? brandRed : const Color(0xFF111111), fontSize: 13, fontWeight: FontWeight.w500),
-            items: items.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+            icon: Icon(
+              Icons.keyboard_arrow_down,
+              color: isRed ? brandRed : const Color(0xFF111111),
+            ),
+            style: TextStyle(
+              color: isRed ? brandRed : const Color(0xFF111111),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            items: items
+                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                .toList(),
             onChanged: onChanged,
           ),
         ),
@@ -681,7 +931,14 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
           backgroundColor: Colors.white,
           elevation: 0,
         ),
-        child: const Text('+Add Documents', style: TextStyle(color: brandRed, fontSize: 13, fontWeight: FontWeight.w600)),
+        child: const Text(
+          '+Add Documents',
+          style: TextStyle(
+            color: brandRed,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
@@ -689,20 +946,39 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   Widget _buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF111111),
+        ),
+      ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, {int maxLines = 1}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint, {
+    int maxLines = 1,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
-        style: const TextStyle(fontSize: 14, color: Color(0xFF111111), fontWeight: FontWeight.w400),
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF111111),
+          fontWeight: FontWeight.w400,
+        ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13, fontWeight: FontWeight.w400),
+          hintStyle: const TextStyle(
+            color: Color(0xFFBBBBBB),
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+          ),
           filled: true,
           fillColor: Colors.white,
           enabledBorder: OutlineInputBorder(
@@ -713,7 +989,10 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: brandRed, width: 1),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -726,9 +1005,11 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         onTap: () async {
           DateTime initialDate = DateTime.now();
           if (controller.text.isNotEmpty) {
-            try { initialDate = DateFormat('MM/dd/yyyy').parse(controller.text); } catch (_) {}
+            try {
+              initialDate = DateFormat('MM/dd/yyyy').parse(controller.text);
+            } catch (_) {}
           }
-           final DateTime? result = await showDatePicker(
+          final DateTime? result = await showDatePicker(
             context: context,
             initialDate: initialDate,
             firstDate: DateTime(2000),
@@ -752,21 +1033,35 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         child: AbsorbPointer(
           child: TextField(
             controller: controller,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF111111), fontWeight: FontWeight.w400),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF111111),
+              fontWeight: FontWeight.w400,
+            ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13, fontWeight: FontWeight.w400),
+              hintStyle: const TextStyle(
+                color: Color(0xFFBBBBBB),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
               filled: true,
               fillColor: Colors.white,
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFEBEBEB), width: 1),
+                borderSide: const BorderSide(
+                  color: Color(0xFFEBEBEB),
+                  width: 1,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: brandRed, width: 1),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
         ),

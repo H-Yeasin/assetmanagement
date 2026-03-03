@@ -16,7 +16,8 @@ class HousingCostDetailScreen extends StatefulWidget {
   const HousingCostDetailScreen({super.key, required this.cost});
 
   @override
-  State<HousingCostDetailScreen> createState() => _HousingCostDetailScreenState();
+  State<HousingCostDetailScreen> createState() =>
+      _HousingCostDetailScreenState();
 }
 
 class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
@@ -94,10 +95,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
           const Center(
             child: Material(
               color: Colors.transparent,
-              child: SizedBox(
-                width: 343,
-                child: ReminderModal(),
-              ),
+              child: SizedBox(width: 343, child: ReminderModal()),
             ),
           ),
         ],
@@ -107,13 +105,15 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
 
   Future<void> _toggleAutoPay(bool value) async {
     try {
-      final updated = await _apiService.updateHousingCost(_cost.id!, {'autoPay': value});
+      final updated = await _apiService.updateHousingCost(_cost.id!, {
+        'autoPay': value,
+      });
       setState(() => _cost = updated);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -140,26 +140,40 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context, true),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   Expanded(
                     child: Text(
                       _categoryLabel,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   GestureDetector(
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => EditHousingCostScreen(cost: _cost)),
+                        MaterialPageRoute(
+                          builder: (_) => EditHousingCostScreen(cost: _cost),
+                        ),
                       );
                       if (result == true) _refreshCost();
                     },
                     child: const Text(
                       'Edit',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFC61C36)),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFC61C36),
+                      ),
                     ),
                   ),
                 ],
@@ -188,12 +202,19 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                         children: [
                           const Text(
                             'Total Monthly Payment:',
-                            style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF888888),
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             NumberFormat('#,##0.00').format(_cost.amount),
-                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111111),
+                            ),
                           ),
                         ],
                       ),
@@ -230,7 +251,8 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => HousingAdditionalDetailsScreen(cost: _cost),
+                            builder: (_) =>
+                                HousingAdditionalDetailsScreen(cost: _cost),
                           ),
                         );
                       },
@@ -248,12 +270,20 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                               'assets/images/icon/additional_detail.png',
                               width: 18,
                               height: 18,
-                              errorBuilder: (c, e, s) => const Icon(Icons.apps, color: Color(0xFFC61C36), size: 18),
+                              errorBuilder: (c, e, s) => const Icon(
+                                Icons.apps,
+                                color: Color(0xFFC61C36),
+                                size: 18,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             const Text(
                               'Additional Details',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFC61C36)),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFC61C36),
+                              ),
                             ),
                           ],
                         ),
@@ -268,12 +298,16 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                       children: [
                         const Text(
                           'Documents',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
                         ),
                         GestureDetector(
                           onTap: () async {
                             final result = await Navigator.push(
-                              context, 
+                              context,
                               MaterialPageRoute(
                                 builder: (_) => HousingAddDocumentsScreen(
                                   cost: _cost,
@@ -281,9 +315,26 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                                     if (doc is Map<String, dynamic>) {
                                       return {
                                         'id': doc['_id'] ?? doc['id'] ?? '',
-                                        'name': doc['displayName'] ?? doc['name'] ?? 'Existing Document',
-                                        'type': (doc['mimeType']?.toString().contains('pdf') == true) || doc['type'] == 'pdf' ? 'pdf' : 'image',
-                                        'date': doc['createdAt'] != null ? DateTime.tryParse(doc['createdAt']) ?? DateTime.now() : (doc['date'] is DateTime ? doc['date'] : DateTime.now()),
+                                        'name':
+                                            doc['displayName'] ??
+                                            doc['name'] ??
+                                            'Existing Document',
+                                        'type':
+                                            (doc['mimeType']
+                                                        ?.toString()
+                                                        .contains('pdf') ==
+                                                    true) ||
+                                                doc['type'] == 'pdf'
+                                            ? 'pdf'
+                                            : 'image',
+                                        'date': doc['createdAt'] != null
+                                            ? DateTime.tryParse(
+                                                    doc['createdAt'],
+                                                  ) ??
+                                                  DateTime.now()
+                                            : (doc['date'] is DateTime
+                                                  ? doc['date']
+                                                  : DateTime.now()),
                                         'path': doc['path'],
                                       };
                                     }
@@ -291,31 +342,44 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                                       return {
                                         'id': doc.id,
                                         'name': doc.displayName,
-                                        'type': doc.mimeType.contains('pdf') ? 'pdf' : 'image',
+                                        'type': doc.mimeType.contains('pdf')
+                                            ? 'pdf'
+                                            : 'image',
                                         'date': doc.createdAt ?? DateTime.now(),
                                         'path': doc.path,
                                       };
                                     }
                                     return {
-                                      'id': doc is String ? doc : doc.toString(),
+                                      'id': doc is String
+                                          ? doc
+                                          : doc.toString(),
                                       'name': 'Existing Document',
                                       'type': 'pdf',
                                       'date': DateTime.now(),
                                     };
                                   }).toList(),
-                                )
-                              )
+                                ),
+                              ),
                             );
-                            if (result != null && result is List<Map<String, dynamic>>) {
-                              final docIds = result.map((d) => d['id'] as String).toList();
-                              
+                            if (result != null &&
+                                result is List<Map<String, dynamic>>) {
+                              final docIds = result
+                                  .map((d) => d['id'] as String)
+                                  .toList();
+
                               try {
-                                await _apiService.updateHousingCost(_cost.id!, {'documents': docIds});
+                                await _apiService.updateHousingCost(_cost.id!, {
+                                  'documents': docIds,
+                                });
                                 await _refreshCost();
                               } catch (e) {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error updating documents: $e')),
+                                    SnackBar(
+                                      content: Text(
+                                        'Error updating documents: $e',
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -323,11 +387,19 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                           },
                           child: const Row(
                             children: [
-                              Icon(Icons.add, color: Color(0xFFC61C36), size: 16),
+                              Icon(
+                                Icons.add,
+                                color: Color(0xFFC61C36),
+                                size: 16,
+                              ),
                               SizedBox(width: 4),
                               Text(
                                 'Add Documents',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFC61C36)),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFC61C36),
+                                ),
                               ),
                             ],
                           ),
@@ -347,7 +419,10 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                         ),
                         child: const Text(
                           'No documents attached',
-                          style: TextStyle(fontSize: 13, color: Color(0xFF888888)),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF888888),
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       )
@@ -363,13 +438,17 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: HousingCost.iconBgColorForCategory(_cost.category),
+                                color: HousingCost.iconBgColorForCategory(
+                                  _cost.category,
+                                ),
                                 shape: BoxShape.circle,
                               ),
                               child: Image.asset(
                                 HousingCost.iconForCategory(_cost.category),
-                                width: 20, height: 20,
-                                errorBuilder: (c, e, s) => const Icon(Icons.folder, size: 20),
+                                width: 20,
+                                height: 20,
+                                errorBuilder: (c, e, s) =>
+                                    const Icon(Icons.folder, size: 20),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -379,11 +458,18 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                                 children: [
                                   Text(
                                     '${_cost.documents.length} Documents',
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111)),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF111111),
+                                    ),
                                   ),
                                   Text(
                                     '${_cost.name}_attachments',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF888888),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -409,15 +495,32 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                               color: const Color(0xFFFDE7E9),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.repeat, color: Color(0xFFC61C36), size: 20),
+                            child: const Icon(
+                              Icons.repeat,
+                              color: Color(0xFFC61C36),
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Auto-payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
-                                Text('Pay automatic every month', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                const Text(
+                                  'Auto-payment',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF111111),
+                                  ),
+                                ),
+                                Text(
+                                  'Pay automatic every month',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -426,7 +529,9 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                             onChanged: _toggleAutoPay,
                             activeThumbColor: Colors.white,
                             activeTrackColor: const Color(0xFFC61C36),
-                            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                            trackOutlineColor: WidgetStateProperty.all(
+                              Colors.transparent,
+                            ),
                           ),
                         ],
                       ),
@@ -437,7 +542,11 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                     // ── Reminders ──
                     const Text(
                       'Reminders',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -456,8 +565,13 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                             ),
                             child: Image.asset(
                               'assets/images/icon/remind.png',
-                              width: 20, height: 20,
-                              errorBuilder: (c, e, s) => const Icon(Icons.notifications, size: 20, color: Color(0xFFC61C36)),
+                              width: 20,
+                              height: 20,
+                              errorBuilder: (c, e, s) => const Icon(
+                                Icons.notifications,
+                                size: 20,
+                                color: Color(0xFFC61C36),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -465,35 +579,71 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Payment Reminders', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
-                                Text('4 days before date', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                const Text(
+                                  'Payment Reminders',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF111111),
+                                  ),
+                                ),
+                                Text(
+                                  '4 days before date',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              border: Border.all(color: const Color(0xFFEEEEEE)),
+                              border: Border.all(
+                                color: const Color(0xFFEEEEEE),
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: _reminderTiming,
                                 isDense: true,
-                                icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF888888)),
-                                style: const TextStyle(fontSize: 12, color: Color(0xFF555555)),
-                                items: _reminderTimings.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                                onChanged: (val) => setState(() => _reminderTiming = val!),
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  size: 16,
+                                  color: Color(0xFF888888),
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF555555),
+                                ),
+                                items: _reminderTimings
+                                    .map(
+                                      (t) => DropdownMenuItem(
+                                        value: t,
+                                        child: Text(t),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (val) =>
+                                    setState(() => _reminderTiming = val!),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Switch(
                             value: _reminderEnabled,
-                            onChanged: (v) => setState(() => _reminderEnabled = v),
+                            onChanged: (v) =>
+                                setState(() => _reminderEnabled = v),
                             activeThumbColor: Colors.white,
                             activeTrackColor: const Color(0xFFC61C36),
-                            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                            trackOutlineColor: WidgetStateProperty.all(
+                              Colors.transparent,
+                            ),
                           ),
                         ],
                       ),
@@ -504,7 +654,11 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                     // ── Notes ──
                     const Text(
                       'Notes',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -515,10 +669,14 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        _cost.notes?.isNotEmpty == true 
-                            ? _cost.notes! 
+                        _cost.notes?.isNotEmpty == true
+                            ? _cost.notes!
                             : 'No notes added yet.',
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF555555), height: 1.5),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF555555),
+                          height: 1.5,
+                        ),
                       ),
                     ),
 
@@ -557,10 +715,21 @@ class _ActionButton extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Image.asset(iconPath, width: 32, height: 32,
-                errorBuilder: (c, e, s) => const Icon(Icons.image, size: 32)),
+            Image.asset(
+              iconPath,
+              width: 32,
+              height: 32,
+              errorBuilder: (c, e, s) => const Icon(Icons.image, size: 32),
+            ),
             const SizedBox(height: 12),
-            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF111111))),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF111111),
+              ),
+            ),
           ],
         ),
       ),

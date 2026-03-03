@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/security_service.dart';
 
+/// Two-step PIN setup screen:
+/// Step 1 – Enter a 4-digit PIN
+/// Step 2 – Confirm the PIN
+/// On match: encrypts and stores PIN securely, then navigates to success.
 class SetPinScreen extends StatefulWidget {
   const SetPinScreen({super.key});
 
@@ -10,19 +15,84 @@ class SetPinScreen extends StatefulWidget {
 }
 
 class _SetPinScreenState extends State<SetPinScreen> {
-  String _pin = '';
   static const int _pinLength = 4;
 
+  // Step 1 values
+  String _pin = '';
+  String _confirmPin = '';
+  bool _isConfirmStep = false;
+  bool _isMismatch = false;
+  bool _isSaving = false;
+
+  String get _currentPin => _isConfirmStep ? _confirmPin : _pin;
+
   void _onKeyTap(String val) {
-    if (_pin.length < _pinLength) {
-      setState(() => _pin += val);
-    }
+    setState(() {
+      _isMismatch = false;
+      if (_isConfirmStep) {
+        if (_confirmPin.length < _pinLength) _confirmPin += val;
+      } else {
+        if (_pin.length < _pinLength) _pin += val;
+      }
+    });
   }
 
   void _onDelete() {
-    if (_pin.isNotEmpty) {
-      setState(() => _pin = _pin.substring(0, _pin.length - 1));
+    setState(() {
+      _isMismatch = false;
+      if (_isConfirmStep) {
+        if (_confirmPin.isNotEmpty) {
+          _confirmPin = _confirmPin.substring(0, _confirmPin.length - 1);
+        }
+      } else {
+        if (_pin.isNotEmpty) {
+          _pin = _pin.substring(0, _pin.length - 1);
+        }
+      }
+    });
+  }
+
+  Future<void> _onContinue() async {
+    if (!_isConfirmStep) {
+      // Step 1 → Step 2
+      if (_pin.length < _pinLength) {
+        _showSnack('Please enter a $_pinLength-digit PIN');
+        return;
+      }
+      setState(() => _isConfirmStep = true);
+    } else {
+      // Step 2 → Verify match
+      if (_confirmPin.length < _pinLength) {
+        _showSnack('Please re-enter your PIN to confirm');
+        return;
+      }
+      if (_pin != _confirmPin) {
+        setState(() {
+          _isMismatch = true;
+          _confirmPin = '';
+        });
+        _showSnack('PINs do not match. Please try again.');
+        return;
+      }
+
+      // Match! Save PIN
+      setState(() => _isSaving = true);
+      await SecurityService.setPin(_pin);
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      context.pushReplacement('/pin-locked');
     }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: brandRed,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -32,60 +102,92 @@ class _SetPinScreenState extends State<SetPinScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 60),
+            const SizedBox(height: 48),
+
+            // Back arrow (only on confirm step)
+            if (_isConfirmStep)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Color(0xFF111111),
+                      size: 22,
+                    ),
+                    onPressed: () => setState(() {
+                      _isConfirmStep = false;
+                      _confirmPin = '';
+                      _isMismatch = false;
+                    }),
+                  ),
+                ),
+              ),
 
             // Title
-            const Text(
-              'Set Your PIN',
-              style: TextStyle(
+            Text(
+              _isConfirmStep ? 'Confirm PIN' : 'Set Your PIN',
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF111111),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             // Subtitle
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
-                "You'll use this PIN if biometric access\nisn't available.",
+                _isConfirmStep
+                    ? 'Enter your PIN again to confirm'
+                    : 'This PIN will be required to access your Vault.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
                   color: Color(0xFF777777),
                   height: 1.4,
                 ),
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 40),
 
-            // PIN entry boxes
+            // PIN entry circles (dots)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(_pinLength, (i) {
-                final filled = i < _pin.length;
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 54,
-                  height: 64,
+                final filled = i < _currentPin.length;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                  width: 16,
+                  height: 16,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEBEBEB),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    filled ? _pin[i] : '-',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      color: Color(0xFF777777),
-                      fontWeight: FontWeight.w500,
-                    ),
+                    color: _isMismatch
+                        ? Colors.red
+                        : filled
+                        ? brandRed
+                        : const Color(0xFFDDDDDD),
+                    shape: BoxShape.circle,
                   ),
                 );
               }),
             ),
+
+            if (_isMismatch)
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: Text(
+                  'PINs do not match',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
 
             const Spacer(),
 
@@ -111,40 +213,41 @@ class _SetPinScreenState extends State<SetPinScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
-            // Continue Button (Pinned at bottom)
+            // Continue Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_pin.length == _pinLength) {
-                      context.pushReplacement('/pin-locked');
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter a 4-digit PIN'),
-                          backgroundColor: brandRed,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _isSaving ? null : _onContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandRed,
+                    disabledBackgroundColor: brandRed.withValues(alpha: 0.5),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          _isConfirmStep ? 'Confirm PIN' : 'Continue',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -165,7 +268,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
   }
 }
 
-// ── Light Gray Square Keypad Button ───────────────────────────────────────────
+// ── Light Gray Round Keypad Button ─────────────────────────────────────────────
 class _KeypadButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -197,7 +300,7 @@ class _KeypadButton extends StatelessWidget {
   }
 }
 
-// ── Delete Button with backspace-like icon shape ──────────────────────────────
+// ── Delete Button ──────────────────────────────────────────────────────────────
 class _KeypadDelete extends StatelessWidget {
   final VoidCallback onTap;
   const _KeypadDelete({required this.onTap});
@@ -210,22 +313,15 @@ class _KeypadDelete extends StatelessWidget {
       child: SizedBox(
         width: 80,
         height: 50,
-        child: Center(
-          child: DefaultTextStyle(
-            style: const TextStyle(
-              fontSize: 24,
-              color: Color(0xFF111111),
-              fontFamily: 'MaterialIcons',
-            ),
-            child: const Icon(Icons.backspace, size: 28, color: Colors.black),
-          ),
+        child: const Center(
+          child: Icon(Icons.backspace_outlined, size: 26, color: Colors.black),
         ),
       ),
     );
   }
 }
 
-// ── Empty spacer for keypad ───────────────────────────────────────────────────
+// ── Empty spacer ───────────────────────────────────────────────────────────────
 class _KeypadEmpty extends StatelessWidget {
   const _KeypadEmpty();
   @override

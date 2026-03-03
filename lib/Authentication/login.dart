@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 import 'shared_widgets.dart';
 import 'sign_in.dart';
-import 'verification_code.dart';
-
-
+import 'forgot_password.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -14,8 +14,83 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnack('Please enter your email and password');
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      final result = await AuthService.login(email: email, password: password);
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        final data = result['data'] as Map<String, dynamic>;
+
+        // Normal login — save session
+        final accessToken = data['accessToken'] as String? ?? '';
+        final refreshToken = data['refreshToken'] as String? ?? '';
+        final userId = data['_id'] as String? ?? '';
+        final userName = data['user']?['fullName'] as String? ?? 'User';
+        await StorageService.saveSession(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          userId: userId,
+          email: email,
+          name: userName,
+        );
+
+        if (!mounted) return;
+        context.go('/home');
+      } else {
+        // Backend returns success: false and statusCode: 403 when 2FA is required
+        final data = result['data'] as Map<String, dynamic>?;
+        if (data != null && data['twoFactorRequired'] == true) {
+          final tfEmail = data['email'] as String? ?? email;
+          context.push(
+            '/two-factor-otp',
+            extra: {'email': tfEmail, 'flow': 'login'},
+          );
+          return;
+        }
+
+        _showSnack(result['message'] ?? 'Login failed');
+      }
+    } catch (e) {
+      _showSnack('Network error. Is the backend running?');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFF333333),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +127,10 @@ class _LoginState extends State<Login> {
 
               const SizedBox(height: 32),
 
-              // Email / Phone
-              const AppInputField(
-                hint: 'Email or Phone Number',
+              // Email
+              AppInputFieldControlled(
+                controller: _emailCtrl,
+                hint: 'Email address',
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -62,7 +138,8 @@ class _LoginState extends State<Login> {
               const SizedBox(height: 14),
 
               // Password
-              AppInputField(
+              AppInputFieldControlled(
+                controller: _passwordCtrl,
                 hint: 'Password',
                 icon: Icons.lock_outline_rounded,
                 obscure: _obscurePassword,
@@ -105,8 +182,7 @@ class _LoginState extends State<Login> {
                   GestureDetector(
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const VerificationCodeScreen()),
+                      MaterialPageRoute(builder: (_) => const ForgotPassword()),
                     ),
                     child: const Text(
                       'Forgot your password?',
@@ -123,12 +199,14 @@ class _LoginState extends State<Login> {
               const SizedBox(height: 28),
 
               // Log in button
-              AppPrimaryButton(
-                label: 'Log in',
-                onTap: () {
-                  context.go('/home');
-                },
-              ),
+              _loading
+                  ? const SizedBox(
+                      height: 54,
+                      child: Center(
+                        child: CircularProgressIndicator(color: brandRed),
+                      ),
+                    )
+                  : AppPrimaryButton(label: 'Log in', onTap: _handleLogin),
 
               const SizedBox(height: 24),
 
@@ -140,10 +218,7 @@ class _LoginState extends State<Login> {
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'Or continue with',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFFAAAAAA),
-                      ),
+                      style: TextStyle(fontSize: 13, color: Color(0xFFAAAAAA)),
                     ),
                   ),
                   const Expanded(child: Divider(color: Color(0xFFE0E0E0))),
@@ -189,7 +264,7 @@ class _LoginState extends State<Login> {
                 children: [
                   const Text(
                     "Don't have an account? ",
-                    style: TextStyle(fontSize: 14, color: Color(0xFF81E1E1E)),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E)),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.push(

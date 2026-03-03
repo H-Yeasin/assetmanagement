@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import '../services/storage_service.dart';
 import '../Onbording_Screen/onbordin_screen.dart';
+import '../Authentication/welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,6 +28,33 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
+  Future<void> _navigateAfterSplash() async {
+    // Check if user is already logged in
+    final loggedIn = await StorageService.isLoggedIn();
+    if (!mounted) return;
+
+    if (loggedIn) {
+      // Skip onboarding and auth — go straight to home via GoRouter
+      context.go('/home');
+    } else {
+      // Check if onboarding has been shown before
+      final seenOnboarding = await StorageService.hasSeenOnboarding();
+      if (!mounted) return;
+
+      if (seenOnboarding) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,14 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
             _lottieController
               ..duration = composition.duration
               ..forward().whenComplete(() {
-                if (mounted) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const OnboardingScreen(),
-                    ),
-                  );
-                }
+                if (mounted) _navigateAfterSplash();
               });
           },
         ),

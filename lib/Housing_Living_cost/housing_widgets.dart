@@ -31,7 +31,9 @@ class HousingCostListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = isPaid ? const Color(0xFF2196F3) : brandRed;
-    final statusBgColor = isPaid ? const Color(0xFFE3F2FD) : const Color(0xFFFFEBEE);
+    final statusBgColor = isPaid
+        ? const Color(0xFFE3F2FD)
+        : const Color(0xFFFFEBEE);
 
     return GestureDetector(
       onTap: onTap,
@@ -54,8 +56,12 @@ class HousingCostListItem extends StatelessWidget {
                 color: iconBgColor,
                 shape: BoxShape.circle,
               ),
-              child: Image.asset(iconPath, width: 26, height: 26,
-                  errorBuilder: (c, e, s) => const Icon(Icons.home, size: 26)),
+              child: Image.asset(
+                iconPath,
+                width: 26,
+                height: 26,
+                errorBuilder: (c, e, s) => const Icon(Icons.home, size: 26),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -68,14 +74,22 @@ class HousingCostListItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF111111)),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF111111),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Text(
                         amount,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111111)),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF111111),
+                        ),
                       ),
                     ],
                   ),
@@ -85,10 +99,16 @@ class HousingCostListItem extends StatelessWidget {
                     children: [
                       Text(
                         subtitle,
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF888888)),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF888888),
+                        ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: statusBgColor,
                           borderRadius: BorderRadius.circular(6),
@@ -134,7 +154,11 @@ class HousingPaymentModal extends StatefulWidget {
   final HousingCost cost;
   final VoidCallback? onPaymentConfirmed;
 
-  const HousingPaymentModal({super.key, required this.cost, this.onPaymentConfirmed});
+  const HousingPaymentModal({
+    super.key,
+    required this.cost,
+    this.onPaymentConfirmed,
+  });
 
   @override
   State<HousingPaymentModal> createState() => _HousingPaymentModalState();
@@ -148,15 +172,27 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
   final TextEditingController _amountController = TextEditingController();
 
   final List<String> _months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   @override
   void initState() {
     super.initState();
     _isAutoPayment = widget.cost.autoPay;
-    _amountController.text = NumberFormat('#,##0.00').format(widget.cost.amount);
+    _amountController.text = NumberFormat(
+      '#,##0.00',
+    ).format(widget.cost.amount);
     _selectedMonth = DateFormat('MMMM').format(DateTime.now());
   }
 
@@ -182,9 +218,9 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -209,11 +245,19 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
             children: [
               const Text(
                 'Payment Details',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
               ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+                child: const Icon(
+                  Icons.close,
+                  size: 24,
+                  color: Color(0xFF111111),
+                ),
               ),
             ],
           ),
@@ -238,12 +282,20 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
               children: [
                 const Text(
                   'Payment Amount',
-                  style: TextStyle(fontSize: 18, color: Color(0xFFC61C36), fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Color(0xFFC61C36),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   NumberFormat.simpleCurrency().format(widget.cost.amount),
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
                 ),
               ],
             ),
@@ -251,7 +303,14 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
           const SizedBox(height: 10),
 
           // Amount Input
-          const Text('Amount', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          const Text(
+            'Amount',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -273,7 +332,14 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
           const SizedBox(height: 10),
 
           // Month Dropdown
-          const Text('Month', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          const Text(
+            'Month',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -285,10 +351,16 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
               child: DropdownButton<String>(
                 value: _selectedMonth,
                 isExpanded: true,
-                icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
+                icon: const Icon(
+                  Icons.arrow_drop_down,
+                  color: Color(0xFF111111),
+                ),
                 style: const TextStyle(fontSize: 15, color: Color(0xFF888888)),
                 items: _months.map((String month) {
-                  return DropdownMenuItem<String>(value: month, child: Text(month));
+                  return DropdownMenuItem<String>(
+                    value: month,
+                    child: Text(month),
+                  );
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedMonth = val!),
               ),
@@ -305,15 +377,32 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
                   color: const Color(0xFFFDE7E9),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.repeat, color: Color(0xFFC61C36), size: 20),
+                child: const Icon(
+                  Icons.repeat,
+                  color: Color(0xFFC61C36),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Auto-payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
-                    Text('Pay automatic every month', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    const Text(
+                      'Auto-payment',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
+                    ),
+                    Text(
+                      'Pay automatic every month',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -334,7 +423,14 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
               Expanded(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF111111),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -345,12 +441,27 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
                     backgroundColor: const Color(0xFFFDE7E9),
                     foregroundColor: const Color(0xFFC61C36),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: _isProcessing 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC61C36)))
-                      : const Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: _isProcessing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFC61C36),
+                          ),
+                        )
+                      : const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ],

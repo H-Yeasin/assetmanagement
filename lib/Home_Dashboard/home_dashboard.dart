@@ -52,7 +52,7 @@ class HomeDashboardScreen extends StatelessWidget {
                         height: 1.2,
                       ),
                       children: [
-                        const TextSpan(text: 'Welcome to\n'),
+                        TextSpan(text: 'Welcome to\n'),
                         TextSpan(
                           text: 'FFP',
                           style: TextStyle(
@@ -61,7 +61,7 @@ class HomeDashboardScreen extends StatelessWidget {
                             height: 1.15,
                           ),
                         ),
-                        const TextSpan(text: ' Vault'),
+                        TextSpan(text: ' Vault'),
                       ],
                     ),
                   ),
@@ -73,7 +73,11 @@ class HomeDashboardScreen extends StatelessWidget {
                         color: const Color(0xFFF8F8F8),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Image.asset('assets/images/icon/notification.png', width: 24, height: 24),
+                      child: Image.asset(
+                        'assets/images/icon/notification.png',
+                        width: 24,
+                        height: 24,
+                      ),
                     ),
                   ),
                 ],
@@ -100,35 +104,35 @@ class HomeDashboardScreen extends StatelessWidget {
                 childAspectRatio: 1.3,
                 children: [
                   CategoryCard(
-                    iconPath: 'assets/images/icon/loan.png', 
-                    title: 'Loans', 
-                    subtitle: '2 active', 
-                    iconColor: brandRed, 
+                    iconPath: 'assets/images/icon/loan.png',
+                    title: 'Loans',
+                    subtitle: '2 active',
+                    iconColor: brandRed,
                     onTap: () {
                       context.go('/my-loans');
                     },
                   ),
                   CategoryCard(
-                    iconPath: 'assets/images/icon/housing.png', 
-                    title: 'Housing / Living Costs', 
-                    subtitle: 'up to date', 
-                    iconColor: Colors.purple, 
+                    iconPath: 'assets/images/icon/housing.png',
+                    title: 'Housing / Living Costs',
+                    subtitle: 'up to date',
+                    iconColor: Colors.purple,
                     onTap: () {
                       context.go('/housing-costs');
                     },
                   ),
                   CategoryCard(
-                    iconPath: 'assets/images/icon/insurance.png', 
-                    title: 'Insurance', 
-                    subtitle: '3 policies', 
-                    iconColor: Colors.blue, 
+                    iconPath: 'assets/images/icon/insurance.png',
+                    title: 'Insurance',
+                    subtitle: '3 policies',
+                    iconColor: Colors.blue,
                     onTap: () => context.push('/my-insurances'),
                   ),
                   CategoryCard(
-                    iconPath: 'assets/images/icon/doccument.png', 
-                    title: 'Documents', 
-                    subtitle: '12 stored', 
-                    iconColor: Colors.orange, 
+                    iconPath: 'assets/images/icon/doccument.png',
+                    title: 'Documents',
+                    subtitle: '12 stored',
+                    iconColor: Colors.orange,
                     onTap: () => context.push('/add-documents'),
                   ),
                 ],
@@ -142,29 +146,37 @@ class HomeDashboardScreen extends StatelessWidget {
                 children: [
                   const Text(
                     'Upcoming Reminders',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   GestureDetector(
                     onTap: () => context.push('/upcoming-reminders'),
                     child: const Text(
                       'See All',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1E1E1E),
+                      ),
                     ),
                   ),
                 ],
               ),
-             const SizedBox(height: 20),
+              const SizedBox(height: 20),
               ReminderCard(
-                month: 'Jan', 
-                day: '01' , 
-                title: 'Apartment Rent Due', 
+                month: 'Jan',
+                day: '01',
+                title: 'Apartment Rent Due',
                 dueInfo: 'Due in 3 days',
                 onTap: () => context.push('/upcoming-reminders'),
               ),
               ReminderCard(
-                month: 'Feb', 
-                day: '20', 
-                title: 'Car Insurance Renewal', 
+                month: 'Feb',
+                day: '20',
+                title: 'Car Insurance Renewal',
                 dueInfo: 'February 20, 2025',
                 onTap: () => context.push('/upcoming-reminders'),
               ),

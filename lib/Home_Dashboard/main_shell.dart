@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'widgets.dart';
-import 'home_dashboard.dart';
-import '../Home_Vault/vault_screen.dart';
-import '../Home_Profile/profile_screen.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -20,7 +17,8 @@ class _MainShellState extends State<MainShell> {
     final String location = GoRouterState.of(context).uri.toString();
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/vault')) return 2;
-    if (location.startsWith('/profile') || location.startsWith('/edit-profile')) return 3;
+    if (location.startsWith('/profile') || location.startsWith('/edit-profile'))
+      return 3;
     // For '/my-loans' or others not directly on the nav bar, we can highlight home or leave it
     if (location.startsWith('/my-loans')) return 0; // Visual fallback
     return 0; // Default

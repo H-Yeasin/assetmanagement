@@ -78,11 +78,7 @@ class PincodeLocked extends StatelessWidget {
                       borderRadius: BorderRadius.circular(28),
                     ),
                     child: Center(
-                      child: Icon(
-                        Icons.lock,
-                        size: 44,
-                        color: brandRed,
-                      ),
+                      child: Icon(Icons.lock, size: 44, color: brandRed),
                     ),
                   ),
                 ),
@@ -105,7 +101,7 @@ class PincodeLocked extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'Go to Dashboard',
+                    'Continue to Dashboard',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),

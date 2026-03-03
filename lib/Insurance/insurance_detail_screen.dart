@@ -6,7 +6,6 @@ import '../Home_Dashboard/widgets.dart';
 import 'services/insurance_api_service.dart';
 import 'models/insurance_model.dart';
 import 'insurance_widgets.dart';
-import '../Loan_Screen/loan_widgets.dart';
 
 class InsuranceDetailScreen extends StatefulWidget {
   final InsurancePolicy policy;
@@ -21,7 +20,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
   final InsuranceApiService _apiService = InsuranceApiService();
   late InsurancePolicy _policy;
   bool _reminderEnabled = true;
-  String _reminderTiming = 'Same day';
+  final String _reminderTiming = 'Same day';
   final List<String> _reminderTimings = [
     'Same day',
     '1 day before',
@@ -103,8 +102,9 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String categoryDisp = _policy.category[0].toUpperCase() + _policy.category.substring(1);
-    
+    final String categoryDisp =
+        _policy.category[0].toUpperCase() + _policy.category.substring(1);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
       appBar: AppBar(
@@ -112,20 +112,41 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
         elevation: 0,
         leading: GestureDetector(
           onTap: () => context.pop(),
-          child: const Icon(Icons.arrow_back, color: Color(0xFF111111), size: 24),
+          child: const Icon(
+            Icons.arrow_back,
+            color: Color(0xFF111111),
+            size: 24,
+          ),
         ),
-        title: Text('$categoryDisp Insurance', style: const TextStyle(color: Color(0xFF111111), fontWeight: FontWeight.w700, fontSize: 18)),
+        title: Text(
+          '$categoryDisp Insurance',
+          style: const TextStyle(
+            color: Color(0xFF111111),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
         centerTitle: true,
         actions: [
           GestureDetector(
             onTap: () async {
-              final result = await context.push('/edit-insurance', extra: _policy);
+              final result = await context.push(
+                '/edit-insurance',
+                extra: _policy,
+              );
               if (result == true) _refreshPolicy();
             },
             child: const Padding(
               padding: EdgeInsets.only(right: 16),
               child: Center(
-                child: Text('Edit', style: TextStyle(color: brandRed, fontWeight: FontWeight.w700, fontSize: 16)),
+                child: Text(
+                  'Edit',
+                  style: TextStyle(
+                    color: brandRed,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
           ),
@@ -137,7 +158,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            
+
             // Annual Payment Card
             Container(
               width: double.infinity,
@@ -146,21 +167,38 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFF0F0F0)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   const Text('Annual Payment', style: TextStyle(fontSize: 15, color: Color(0xFF888888), fontWeight: FontWeight.w500)),
-                   const SizedBox(height: 8),
-                   Text(
-                     '\$${NumberFormat('#,##0.00').format(
-                       _policy.paymentFrequency?.toLowerCase() == 'monthly' ? _policy.premium * 12 :
-                       _policy.paymentFrequency?.toLowerCase() == 'quarterly' ? _policy.premium * 4 :
-                       _policy.premium
-                     )}', 
-                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF111111)),
-                   ),
+                  const Text(
+                    'Annual Payment',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF888888),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '\$${NumberFormat('#,##0.00').format(_policy.paymentFrequency?.toLowerCase() == 'monthly'
+                        ? _policy.premium * 12
+                        : _policy.paymentFrequency?.toLowerCase() == 'quarterly'
+                        ? _policy.premium * 4
+                        : _policy.premium)}',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111111),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -170,17 +208,17 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
               children: [
                 Expanded(
                   child: _ActionBox(
-                   label: 'Pay',
-                   iconPath: 'assets/images/insurance/pay.png',
-                   onTap: _showPaymentModal,
+                    label: 'Pay',
+                    iconPath: 'assets/images/insurance/pay.png',
+                    onTap: _showPaymentModal,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _ActionBox(
-                   label: 'Remind',
-                   iconPath: 'assets/images/insurance/remind.png',
-                   onTap: _showReminderModal,
+                    label: 'Remind',
+                    iconPath: 'assets/images/insurance/remind.png',
+                    onTap: _showReminderModal,
                   ),
                 ),
               ],
@@ -189,7 +227,8 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
             const SizedBox(height: 24),
             // Additional Details Button
             GestureDetector(
-              onTap: () => context.push('/insurance-additional-details', extra: _policy),
+              onTap: () =>
+                  context.push('/insurance-additional-details', extra: _policy),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -201,9 +240,25 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assets/images/insurance/additionaldetailicon.png', width: 18, height: 18, errorBuilder: (c,e,s) => const Icon(Icons.grid_view_rounded, color: brandRed, size: 18)),
+                    Image.asset(
+                      'assets/images/insurance/additionaldetailicon.png',
+                      width: 18,
+                      height: 18,
+                      errorBuilder: (c, e, s) => const Icon(
+                        Icons.grid_view_rounded,
+                        color: brandRed,
+                        size: 18,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    const Text('Additional Details', style: TextStyle(color: brandRed, fontWeight: FontWeight.w700, fontSize: 16)),
+                    const Text(
+                      'Additional Details',
+                      style: TextStyle(
+                        color: brandRed,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -213,11 +268,24 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                const Text(
+                  'Documents',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
+                ),
                 GestureDetector(
-                  onTap: () => context.push('/insurance-add-documents', extra: {'policy': _policy}),
+                  onTap: () => context.push(
+                    '/insurance-add-documents',
+                    extra: {'policy': _policy},
+                  ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: brandRed),
@@ -226,7 +294,14 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                       children: [
                         Icon(Icons.add, color: brandRed, size: 16),
                         SizedBox(width: 4),
-                        Text('Add Documents', style: TextStyle(color: brandRed, fontWeight: FontWeight.w600, fontSize: 12)),
+                        Text(
+                          'Add Documents',
+                          style: TextStyle(
+                            color: brandRed,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -244,28 +319,49 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
               child: Row(
                 children: [
                   Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(color: const Color(0xFFF0F7FF), borderRadius: BorderRadius.circular(8)),
-                    child: Center(child: Image.asset('assets/images/insurance/doccument.png', width: 24, height: 24)),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F7FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/insurance/doccument.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${_policy.documents.length} Documents', 
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF111111)),
+                        Text(
+                          '${_policy.documents.length} Documents',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: Color(0xFF111111),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        Text(_policy.documents.isNotEmpty 
-                          ? (_policy.documents.first is String 
-                              ? _policy.documents.first 
-                              : (_policy.documents.first as Map)['displayName'] ?? 'document') 
-                          : 'No documents', 
-                             style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
-                             maxLines: 1,
-                             overflow: TextOverflow.ellipsis,
+                        Text(
+                          _policy.documents.isNotEmpty
+                              ? (_policy.documents.first is String
+                                    ? _policy.documents.first
+                                    : (_policy.documents.first
+                                              as Map)['displayName'] ??
+                                          'document')
+                              : 'No documents',
+                          style: const TextStyle(
+                            color: Color(0xFF888888),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -275,7 +371,14 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
             ),
 
             const SizedBox(height: 32),
-            const Text('Reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+            const Text(
+              'Reminders',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111111),
+              ),
+            ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
@@ -287,30 +390,67 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
               child: Row(
                 children: [
                   Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(color: const Color(0xFFFFF7EA), borderRadius: BorderRadius.circular(8)),
-                    child: Center(child: Image.asset('assets/images/insurance/reminder.png', width: 24, height: 24)),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7EA),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/insurance/reminder.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Payment Reminders', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF111111))),
-                        Text('4 days before date', style: TextStyle(color: Color(0xFF888888), fontSize: 12)),
+                        Text(
+                          'Payment Reminders',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
+                        Text(
+                          '4 days before date',
+                          style: TextStyle(
+                            color: Color(0xFF888888),
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: const Color(0xFFF0F0F0)),
                     ),
                     child: const Row(
                       children: [
-                        Text('Same day', style: TextStyle(color: Color(0xFF888888), fontSize: 12, fontWeight: FontWeight.w500)),
-                        Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF888888)),
+                        Text(
+                          'Same day',
+                          style: TextStyle(
+                            color: Color(0xFF888888),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Icon(
+                          Icons.keyboard_arrow_down,
+                          size: 16,
+                          color: Color(0xFF888888),
+                        ),
                       ],
                     ),
                   ),
@@ -318,14 +458,21 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                   Switch(
                     value: _reminderEnabled,
                     onChanged: (v) => setState(() => _reminderEnabled = v),
-                    activeColor: brandRed,
+                    activeThumbColor: brandRed,
                   ),
                 ],
               ),
             ),
 
             const SizedBox(height: 32),
-            const Text('Notes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+            const Text(
+              'Notes',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111111),
+              ),
+            ),
             const SizedBox(height: 16),
             Container(
               width: double.infinity,
@@ -337,7 +484,11 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
               ),
               child: Text(
                 _policy.coverageNotes ?? 'No notes available.',
-                style: const TextStyle(color: Color(0xFF888888), fontSize: 13, height: 1.5),
+                style: const TextStyle(
+                  color: Color(0xFF888888),
+                  fontSize: 13,
+                  height: 1.5,
+                ),
               ),
             ),
             const SizedBox(height: 48),
@@ -353,7 +504,11 @@ class _ActionBox extends StatelessWidget {
   final String iconPath;
   final VoidCallback onTap;
 
-  const _ActionBox({required this.label, required this.iconPath, required this.onTap});
+  const _ActionBox({
+    required this.label,
+    required this.iconPath,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -365,14 +520,33 @@ class _ActionBox extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFF0F0F0)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(iconPath, width: 48, height: 48, errorBuilder: (c,e,s) => const Icon(Icons.payment, color: brandRed, size: 40)),
+            Image.asset(
+              iconPath,
+              width: 48,
+              height: 48,
+              errorBuilder: (c, e, s) =>
+                  const Icon(Icons.payment, color: brandRed, size: 40),
+            ),
             const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF111111))),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: Color(0xFF111111),
+              ),
+            ),
           ],
         ),
       ),

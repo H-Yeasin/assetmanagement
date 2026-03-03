@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../services/auth_service.dart';
 import 'shared_widgets.dart';
 import 'login.dart';
-
-
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -14,9 +13,97 @@ class SignIn extends StatefulWidget {
 
 class _SignInState extends State<SignIn> {
   final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
   bool _agreeToTerms = false;
   bool _obscureCreate = true;
   bool _obscureConfirm = true;
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    if (!_agreeToTerms) {
+      _showSnack('Please agree to the terms to continue');
+      return;
+    }
+    final name = _nameCtrl.text.trim();
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text.trim();
+    final confirm = _confirmCtrl.text.trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
+      _showSnack('Please fill in all fields');
+      return;
+    }
+    if (password != confirm) {
+      _showSnack('Passwords do not match');
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      final result = await AuthService.register(
+        fullName: name,
+        email: email,
+        password: password,
+        confirmPassword: confirm,
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        final data = result['data'] as Map<String, dynamic>? ?? {};
+        final accessToken = data['accessToken'] as String? ?? '';
+        final refreshToken = data['refreshToken'] as String? ?? '';
+        final userId = data['_id'] as String? ?? '';
+
+        if (accessToken.isNotEmpty) {
+          if (mounted) {
+            _showSnack('Account created successfully. Please login.');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const Login()),
+            );
+          }
+        } else {
+          // OTP verification required
+          if (mounted) {
+            context.push(
+              '/verify-otp',
+              extra: {'email': email, 'flow': 'register'},
+            );
+          }
+        }
+      } else {
+        _showSnack(result['message'] ?? 'Registration failed');
+      }
+    } catch (e) {
+      _showSnack('Network error. Is the backend running?');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFF333333),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,14 +148,12 @@ class _SignInState extends State<SignIn> {
                 RichText(
                   textAlign: TextAlign.center,
                   text: const TextSpan(
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: Color(0xFF888888),
-                    ),
+                    style: TextStyle(fontSize: 13.5, color: Color(0xFF888888)),
                     children: [
                       TextSpan(
-                          text:
-                              'Protect your documents, set reminders, and stay in control '),
+                        text:
+                            'Protect your documents, set reminders, and stay in control ',
+                      ),
                       TextSpan(
                         text: 'Securely.',
                         style: TextStyle(
@@ -83,18 +168,21 @@ class _SignInState extends State<SignIn> {
                 const SizedBox(height: 32),
 
                 // Form Fields
-                const AppInputField(
+                AppInputFieldControlled(
+                  controller: _nameCtrl,
                   hint: 'Full Name',
                   icon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(height: 14),
-                const AppInputField(
+                AppInputFieldControlled(
+                  controller: _emailCtrl,
                   hint: 'Email address',
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 14),
-                AppInputField(
+                AppInputFieldControlled(
+                  controller: _passwordCtrl,
                   hint: 'Create password',
                   icon: Icons.lock_outline_rounded,
                   obscure: _obscureCreate,
@@ -102,7 +190,8 @@ class _SignInState extends State<SignIn> {
                       setState(() => _obscureCreate = !_obscureCreate),
                 ),
                 const SizedBox(height: 14),
-                AppInputField(
+                AppInputFieldControlled(
+                  controller: _confirmCtrl,
                   hint: 'Confirm password',
                   icon: Icons.lock_outline_rounded,
                   obscure: _obscureConfirm,
@@ -146,13 +235,18 @@ class _SignInState extends State<SignIn> {
 
                 const SizedBox(height: 28),
 
-                // Sign in button
-                AppPrimaryButton(
-                  label: 'Sign In',
-                  onTap: () {
-                    context.go('/home');
-                  },
-                ),
+                // Sign Up button
+                _loading
+                    ? const SizedBox(
+                        height: 54,
+                        child: Center(
+                          child: CircularProgressIndicator(color: brandRed),
+                        ),
+                      )
+                    : AppPrimaryButton(
+                        label: 'Sign In',
+                        onTap: _handleRegister,
+                      ),
 
                 const SizedBox(height: 20),
 
@@ -162,10 +256,7 @@ class _SignInState extends State<SignIn> {
                   children: [
                     const Text(
                       'Already have an account? ',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF1E1E1E),
-                      ),
+                      style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E)),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.push(

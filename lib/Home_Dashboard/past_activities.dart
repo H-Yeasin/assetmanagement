@@ -18,8 +18,8 @@ class PastActivitiesScreen extends StatelessWidget {
         title: const Text(
           'View Past Activities',
           style: TextStyle(
-            fontSize: 18, 
-            fontWeight: FontWeight.w700, 
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
             color: Color(0xFF111111),
           ),
         ),
@@ -32,25 +32,25 @@ class PastActivitiesScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               children: const [
                 PaymentCard(
-                  month: 'Sept', 
-                  day: '22', 
-                  title: 'Student Loan', 
-                  amount: '\$1,300.00', 
-                  status: 'Paid', 
+                  month: 'Sept',
+                  day: '22',
+                  title: 'Student Loan',
+                  amount: '\$1,300.00',
+                  status: 'Paid',
                   isPaid: true,
                 ),
                 PaymentCard(
-                  month: 'Sept', 
-                  day: '17', 
-                  title: 'Car Loan', 
-                  amount: '\$2,230.00', 
-                  status: 'Manual payment required', 
+                  month: 'Sept',
+                  day: '17',
+                  title: 'Car Loan',
+                  amount: '\$2,230.00',
+                  status: 'Manual payment required',
                   isPaid: false,
                 ),
               ],
             ),
           ),
-          
+
           // Data Deletion Notice
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
@@ -58,7 +58,7 @@ class PastActivitiesScreen extends StatelessWidget {
               'All data will be deleted within 14 days.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 12, 
+                fontSize: 12,
                 color: Color(0xFFBBBBBB),
                 fontWeight: FontWeight.w400,
               ),

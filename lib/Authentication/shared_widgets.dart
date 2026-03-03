@@ -63,8 +63,69 @@ class AppInputField extends StatelessWidget {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Controlled Input Field (with TextEditingController) ───────────────────────
+class AppInputFieldControlled extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final IconData icon;
+  final bool obscure;
+  final VoidCallback? onToggleObscure;
+  final TextInputType keyboardType;
+
+  const AppInputFieldControlled({
+    super.key,
+    required this.controller,
+    required this.hint,
+    required this.icon,
+    this.obscure = false,
+    this.onToggleObscure,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEAEAEA)),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        style: const TextStyle(fontSize: 15, color: Color(0xFF111111)),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(fontSize: 14, color: Color(0xFFBBBBBB)),
+          prefixIcon: Icon(icon, size: 20, color: const Color(0xFFAAAAAA)),
+          suffixIcon: onToggleObscure != null
+              ? IconButton(
+                  icon: Icon(
+                    obscure
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                    color: const Color(0xFFAAAAAA),
+                  ),
+                  onPressed: onToggleObscure,
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -116,7 +177,11 @@ class AppSecondaryButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const AppSecondaryButton({super.key, required this.label, required this.onTap});
+  const AppSecondaryButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

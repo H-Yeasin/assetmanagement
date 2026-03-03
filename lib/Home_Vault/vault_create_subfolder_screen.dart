@@ -7,10 +7,12 @@ class VaultCreateSubfolderScreen extends StatefulWidget {
   const VaultCreateSubfolderScreen({super.key, required this.categoryName});
 
   @override
-  State<VaultCreateSubfolderScreen> createState() => _VaultCreateSubfolderScreenState();
+  State<VaultCreateSubfolderScreen> createState() =>
+      _VaultCreateSubfolderScreenState();
 }
 
-class _VaultCreateSubfolderScreenState extends State<VaultCreateSubfolderScreen> {
+class _VaultCreateSubfolderScreenState
+    extends State<VaultCreateSubfolderScreen> {
   final TextEditingController _nameController = TextEditingController();
 
   @override
@@ -33,7 +35,11 @@ class _VaultCreateSubfolderScreenState extends State<VaultCreateSubfolderScreen>
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, size: 20, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 20,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Center(
@@ -81,14 +87,21 @@ class _VaultCreateSubfolderScreenState extends State<VaultCreateSubfolderScreen>
                       decoration: InputDecoration(
                         hintText: 'Notary',
                         hintStyle: const TextStyle(color: Color(0xFFBBBBBB)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFDDDDDD),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFDDDDDD),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),

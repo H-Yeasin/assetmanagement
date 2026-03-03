@@ -3,42 +3,65 @@ import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import 'shared_widgets.dart';
 
-/// Step 1 of Forgot Password: enter email → send OTP.
-/// Navigates to the OTP verification screen on success.
-class ForgotPassword extends StatefulWidget {
-  const ForgotPassword({super.key});
+/// Step 3 of Forgot Password: enter new password after OTP verification.
+/// Receives [email] and [otp] via route extra.
+class ResetPassword extends StatefulWidget {
+  final String email;
+  final String otp;
+
+  const ResetPassword({super.key, required this.email, required this.otp});
 
   @override
-  State<ForgotPassword> createState() => _ForgotPasswordState();
+  State<ResetPassword> createState() => _ResetPasswordState();
 }
 
-class _ForgotPasswordState extends State<ForgotPassword> {
-  final _emailCtrl = TextEditingController();
+class _ResetPasswordState extends State<ResetPassword> {
+  final _newPasswordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
   bool _loading = false;
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
+    _newPasswordCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSendOtp() async {
-    final email = _emailCtrl.text.trim();
-    if (email.isEmpty) {
-      _showSnack('Please enter your email address');
+  Future<void> _handleReset() async {
+    final newPassword = _newPasswordCtrl.text.trim();
+    final confirm = _confirmCtrl.text.trim();
+
+    if (newPassword.isEmpty || confirm.isEmpty) {
+      _showSnack('Please fill in both password fields');
+      return;
+    }
+    if (newPassword != confirm) {
+      _showSnack('Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      _showSnack('Password must be at least 6 characters');
       return;
     }
 
     setState(() => _loading = true);
     try {
-      final result = await AuthService.forgotPassword(email: email);
+      final result = await AuthService.resetPassword(
+        email: widget.email,
+        otp: widget.otp,
+        newPassword: newPassword,
+      );
+
       if (!mounted) return;
 
       if (result['success'] == true) {
-        // Navigate to OTP screen, passing email and flow = 'forgot'
-        context.push('/verify-otp', extra: {'email': email, 'flow': 'forgot'});
+        _showSnack('Password reset successfully! Please log in.');
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) context.go('/');
       } else {
-        _showSnack(result['message'] ?? 'Failed to send OTP');
+        _showSnack(result['message'] ?? 'Reset failed. Try again.');
       }
     } catch (e) {
       _showSnack('Network error. Is the backend running?');
@@ -84,7 +107,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
 
               // Title
               const Text(
-                'Reset Your Password',
+                'Set New Password',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
@@ -96,7 +119,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
               const SizedBox(height: 10),
 
               const Text(
-                'Enter the email address associated with your account.',
+                'Create a strong new password for your account.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -107,17 +130,31 @@ class _ForgotPasswordState extends State<ForgotPassword> {
 
               const SizedBox(height: 36),
 
-              // Email input
+              // New password
               AppInputFieldControlled(
-                controller: _emailCtrl,
-                hint: 'Email address',
-                icon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
+                controller: _newPasswordCtrl,
+                hint: 'New password',
+                icon: Icons.lock_outline_rounded,
+                obscure: _obscureNew,
+                onToggleObscure: () =>
+                    setState(() => _obscureNew = !_obscureNew),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Confirm password
+              AppInputFieldControlled(
+                controller: _confirmCtrl,
+                hint: 'Confirm password',
+                icon: Icons.lock_outline_rounded,
+                obscure: _obscureConfirm,
+                onToggleObscure: () =>
+                    setState(() => _obscureConfirm = !_obscureConfirm),
               ),
 
               const SizedBox(height: 36),
 
-              // Send OTP button
+              // Reset button
               _loading
                   ? const SizedBox(
                       height: 54,
@@ -125,7 +162,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                         child: CircularProgressIndicator(color: brandRed),
                       ),
                     )
-                  : AppPrimaryButton(label: 'Send OTP', onTap: _handleSendOtp),
+                  : AppPrimaryButton(
+                      label: 'Reset Password',
+                      onTap: _handleReset,
+                    ),
 
               const SizedBox(height: 32),
             ],

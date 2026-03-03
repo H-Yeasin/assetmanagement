@@ -21,7 +21,11 @@ class VaultCategoryScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, size: 20, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 20,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   Expanded(
                     child: Center(
@@ -47,7 +51,11 @@ class VaultCategoryScreen extends StatelessWidget {
                         color: brandRed,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.add, color: Colors.white, size: 22),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ],
@@ -64,9 +72,15 @@ class VaultCategoryScreen extends StatelessWidget {
 
                     // ── Create Subfolder Button ──
                     GestureDetector(
-                      onTap: () => context.push('/vault-create-subfolder', extra: categoryName),
+                      onTap: () => context.push(
+                        '/vault-create-subfolder',
+                        extra: categoryName,
+                      ),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: brandRed.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(12),
@@ -74,7 +88,11 @@ class VaultCategoryScreen extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Image.asset('assets/images/createsubfolder.png', width: 24, height: 24),
+                            Image.asset(
+                              'assets/images/createsubfolder.png',
+                              width: 24,
+                              height: 24,
+                            ),
                             const SizedBox(width: 10),
                             const Text(
                               'Create Subfolder',
@@ -106,19 +124,22 @@ class VaultCategoryScreen extends StatelessWidget {
                     _SubfolderRow(
                       name: 'Notary',
                       itemCount: '4 items',
-                      onTap: () => context.push('/vault-subfolder', extra: 'Notary'),
+                      onTap: () =>
+                          context.push('/vault-subfolder', extra: 'Notary'),
                       onMenuTap: () => _showFolderMenu(context, 'Notary'),
                     ),
                     _SubfolderRow(
                       name: 'Bank',
                       itemCount: '10 items',
-                      onTap: () => context.push('/vault-subfolder', extra: 'Bank'),
+                      onTap: () =>
+                          context.push('/vault-subfolder', extra: 'Bank'),
                       onMenuTap: () => _showFolderMenu(context, 'Bank'),
                     ),
                     _SubfolderRow(
                       name: 'Taxes',
                       itemCount: '8 items',
-                      onTap: () => context.push('/vault-subfolder', extra: 'Taxes'),
+                      onTap: () =>
+                          context.push('/vault-subfolder', extra: 'Taxes'),
                       onMenuTap: () => _showFolderMenu(context, 'Taxes'),
                     ),
 
@@ -140,7 +161,8 @@ class VaultCategoryScreen extends StatelessWidget {
                       fileName: 'Property_Deed.pdf',
                       fileInfo: '2.4 MB',
                       fileType: 'pdf',
-                      onMenuTap: () => _showFileMenu(context, 'Property_Deed.pdf'),
+                      onMenuTap: () =>
+                          _showFileMenu(context, 'Property_Deed.pdf'),
                     ),
                     _RecentFileRow(
                       fileName: 'ID_Front.jpg',
@@ -268,9 +290,7 @@ class _SubfolderRow extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 6),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Row(
             children: [
               // Folder icon
@@ -309,7 +329,11 @@ class _SubfolderRow extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: onMenuTap,
-                child: const Icon(Icons.more_vert, color: Color(0xFF888888), size: 22),
+                child: const Icon(
+                  Icons.more_vert,
+                  color: Color(0xFF888888),
+                  size: 22,
+                ),
               ),
             ],
           ),
@@ -339,9 +363,7 @@ class _RecentFileRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
         child: Row(
           children: [
             // File type icon
@@ -355,8 +377,16 @@ class _RecentFileRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: fileType == 'pdf'
-                  ? Image.asset('assets/images/pdficon.png', width: 22, height: 22)
-                  : const Icon(Icons.image_rounded, color: Color(0xFF2196F3), size: 22),
+                  ? Image.asset(
+                      'assets/images/pdficon.png',
+                      width: 22,
+                      height: 22,
+                    )
+                  : const Icon(
+                      Icons.image_rounded,
+                      color: Color(0xFF2196F3),
+                      size: 22,
+                    ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -386,7 +416,11 @@ class _RecentFileRow extends StatelessWidget {
             ),
             GestureDetector(
               onTap: onMenuTap,
-              child: const Icon(Icons.more_vert, color: Color(0xFF888888), size: 22),
+              child: const Icon(
+                Icons.more_vert,
+                color: Color(0xFF888888),
+                size: 22,
+              ),
             ),
           ],
         ),
@@ -421,7 +455,12 @@ class _MenuOption extends StatelessWidget {
           children: [
             icon is IconData
                 ? Icon(icon as IconData, color: c, size: 22)
-                : Image.asset(icon as String, width: 22, height: 22, color: color == brandRed ? brandRed : null),
+                : Image.asset(
+                    icon as String,
+                    width: 22,
+                    height: 22,
+                    color: color == brandRed ? brandRed : null,
+                  ),
             const SizedBox(width: 14),
             Text(
               label,

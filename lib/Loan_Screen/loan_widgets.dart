@@ -118,14 +118,22 @@ class LoanListItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF111111)),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF111111),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Text(
                         amount,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111111)),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF111111),
+                        ),
                       ),
                     ],
                   ),
@@ -135,7 +143,10 @@ class LoanListItem extends StatelessWidget {
                     children: [
                       Text(
                         subtitle,
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF888888)),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF888888),
+                        ),
                       ),
                       LoanStatusBadge(status: status, isPaid: isPaid),
                     ],
@@ -154,7 +165,11 @@ class SetupPaymentModal extends StatefulWidget {
   final Loan loan;
   final VoidCallback? onPaymentConfirmed;
 
-  const SetupPaymentModal({super.key, required this.loan, this.onPaymentConfirmed});
+  const SetupPaymentModal({
+    super.key,
+    required this.loan,
+    this.onPaymentConfirmed,
+  });
 
   @override
   State<SetupPaymentModal> createState() => _SetupPaymentModalState();
@@ -168,15 +183,27 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
   final TextEditingController _amountController = TextEditingController();
 
   final List<String> _months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   @override
   void initState() {
     super.initState();
     _isAutoPayment = widget.loan.autoPay;
-    _amountController.text = NumberFormat('#,##0.00').format(widget.loan.monthlyPayment);
+    _amountController.text = NumberFormat(
+      '#,##0.00',
+    ).format(widget.loan.monthlyPayment);
     // Set current month as default
     _selectedMonth = DateFormat('MMMM').format(DateTime.now());
   }
@@ -191,8 +218,9 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
     setState(() => _isProcessing = true);
     try {
       final completedP = widget.loan.completedPayments + 1;
-      final remaining = widget.loan.remainingBalance - widget.loan.monthlyPayment;
-      
+      final remaining =
+          widget.loan.remainingBalance - widget.loan.monthlyPayment;
+
       await _apiService.updateLoan(widget.loan.id!, {
         'completedPayments': completedP,
         'remainingBalance': remaining > 0 ? remaining : 0,
@@ -207,9 +235,9 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -234,16 +262,23 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
             children: [
               const Text(
                 'Payment Details',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
               ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+                child: const Icon(
+                  Icons.close,
+                  size: 24,
+                  color: Color(0xFF111111),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10), // Gap: 10px
-
           // ── Payment Amount Card ──
           Container(
             width: double.infinity,
@@ -263,20 +298,36 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
               children: [
                 const Text(
                   'Payment Amount',
-                  style: TextStyle(fontSize: 18, color: Color(0xFFC61C36), fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Color(0xFFC61C36),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  NumberFormat.simpleCurrency().format(widget.loan.monthlyPayment),
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                  NumberFormat.simpleCurrency().format(
+                    widget.loan.monthlyPayment,
+                  ),
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 10), // Gap: 10px
-
           // ── Amount Input ──
-          const Text('Amount', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          const Text(
+            'Amount',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -296,9 +347,15 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
             ),
           ),
           const SizedBox(height: 10), // Gap: 10px
-
           // ── Month Dropdown ──
-          const Text('Month', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111111))),
+          const Text(
+            'Month',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -310,7 +367,10 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
               child: DropdownButton<String>(
                 value: _selectedMonth,
                 isExpanded: true,
-                icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
+                icon: const Icon(
+                  Icons.arrow_drop_down,
+                  color: Color(0xFF111111),
+                ),
                 style: const TextStyle(fontSize: 15, color: Color(0xFF888888)),
                 items: _months.map((String month) {
                   return DropdownMenuItem<String>(
@@ -323,7 +383,6 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
             ),
           ),
           const SizedBox(height: 10), // Gap: 10px
-
           // ── Auto-payment ──
           Row(
             children: [
@@ -333,36 +392,61 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
                   color: const Color(0xFFFDE7E9),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.repeat, color: Color(0xFFC61C36), size: 20),
+                child: const Icon(
+                  Icons.repeat,
+                  color: Color(0xFFC61C36),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Auto-payment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
-                    Text('Pay automatic every month', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    const Text(
+                      'Auto-payment',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
+                    ),
+                    Text(
+                      'Pay automatic every month',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Switch(
                 value: _isAutoPayment,
                 onChanged: (v) => setState(() => _isAutoPayment = v),
-                activeColor: Colors.white,
+                activeThumbColor: Colors.white,
                 activeTrackColor: const Color(0xFFC61C36),
-                trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
+                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
               ),
             ],
           ),
-          const SizedBox(height: 16), // A bit more space before buttons is usually better, but let's stick closer to Figma or reasonable spacing
-
+          const SizedBox(
+            height: 16,
+          ), // A bit more space before buttons is usually better, but let's stick closer to Figma or reasonable spacing
           // ── Action Buttons ──
           Row(
             children: [
               Expanded(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF111111),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -373,12 +457,27 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
                     backgroundColor: const Color(0xFFFDE7E9),
                     foregroundColor: const Color(0xFFC61C36),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: _isProcessing 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC61C36)))
-                      : const Text('Continue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: _isProcessing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFC61C36),
+                          ),
+                        )
+                      : const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -387,12 +486,19 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
       ),
     );
   }
+
   Widget _buildRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
@@ -452,37 +558,60 @@ class _ReminderModalState extends State<ReminderModal> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFFC61C36), // Selected Hour/Minute text and Circle
+              primary: Color(
+                0xFFC61C36,
+              ), // Selected Hour/Minute text and Circle
               onPrimary: Colors.white,
               onSurface: Color(0xFF212121), // Unselected Hour/Minute text
             ),
             timePickerTheme: TimePickerThemeData(
               backgroundColor: Colors.white,
-              helpTextStyle: const TextStyle(fontSize: 14, color: Color(0xFF111111), fontWeight: FontWeight.w500),
-              hourMinuteColor: const Color(0xFFEBEBEB), // Box background (#EBEBEB)
+              helpTextStyle: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF111111),
+                fontWeight: FontWeight.w500,
+              ),
+              hourMinuteColor: const Color(
+                0xFFEBEBEB,
+              ), // Box background (#EBEBEB)
               hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) return const Color(0xFFC61C36);
+                if (states.contains(WidgetState.selected))
+                  return const Color(0xFFC61C36);
                 return const Color(0xFF212121);
               }),
               dayPeriodColor: WidgetStateColor.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) return const Color(0xFFFDE7E9); // AM pink
+                if (states.contains(WidgetState.selected))
+                  return const Color(0xFFFDE7E9); // AM pink
                 return const Color(0xFFEDE9F2); // PM light purple
               }),
               dayPeriodTextColor: const Color(0xFF111111),
-              dayPeriodBorderSide: const BorderSide(color: Color(0xFFAAAAAA), width: 1),
-              dayPeriodShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              hourMinuteShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              dayPeriodBorderSide: const BorderSide(
+                color: Color(0xFFAAAAAA),
+                width: 1,
+              ),
+              dayPeriodShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              hourMinuteShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               // ── Clock Dial Styling ──
-              dialBackgroundColor: const Color(0xFFECECEC), // Dial background (#ECECEC)
+              dialBackgroundColor: const Color(
+                0xFFECECEC,
+              ), // Dial background (#ECECEC)
               dialTextColor: WidgetStateColor.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) return Colors.white;
                 return const Color(0xFF212121);
               }),
-              dialHandColor: const Color(0xFFC61C36), // Needle/Selector hand (#C61C36)
+              dialHandColor: const Color(
+                0xFFC61C36,
+              ), // Needle/Selector hand (#C61C36)
               entryModeIconColor: const Color(0xFFC61C36),
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFFC61C36)),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFC61C36),
+              ),
             ),
           ),
           child: child!,
@@ -516,11 +645,19 @@ class _ReminderModalState extends State<ReminderModal> {
             children: [
               const Text(
                 'Pick Date & Time',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
               ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+                child: const Icon(
+                  Icons.close,
+                  size: 24,
+                  color: Color(0xFF111111),
+                ),
               ),
             ],
           ),
@@ -538,7 +675,11 @@ class _ReminderModalState extends State<ReminderModal> {
                   children: [
                     Text(
                       formattedDate,
-                      style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF111111),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
                   ],
@@ -562,7 +703,11 @@ class _ReminderModalState extends State<ReminderModal> {
                   children: [
                     Text(
                       '${_selectedTime.hourOfPeriod.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${_selectedTime.period == DayPeriod.am ? 'AM' : 'PM'}',
-                      style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF111111),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
                   ],
@@ -580,7 +725,14 @@ class _ReminderModalState extends State<ReminderModal> {
               Expanded(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF111111),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -591,10 +743,15 @@ class _ReminderModalState extends State<ReminderModal> {
                     backgroundColor: const Color(0xFFFDE7E9),
                     foregroundColor: const Color(0xFFC61C36),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Save', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],
@@ -619,7 +776,20 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
   late DateTime _focusedDay;
   late DateTime _selectedDay;
 
-  final List<String> _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  final List<String> _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   final List<int> _years = List.generate(20, (index) => 2015 + index);
 
   @override
@@ -648,13 +818,16 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
                 icon: const Icon(Icons.chevron_left, color: Color(0xFF111111)),
                 onPressed: () {
                   setState(() {
-                    _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+                    _focusedDay = DateTime(
+                      _focusedDay.year,
+                      _focusedDay.month - 1,
+                    );
                   });
                 },
               ),
               Row(
                 children: [
-                   // Month Dropdown
+                  // Month Dropdown
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -664,10 +837,19 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
                         value: _focusedDay.month,
-                        items: List.generate(12, (i) => DropdownMenuItem(
-                          value: i + 1,
-                          child: Text(_months[i], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                        )),
+                        items: List.generate(
+                          12,
+                          (i) => DropdownMenuItem(
+                            value: i + 1,
+                            child: Text(
+                              _months[i],
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                         onChanged: (val) {
                           setState(() {
                             _focusedDay = DateTime(_focusedDay.year, val!);
@@ -687,10 +869,20 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
                         value: _focusedDay.year,
-                        items: _years.map((y) => DropdownMenuItem(
-                          value: y,
-                          child: Text('$y', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                        )).toList(),
+                        items: _years
+                            .map(
+                              (y) => DropdownMenuItem(
+                                value: y,
+                                child: Text(
+                                  '$y',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (val) {
                           setState(() {
                             _focusedDay = DateTime(val!, _focusedDay.month);
@@ -705,7 +897,10 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
                 icon: const Icon(Icons.chevron_right, color: Color(0xFF111111)),
                 onPressed: () {
                   setState(() {
-                    _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+                    _focusedDay = DateTime(
+                      _focusedDay.year,
+                      _focusedDay.month + 1,
+                    );
                   });
                 },
               ),
@@ -741,26 +936,25 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(8),
               ),
-              defaultDecoration: const BoxDecoration(
-                shape: BoxShape.rectangle,
+              defaultDecoration: const BoxDecoration(shape: BoxShape.rectangle),
+              weekendDecoration: const BoxDecoration(shape: BoxShape.rectangle),
+              outsideDecoration: const BoxDecoration(shape: BoxShape.rectangle),
+              holidayDecoration: const BoxDecoration(shape: BoxShape.rectangle),
+              markerDecoration: const BoxDecoration(shape: BoxShape.rectangle),
+              todayTextStyle: const TextStyle(
+                color: Color(0xFFC61C36),
+                fontWeight: FontWeight.bold,
               ),
-              weekendDecoration: const BoxDecoration(
-                shape: BoxShape.rectangle,
-              ),
-              outsideDecoration: const BoxDecoration(
-                shape: BoxShape.rectangle,
-              ),
-              holidayDecoration: const BoxDecoration(
-                shape: BoxShape.rectangle,
-              ),
-              markerDecoration: const BoxDecoration(
-                shape: BoxShape.rectangle,
-              ),
-              todayTextStyle: const TextStyle(color: Color(0xFFC61C36), fontWeight: FontWeight.bold),
               outsideDaysVisible: true,
               outsideTextStyle: const TextStyle(color: Color(0xFFBBBBBB)),
-              defaultTextStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              weekendTextStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              defaultTextStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              weekendTextStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             daysOfWeekStyle: const DaysOfWeekStyle(
               weekdayStyle: TextStyle(color: Color(0xFF888888), fontSize: 13),
@@ -790,24 +984,46 @@ class CustomTimePickerModal extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Select Time', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Select Time',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildTimeBox('07'),
-              const Text(' : ', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+              const Text(
+                ' : ',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              ),
               _buildTimeBox('00'),
               const SizedBox(width: 16),
               Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: brandRed.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                    child: const Text('AM', style: TextStyle(color: brandRed, fontWeight: FontWeight.bold, fontSize: 12)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: brandRed.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'AM',
+                      style: TextStyle(
+                        color: brandRed,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  const Text('PM', style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 12)),
+                  const Text(
+                    'PM',
+                    style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 12),
+                  ),
                 ],
               ),
             ],
@@ -816,7 +1032,10 @@ class CustomTimePickerModal extends StatelessWidget {
           Container(
             width: 180,
             height: 180,
-            decoration: BoxDecoration(color: const Color(0xFFF5F5F5), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              shape: BoxShape.circle,
+            ),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -824,7 +1043,10 @@ class CustomTimePickerModal extends StatelessWidget {
                 Container(
                   width: 4,
                   height: 60,
-                  decoration: BoxDecoration(color: brandRed, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: brandRed,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ],
             ),
@@ -833,11 +1055,17 @@ class CustomTimePickerModal extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(backgroundColor: brandRed),
-                child: const Text('Done', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -849,8 +1077,14 @@ class CustomTimePickerModal extends StatelessWidget {
   Widget _buildTimeBox(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: const Color(0xFFF8F8F8), borderRadius: BorderRadius.circular(8)),
-      child: Text(text, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+      ),
     );
   }
 
@@ -862,7 +1096,10 @@ class CustomTimePickerModal extends StatelessWidget {
         alignment: Alignment.topCenter,
         child: Transform.rotate(
           angle: -(num * 30) * (3.14159 / 180),
-          child: Text('$num', style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
+          child: Text(
+            '$num',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+          ),
         ),
       ),
     );

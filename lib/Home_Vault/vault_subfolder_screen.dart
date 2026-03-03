@@ -21,7 +21,11 @@ class VaultSubfolderScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, size: 20, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 20,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   Expanded(
                     child: Center(
@@ -36,8 +40,13 @@ class VaultSubfolderScreen extends StatelessWidget {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => context.push('/vault-edit-folder', extra: folderName),
-                    child: Image.asset('assets/images/create.png', width: 22, height: 22),
+                    onTap: () =>
+                        context.push('/vault-edit-folder', extra: folderName),
+                    child: Image.asset(
+                      'assets/images/create.png',
+                      width: 22,
+                      height: 22,
+                    ),
                   ),
                 ],
               ),
@@ -104,7 +113,8 @@ class VaultSubfolderScreen extends StatelessWidget {
                       fileName: 'Property_Deed.pdf',
                       fileInfo: '2.4 MB',
                       fileType: 'pdf',
-                      onMenuTap: () => _showFileMenu(context, 'Property_Deed.pdf'),
+                      onMenuTap: () =>
+                          _showFileMenu(context, 'Property_Deed.pdf'),
                     ),
                     _UploadedFileRow(
                       fileName: 'ID_Front.jpg',
@@ -245,8 +255,16 @@ class _UploadedFileRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: fileType == 'pdf'
-                  ? Image.asset('assets/images/pdficon.png', width: 22, height: 22)
-                  : const Icon(Icons.image_rounded, color: Color(0xFF2196F3), size: 22),
+                  ? Image.asset(
+                      'assets/images/pdficon.png',
+                      width: 22,
+                      height: 22,
+                    )
+                  : const Icon(
+                      Icons.image_rounded,
+                      color: Color(0xFF2196F3),
+                      size: 22,
+                    ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -276,7 +294,11 @@ class _UploadedFileRow extends StatelessWidget {
             ),
             GestureDetector(
               onTap: onMenuTap,
-              child: const Icon(Icons.more_vert, color: Color(0xFF888888), size: 22),
+              child: const Icon(
+                Icons.more_vert,
+                color: Color(0xFF888888),
+                size: 22,
+              ),
             ),
           ],
         ),
@@ -295,8 +317,8 @@ class _MenuOption extends StatelessWidget {
   const _MenuOption({
     required this.icon,
     required this.label,
-    this.color,
     required this.onTap,
+    this.color,
   });
 
   @override
@@ -311,7 +333,12 @@ class _MenuOption extends StatelessWidget {
           children: [
             icon is IconData
                 ? Icon(icon as IconData, color: c, size: 22)
-                : Image.asset(icon as String, width: 22, height: 22, color: color == brandRed ? brandRed : null),
+                : Image.asset(
+                    icon as String,
+                    width: 22,
+                    height: 22,
+                    color: color == brandRed ? brandRed : null,
+                  ),
             const SizedBox(width: 14),
             Text(
               label,

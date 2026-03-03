@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../Home_Dashboard/widgets.dart';
 import 'models/loan_model.dart';
 import 'package:intl/intl.dart';
 
@@ -24,13 +23,21 @@ class LoanAdditionalDetailsScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.chevron_left, size: 28, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.chevron_left,
+                      size: 28,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Text(
                       'Additional Details',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 28),
@@ -41,7 +48,10 @@ class LoanAdditionalDetailsScreen extends StatelessWidget {
             // ── Grid ──
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Column(
                   children: [
                     Row(
@@ -82,7 +92,11 @@ class LoanAdditionalDetailsScreen extends StatelessWidget {
                             iconPath: 'assets/images/icon/renewal_date.png',
                             iconBgColor: const Color(0xFFF3E5F5),
                             label: isMortgage ? 'Renewal Date' : 'End Date',
-                            value: loan.endDate != null ? DateFormat('MMM dd, yyyy').format(loan.endDate!) : 'N/A',
+                            value: loan.endDate != null
+                                ? DateFormat(
+                                    'MMM dd, yyyy',
+                                  ).format(loan.endDate!)
+                                : 'N/A',
                           ),
                         ),
                       ],
@@ -101,10 +115,11 @@ class LoanAdditionalDetailsScreen extends StatelessWidget {
                         const SizedBox(width: 16),
                         Expanded(
                           child: _buildDetailCard(
-                             iconPath: 'assets/images/icon/housing.png', // Fallback
-                             iconBgColor: const Color(0xFFE0F2F1),
-                             label: 'Apartment',
-                             value: loan.apartmentName ?? 'N/A',
+                            iconPath:
+                                'assets/images/icon/housing.png', // Fallback
+                            iconBgColor: const Color(0xFFE0F2F1),
+                            label: 'Apartment',
+                            value: loan.apartmentName ?? 'N/A',
                           ),
                         ),
                       ],
@@ -114,7 +129,8 @@ class LoanAdditionalDetailsScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _buildDetailCard(
-                            iconPath: 'assets/images/icon/additional_detail.png',
+                            iconPath:
+                                'assets/images/icon/additional_detail.png',
                             iconBgColor: const Color(0xFFEEEEEE),
                             label: 'Interest Rate',
                             value: '${loan.interestRate}%',
@@ -126,7 +142,9 @@ class LoanAdditionalDetailsScreen extends StatelessWidget {
                             iconPath: 'assets/images/icon/total_payment.png',
                             iconBgColor: const Color(0xFFF1F8E9),
                             label: 'Total Amount',
-                            value: NumberFormat.simpleCurrency().format(loan.totalAmount),
+                            value: NumberFormat.simpleCurrency().format(
+                              loan.totalAmount,
+                            ),
                           ),
                         ),
                       ],
@@ -165,18 +183,35 @@ class LoanAdditionalDetailsScreen extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: iconBgColor, shape: BoxShape.circle),
-            child: Image.asset(iconPath, width: 20, height: 20, errorBuilder: (c, e, s) => const Icon(Icons.info_outline, size: 20)),
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              shape: BoxShape.circle,
+            ),
+            child: Image.asset(
+              iconPath,
+              width: 20,
+              height: 20,
+              errorBuilder: (c, e, s) =>
+                  const Icon(Icons.info_outline, size: 20),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             label,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF888888), fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF888888),
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF111111), fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF111111),
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

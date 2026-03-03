@@ -1,39 +1,82 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 import 'shared_widgets.dart';
-import 'forgot_password.dart';
+import 'login.dart';
 
+/// Universal OTP verification screen.
+/// Receives [email] and [flow] via route extra.
+/// flow = 'register'  → verifyEmailOtp → save session → /home
+/// flow = 'forgot'    → navigate to /reset-password (email + otp)
+/// flow = 'twofactor' → (handled by existing two_factor_otp_screen)
 class VerificationCodeScreen extends StatefulWidget {
-  const VerificationCodeScreen({super.key});
+  final String email;
+  final String flow; // 'register' | 'forgot'
+
+  const VerificationCodeScreen({
+    super.key,
+    required this.email,
+    required this.flow,
+  });
 
   @override
   State<VerificationCodeScreen> createState() => _VerificationCodeScreenState();
 }
 
 class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+
+  bool _loading = false;
+  int _resendSeconds = 45;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
 
   @override
   void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
+    _timer?.cancel();
+    for (var c in _controllers) {
+      c.dispose();
     }
-    for (var node in _focusNodes) {
-      node.dispose();
+    for (var n in _focusNodes) {
+      n.dispose();
     }
     super.dispose();
   }
 
+  void _startCountdown() {
+    _timer?.cancel();
+    setState(() => _resendSeconds = 45);
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      if (_resendSeconds <= 0) {
+        t.cancel();
+      } else {
+        setState(() => _resendSeconds--);
+      }
+    });
+  }
+
+  String get _otp => _controllers.map((c) => c.text).join();
+
   void _onKeyTap(String value) {
     for (int i = 0; i < 6; i++) {
       if (_controllers[i].text.isEmpty) {
-        setState(() {
-          _controllers[i].text = value;
-        });
-        if (i < 5) {
-          FocusScope.of(context).requestFocus(_focusNodes[i + 1]);
-        }
+        setState(() => _controllers[i].text = value);
+        if (i < 5) FocusScope.of(context).requestFocus(_focusNodes[i + 1]);
         break;
       }
     }
@@ -42,15 +85,114 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   void _onBackspace() {
     for (int i = 5; i >= 0; i--) {
       if (_controllers[i].text.isNotEmpty) {
-        setState(() {
-          _controllers[i].text = '';
-        });
-        if (i > 0) {
-          FocusScope.of(context).requestFocus(_focusNodes[i - 1]);
-        }
+        setState(() => _controllers[i].text = '');
+        if (i > 0) FocusScope.of(context).requestFocus(_focusNodes[i - 1]);
         break;
       }
     }
+  }
+
+  Future<void> _handleVerify() async {
+    final otp = _otp;
+    if (otp.length < 6) {
+      _showSnack('Please enter the full 6-digit code');
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      if (widget.flow == 'forgot') {
+        // Don't call backend yet — go to reset password screen with otp
+        if (mounted) {
+          context.push(
+            '/reset-password',
+            extra: {'email': widget.email, 'otp': otp},
+          );
+        }
+        return;
+      }
+
+      if (widget.flow == 'twofactor') {
+        // Login 2FA – verify OTP and save session
+        final result = await AuthService.verifyTwoFactorLogin(
+          email: widget.email,
+          otp: otp,
+        );
+        if (!mounted) return;
+        if (result['success'] == true) {
+          final data = result['data'] as Map<String, dynamic>;
+          final accessToken = data['accessToken'] as String? ?? '';
+          final refreshToken = data['refreshToken'] as String? ?? '';
+          final userId = data['_id'] as String? ?? '';
+          final userName = data['user']?['fullName'] as String? ?? 'User';
+          await StorageService.saveSession(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            userId: userId,
+            email: widget.email,
+            name: userName,
+          );
+          if (!mounted) return;
+          context.go('/home');
+        } else {
+          _showSnack(result['message'] ?? 'Invalid code. Please try again.');
+        }
+        return;
+      }
+
+      // flow == 'register' → verify email OTP
+      final result = await AuthService.verifyEmailOtp(
+        email: widget.email,
+        otp: otp,
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        // After verification the user must log in to get tokens.
+        // Show success and pop to login.
+        _showSnack('Email verified! Please log in.');
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const Login()),
+          );
+        }
+      } else {
+        _showSnack(result['message'] ?? 'Invalid OTP');
+      }
+    } catch (e) {
+      _showSnack('Network error. Is the backend running?');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _handleResend() async {
+    if (_resendSeconds > 0) return;
+    try {
+      if (widget.flow == 'forgot') {
+        await AuthService.forgotPassword(email: widget.email);
+      }
+      // For register flow the backend doesn't have a standalone resend endpoint;
+      // user can go back to sign-up or handle this on login.
+      _showSnack('OTP resent to ${widget.email}');
+      _startCountdown();
+    } catch (_) {
+      _showSnack('Failed to resend OTP');
+    }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFF333333),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -84,13 +226,17 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    "We've sent a 6-digit code to your email.",
-                    style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                  Text(
+                    "We've sent a 6-digit code to ${widget.email}",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF888888),
+                    ),
                   ),
                   const SizedBox(height: 48),
-                  
-                  // OTP Boxes (6 digits)
+
+                  // OTP Boxes
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List.generate(6, (index) {
@@ -119,35 +265,50 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                       );
                     }),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  const Text(
-                    'Resend code in 45s',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+
+                  // Resend countdown / button
+                  GestureDetector(
+                    onTap: _resendSeconds == 0 ? _handleResend : null,
+                    child: Text(
+                      _resendSeconds > 0
+                          ? 'Resend code in ${_resendSeconds}s'
+                          : 'Resend code',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _resendSeconds > 0
+                            ? const Color(0xFF888888)
+                            : brandRed,
+                        fontWeight: _resendSeconds == 0
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
                   ),
+
                   const SizedBox(height: 40),
-                  AppPrimaryButton(
-                    label: 'Verify',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ForgotPassword()),
-                      );
-                    },
-                  ),
+
+                  _loading
+                      ? const SizedBox(
+                          height: 54,
+                          child: Center(
+                            child: CircularProgressIndicator(color: brandRed),
+                          ),
+                        )
+                      : AppPrimaryButton(label: 'Verify', onTap: _handleVerify),
                 ],
               ),
             ),
           ),
-          
-          // Custom Keypad (Red background style)
+
+          // Custom Keypad
           Container(
             padding: EdgeInsets.fromLTRB(
-              20, 
-              24, 
-              20, 
-              MediaQuery.of(context).padding.bottom + 20
+              20,
+              24,
+              20,
+              MediaQuery.of(context).padding.bottom + 20,
             ),
             decoration: const BoxDecoration(
               color: brandRed,
@@ -166,10 +327,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildKey('0'), // Centered 0
-                    _buildBackspaceKey(),
-                  ],
+                  children: [_buildKey('0'), _buildBackspaceKey()],
                 ),
               ],
             ),

@@ -21,7 +21,14 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
   String? _error;
   String _selectedCategory = 'All';
 
-  final List<String> _categories = ['All', 'Personal', 'Pet', 'Home', 'Auto', 'Appliance'];
+  final List<String> _categories = [
+    'All',
+    'Personal',
+    'Pet',
+    'Home',
+    'Auto',
+    'Appliance',
+  ];
 
   @override
   void initState() {
@@ -40,10 +47,12 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
         _apiService.fetchUpcomingRenewals(),
       ]);
       setState(() {
-        _policies = results[0] as List<InsurancePolicy>;
-        _upcomingPolicies = results[1] as List<InsurancePolicy>;
+        _policies = results[0];
+        _upcomingPolicies = results[1];
         _isLoading = false;
-        debugPrint('Loaded ${_policies.length} policies and ${_upcomingPolicies.length} upcoming renewals.');
+        debugPrint(
+          'Loaded ${_policies.length} policies and ${_upcomingPolicies.length} upcoming renewals.',
+        );
       });
     } catch (e) {
       debugPrint('Error loading data: $e');
@@ -82,7 +91,11 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
 
   List<InsurancePolicy> get _filteredPolicies {
     if (_selectedCategory == 'All') return _policies;
-    return _policies.where((p) => p.category.toLowerCase() == _selectedCategory.toLowerCase()).toList();
+    return _policies
+        .where(
+          (p) => p.category.toLowerCase() == _selectedCategory.toLowerCase(),
+        )
+        .toList();
   }
 
   @override
@@ -106,13 +119,21 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => context.go('/home'),
-                    child: const Icon(Icons.arrow_back, size: 24, color: Color(0xFF111111)),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 24,
+                      color: Color(0xFF111111),
+                    ),
                   ),
                   const Expanded(
                     child: Text(
                       'My Insurances',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
                   GestureDetector(
@@ -123,8 +144,15 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                     child: Container(
                       width: 40,
                       height: 40,
-                      decoration: const BoxDecoration(color: brandRed, shape: BoxShape.circle),
-                      child: const Icon(Icons.add, color: Colors.white, size: 24),
+                      decoration: const BoxDecoration(
+                        color: brandRed,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -140,173 +168,262 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16),
 
-                    // Summary Card
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE1E8F0)),
+                      // Summary Card
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE1E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Total Monthly Payment:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF888888),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '\$${NumberFormat('#,##0.00').format(_totalMonthlyPayment)}',
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF111111),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Total Outstanding: \$${NumberFormat('#,##0.00').format(_totalOutstanding)}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF888888),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Upcoming Actions
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Total Monthly Payment:', style: TextStyle(fontSize: 14, color: Color(0xFF888888), fontWeight: FontWeight.w500)),
-                            const SizedBox(height: 6),
-                            Text(
-                              '\$${NumberFormat('#,##0.00').format(_totalMonthlyPayment)}',
-                              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
+                            const Text(
+                              'Upcoming Actions',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111111),
+                              ),
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Total Outstanding: \$${NumberFormat('#,##0.00').format(_totalOutstanding)}',
-                              style: const TextStyle(fontSize: 13, color: Color(0xFF888888), fontWeight: FontWeight.w500),
+                            TextButton(
+                              onPressed: () =>
+                                  context.push('/insurance-upcoming'),
+                              child: const Text(
+                                'See All',
+                                style: TextStyle(
+                                  color: Color(0xFF555555),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Upcoming Actions
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Upcoming Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
-                          TextButton(onPressed: () => context.push('/insurance-upcoming'), child: const Text('See All', style: TextStyle(color: Color(0xFF555555), fontSize: 13, fontWeight: FontWeight.w600))),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: _policies.isEmpty 
-                          ? [
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Center(
-                                  child: Text(
-                                    'No upcoming actions',
-                                    style: TextStyle(color: Color(0xFF888888), fontSize: 14),
-                                  ),
-                                ),
-                              )
-                            ]
-                          : _policies.take(3).map((p) {
-                              final renewalDate = p.renewalDate ?? DateTime.now();
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: UpcomingActionItem(
-                                  month: DateFormat('MMM').format(renewalDate),
-                                  day: DateFormat('dd').format(renewalDate),
-                                  title: p.name,
-                                  status: p.paymentFrequency?.toLowerCase() == 'manual' ? 'Manual payment required' : 'Paid automatically',
-                                  amount: '\$${NumberFormat('#,##0.00').format(p.premium)}',
-                                  isAutoPay: p.paymentFrequency?.toLowerCase() != 'manual',
-                                ),
-                              );
-                            }).toList(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Categories
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24),
-                      child: Text('Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 48,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(left: 24),
-                        itemCount: _categories.length,
-                        itemBuilder: (context, index) {
-                          final cat = _categories[index];
-                          final isSelected = _selectedCategory == cat;
-                          return GestureDetector(
-                            onTap: () => setState(() => _selectedCategory = cat),
-                            child: Container(
-                              margin: const EdgeInsets.only(right: 12),
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: isSelected ? brandRed : const Color(0xFFFBFBFB),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: isSelected ? brandRed : const Color(0xFFF0F0F0)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (cat != 'All')
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: Image.asset(
-                                        InsurancePolicy.categoryIcon(cat),
-                                        width: 18,
-                                        height: 18,
-                                        color: isSelected ? Colors.white : const Color(0xFF555555),
-                                        errorBuilder: (c, e, s) => Icon(Icons.category, size: 18, color: isSelected ? Colors.white : Colors.grey),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          children: _policies.isEmpty
+                              ? [
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 20),
+                                    child: Center(
+                                      child: Text(
+                                        'No upcoming actions',
+                                        style: TextStyle(
+                                          color: Color(0xFF888888),
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
-                                  Text(
-                                    cat,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : const Color(0xFF555555),
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                      fontSize: 14,
-                                    ),
                                   ),
-                                ],
+                                ]
+                              : _policies.take(3).map((p) {
+                                  final renewalDate =
+                                      p.renewalDate ?? DateTime.now();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: UpcomingActionItem(
+                                      month: DateFormat(
+                                        'MMM',
+                                      ).format(renewalDate),
+                                      day: DateFormat('dd').format(renewalDate),
+                                      title: p.name,
+                                      status:
+                                          p.paymentFrequency?.toLowerCase() ==
+                                              'manual'
+                                          ? 'Manual payment required'
+                                          : 'Paid automatically',
+                                      amount:
+                                          '\$${NumberFormat('#,##0.00').format(p.premium)}',
+                                      isAutoPay:
+                                          p.paymentFrequency?.toLowerCase() !=
+                                          'manual',
+                                    ),
+                                  );
+                                }).toList(),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Categories
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          'Category',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111111),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 48,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.only(left: 24),
+                          itemCount: _categories.length,
+                          itemBuilder: (context, index) {
+                            final cat = _categories[index];
+                            final isSelected = _selectedCategory == cat;
+                            return GestureDetector(
+                              onTap: () =>
+                                  setState(() => _selectedCategory = cat),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? brandRed
+                                      : const Color(0xFFFBFBFB),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? brandRed
+                                        : const Color(0xFFF0F0F0),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (cat != 'All')
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: Image.asset(
+                                          InsurancePolicy.categoryIcon(cat),
+                                          width: 18,
+                                          height: 18,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : const Color(0xFF555555),
+                                          errorBuilder: (c, e, s) => Icon(
+                                            Icons.category,
+                                            size: 18,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                    Text(
+                                      cat,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : const Color(0xFF555555),
+                                        fontWeight: isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Insurance List
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: _filteredPolicies.map((p) => InsuranceListItem(
-                          iconPath: InsurancePolicy.iconForCategory(p.category),
-                          iconBgColor: InsurancePolicy.iconBgColorForCategory(p.category),
-                          title: p.name,
-                          subtitle: p.provider ?? p.category,
-                          amount: '\$${NumberFormat('#,##0.0').format(p.premium)}',
-                          frequency: p.paymentFrequency ?? 'Yearly',
-                          isAutoPay: true,
-                          onTap: () async {
-                            await context.push('/insurance-detail', extra: p);
-                            _loadInsurances();
+                            );
                           },
-                        )).toList(),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
+
+                      const SizedBox(height: 24),
+
+                      // Insurance List
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          children: _filteredPolicies
+                              .map(
+                                (p) => InsuranceListItem(
+                                  iconPath: InsurancePolicy.iconForCategory(
+                                    p.category,
+                                  ),
+                                  iconBgColor:
+                                      InsurancePolicy.iconBgColorForCategory(
+                                        p.category,
+                                      ),
+                                  title: p.name,
+                                  subtitle: p.provider ?? p.category,
+                                  amount:
+                                      '\$${NumberFormat('#,##0.0').format(p.premium)}',
+                                  frequency: p.paymentFrequency ?? 'Yearly',
+                                  isAutoPay: true,
+                                  onTap: () async {
+                                    await context.push(
+                                      '/insurance-detail',
+                                      extra: p,
+                                    );
+                                    _loadInsurances();
+                                  },
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
