@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import '../models/housing_cost_model.dart';
 import '../../Loan_Screen/models/document_model.dart';
 import '../../services/storage_service.dart';
+import '../../services/storage_service.dart';
 
 class HousingApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
@@ -23,7 +24,7 @@ class HousingApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/housing$query'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -38,7 +39,7 @@ class HousingApiService {
   Future<HousingCost> getHousingCost(String id) async {
     final response = await http.get(
       Uri.parse('$baseUrl/housing/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -52,7 +53,7 @@ class HousingApiService {
   Future<HousingCost> createHousingCost(HousingCost cost) async {
     final response = await http.post(
       Uri.parse('$baseUrl/housing'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode(cost.toJson()),
     );
 
@@ -70,7 +71,7 @@ class HousingApiService {
   ) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/housing/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode(updates),
     );
 
@@ -85,7 +86,7 @@ class HousingApiService {
   Future<void> deleteHousingCost(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/housing/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -104,7 +105,7 @@ class HousingApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/housing/upcoming$query'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -122,7 +123,7 @@ class HousingApiService {
   Future<void> deleteDocument(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -133,7 +134,7 @@ class HousingApiService {
   Future<void> renameDocument(String id, String newName) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode({'displayName': newName}),
     );
 
@@ -202,7 +203,7 @@ class HousingApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/reminders'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode({
         'itemId': itemId,
         'itemType': itemType,

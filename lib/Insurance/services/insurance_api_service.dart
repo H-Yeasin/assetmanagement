@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import '../models/insurance_model.dart';
 import '../../Loan_Screen/models/document_model.dart';
 import '../../services/storage_service.dart';
+import '../../services/storage_service.dart';
 
 class InsuranceApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
@@ -23,7 +24,7 @@ class InsuranceApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/insurance$query'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -38,7 +39,7 @@ class InsuranceApiService {
   Future<InsurancePolicy> getInsurance(String id) async {
     final response = await http.get(
       Uri.parse('$baseUrl/insurance/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -52,7 +53,7 @@ class InsuranceApiService {
   Future<InsurancePolicy> createInsurance(InsurancePolicy policy) async {
     final response = await http.post(
       Uri.parse('$baseUrl/insurance'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode(policy.toJson()),
     );
 
@@ -70,7 +71,7 @@ class InsuranceApiService {
   ) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/insurance/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode(updates),
     );
 
@@ -85,7 +86,7 @@ class InsuranceApiService {
   Future<void> deleteInsurance(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/insurance/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -104,7 +105,7 @@ class InsuranceApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/insurance/upcoming$query'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -120,7 +121,7 @@ class InsuranceApiService {
   Future<void> deleteDocument(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -131,7 +132,7 @@ class InsuranceApiService {
   Future<void> renameDocument(String id, String newName) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode({'displayName': newName}),
     );
 
@@ -201,7 +202,7 @@ class InsuranceApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/reminders'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode({
         'itemId': itemId,
         'itemType': itemType,
@@ -227,7 +228,7 @@ class InsuranceApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/reminders/upcoming$query'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {

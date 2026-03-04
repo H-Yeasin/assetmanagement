@@ -20,9 +20,11 @@ class LoanApiService {
     final queryParams = status != null ? '?status=$status' : '';
     final url = '$baseUrl/loans$queryParams';
     print('GET REQUEST: $url');
-    final hdrs = await getHeaders();
-    print('HEADERS: $hdrs');
-    final response = await http.get(Uri.parse(url), headers: hdrs);
+    print('HEADERS: await _getHeaders()');
+    final response = await http.get(
+      Uri.parse(url),
+      headers: await _getHeaders(),
+    );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -36,7 +38,7 @@ class LoanApiService {
   Future<Loan> getLoan(String id) async {
     final response = await http.get(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -50,7 +52,7 @@ class LoanApiService {
   Future<Loan> createLoan(Loan loan) async {
     final response = await http.post(
       Uri.parse('$baseUrl/loans'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode(loan.toJson()),
     );
 
@@ -65,7 +67,7 @@ class LoanApiService {
   Future<Loan> updateLoan(String id, Map<String, dynamic> updates) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode(updates),
     );
 
@@ -80,7 +82,7 @@ class LoanApiService {
   Future<void> deleteLoan(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/loans/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -91,7 +93,7 @@ class LoanApiService {
   Future<void> deleteDocument(String id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -102,7 +104,7 @@ class LoanApiService {
   Future<void> renameDocument(String id, String newName) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/documents/files/$id'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode({'displayName': newName}),
     );
 
@@ -114,7 +116,7 @@ class LoanApiService {
   Future<Loan> markCompleted(String id) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/loans/$id/complete'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -136,7 +138,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/loans/upcoming$query'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -212,7 +214,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/loans/past$query'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -242,7 +244,7 @@ class LoanApiService {
 
     final response = await http.post(
       Uri.parse('$baseUrl/reminders'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
       body: json.encode(body),
     );
 
@@ -265,7 +267,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/reminders/upcoming$query'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -279,7 +281,7 @@ class LoanApiService {
   Future<void> markReminderDone(String id) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/reminders/$id/done'),
-      headers: await getHeaders(),
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {
