@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/loan_model.dart';
 import '../models/document_model.dart';
@@ -19,8 +20,8 @@ class LoanApiService {
   Future<List<Loan>> fetchLoans({String? status}) async {
     final queryParams = status != null ? '?status=$status' : '';
     final url = '$baseUrl/loans$queryParams';
-    print('GET REQUEST: $url');
-    print('HEADERS: ${await _getHeaders()}');
+    debugPrint('GET REQUEST: $url');
+    debugPrint('HEADERS: ${await _getHeaders()}');
     final response = await http.get(
       Uri.parse(url),
       headers: await _getHeaders(),
