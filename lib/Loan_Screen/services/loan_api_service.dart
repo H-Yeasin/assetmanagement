@@ -8,7 +8,7 @@ import '../../services/storage_service.dart';
 class LoanApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
 
-  Future<Map<String, String>> getHeaders() async {
+  Future<Map<String, String>> _getHeaders() async {
     final token = await StorageService.getAccessToken();
     return {
       'Content-Type': 'application/json',
@@ -20,7 +20,7 @@ class LoanApiService {
     final queryParams = status != null ? '?status=$status' : '';
     final url = '$baseUrl/loans$queryParams';
     print('GET REQUEST: $url');
-    print('HEADERS: await _getHeaders()');
+    print('HEADERS: ${await _getHeaders()}');
     final response = await http.get(
       Uri.parse(url),
       headers: await _getHeaders(),

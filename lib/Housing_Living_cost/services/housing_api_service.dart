@@ -5,12 +5,11 @@ import 'package:http_parser/http_parser.dart';
 import '../models/housing_cost_model.dart';
 import '../../Loan_Screen/models/document_model.dart';
 import '../../services/storage_service.dart';
-import '../../services/storage_service.dart';
 
 class HousingApiService {
   static const String baseUrl = 'http://localhost:5000/api/v1';
 
-  Future<Map<String, String>> getHeaders() async {
+  Future<Map<String, String>> _getHeaders() async {
     final token = await StorageService.getAccessToken();
     return {
       'Content-Type': 'application/json',
