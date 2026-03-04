@@ -204,7 +204,10 @@ class LoanApiService {
 
   // ── Past Activities ──────────────────────────────────────────────────────
 
-  Future<List<dynamic>> fetchPastActivities({DateTime? from, DateTime? to}) async {
+  Future<List<dynamic>> fetchPastActivities({
+    DateTime? from,
+    DateTime? to,
+  }) async {
     String query = '';
     if (from != null) query += 'from=${from.toIso8601String()}&';
     if (to != null) query += 'to=${to.toIso8601String()}';
@@ -212,7 +215,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/loans/past$query'),
-      headers: _headers,
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -242,7 +245,7 @@ class LoanApiService {
 
     final response = await http.post(
       Uri.parse('$baseUrl/reminders'),
-      headers: _headers,
+      headers: await _getHeaders(),
       body: json.encode(body),
     );
 
@@ -254,7 +257,10 @@ class LoanApiService {
     }
   }
 
-  Future<List<dynamic>> fetchUpcomingReminders({DateTime? from, DateTime? to}) async {
+  Future<List<dynamic>> fetchUpcomingReminders({
+    DateTime? from,
+    DateTime? to,
+  }) async {
     String query = '';
     if (from != null) query += 'from=${from.toIso8601String()}&';
     if (to != null) query += 'to=${to.toIso8601String()}';
@@ -262,7 +268,7 @@ class LoanApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/reminders/upcoming$query'),
-      headers: _headers,
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode == 200) {
@@ -276,7 +282,7 @@ class LoanApiService {
   Future<void> markReminderDone(String id) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/reminders/$id/done'),
-      headers: _headers,
+      headers: await _getHeaders(),
     );
 
     if (response.statusCode != 200) {

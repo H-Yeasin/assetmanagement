@@ -202,7 +202,7 @@ class HousingApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/reminders'),
-      headers: _headers,
+      headers: await _getHeaders(),
       body: json.encode({
         'itemId': itemId,
         'itemType': itemType,
