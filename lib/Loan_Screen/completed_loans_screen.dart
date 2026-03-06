@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'models/loan_model.dart';
-import 'services/loan_api_service.dart';
+import '../services/loan_service.dart';
 import 'package:intl/intl.dart';
 
 class CompletedLoansScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class CompletedLoansScreen extends StatefulWidget {
 }
 
 class _CompletedLoansScreenState extends State<CompletedLoansScreen> {
-  final LoanApiService _apiService = LoanApiService();
+  final LoanService _loanService = LoanService();
   List<Loan> _completedLoans = [];
   bool _isLoading = true;
   String? _error;
@@ -29,7 +29,7 @@ class _CompletedLoansScreenState extends State<CompletedLoansScreen> {
       _error = null;
     });
     try {
-      final loans = await _apiService.fetchLoans(status: 'completed');
+      final loans = await _loanService.fetchLoans(status: 'completed');
       setState(() {
         _completedLoans = loans;
         _isLoading = false;

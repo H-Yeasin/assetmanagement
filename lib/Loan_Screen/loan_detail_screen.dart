@@ -4,7 +4,7 @@ import 'loan_widgets.dart';
 import 'add_documents_screen.dart';
 import 'edit_loan_screen.dart';
 import 'models/loan_model.dart';
-import 'services/loan_api_service.dart';
+import '../services/loan_service.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
@@ -21,8 +21,9 @@ class LoanDetailScreen extends StatefulWidget {
 
 class _LoanDetailScreenState extends State<LoanDetailScreen> {
   late Loan _currentLoan;
-  final LoanApiService _apiService = LoanApiService();
-  bool _isRefreshing = false;
+  bool _isLoading = false;
+  bool _didChange = false;
+  final LoanService _loanService = LoanService();
 
   @override
   void initState() {
@@ -33,103 +34,17 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
 
   Future<void> _refreshLoan() async {
     try {
-      final updatedLoan = await _apiService.getLoan(_currentLoan.id!);
+      final updatedLoan = await _loanService.getLoan(_currentLoan.id!);
       setState(() {
         _currentLoan = updatedLoan;
+        _isLoading = false;
+        _didChange = true;
       });
     } catch (e) {
-      print('Error refreshing loan: $e');
+      debugPrint('Error refreshing loan: $e');
     }
   }
 
-  Future<void> _deleteDocument(String docId) async {
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Document'),
-        content: const Text('Are you sure you want to delete this document?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() => _isRefreshing = true);
-      try {
-        await _apiService.deleteDocument(docId);
-        await _refreshLoan();
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Document deleted')));
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Delete failed: ${e.toString()}')),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isRefreshing = false);
-      }
-    }
-  }
-
-  Future<void> _renameDocument(String docId, String currentName) async {
-    final TextEditingController controller = TextEditingController(
-      text: currentName,
-    );
-    final String? newName = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename Document'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'Enter new name'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Rename'),
-          ),
-        ],
-      ),
-    );
-
-    if (newName != null && newName.isNotEmpty && newName != currentName) {
-      setState(() => _isRefreshing = true);
-      try {
-        await _apiService.renameDocument(docId, newName);
-        await _refreshLoan();
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Document renamed')));
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Rename failed: ${e.toString()}')),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isRefreshing = false);
-      }
-    }
-  }
 
   String _selectedReminder = 'Same day';
   bool _isReminderEnabled = true;
@@ -152,21 +67,26 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(
-        0xFFFDF5F5,
-      ), // Light pinkish-grey background from design
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── App Bar ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(
+          0xFFFDF5F5,
+        ), // Light pinkish-grey background from design
+        body: SafeArea(
+          child: Column(
+            children: [
+              // ── App Bar ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context, _didChange),
+                      child: const Icon(
                       Icons.arrow_back,
                       size: 24,
                       color: Color(0xFF111111),
@@ -558,15 +478,22 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                               final docIds = result
                                   .map((d) => d['id'] as String)
                                   .toList();
-                              setState(() => _isRefreshing = true);
                               try {
-                                await _apiService.updateLoan(_currentLoan.id!, {
+                                await _loanService.updateLoan(_currentLoan.id!, {
                                   'documents': docIds,
                                 });
                                 await _refreshLoan();
-                              } finally {
-                                if (mounted)
-                                  setState(() => _isRefreshing = false);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Documents updated successfully')),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error updating: $e')),
+                                  );
+                                }
                               }
                             }
                           },
@@ -827,8 +754,9 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _ActionButton extends StatelessWidget {

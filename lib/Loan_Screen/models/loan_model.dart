@@ -84,40 +84,41 @@ class Loan extends HiveObject {
   });
 
   factory Loan.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic date) {
+      if (date == null) return null;
+      if (date is String) return DateTime.parse(date);
+      // Handle Firestore Timestamp if available (dynamic to avoid direct dependency here if possible)
+      try {
+        return date.toDate();
+      } catch (_) {
+        return null;
+      }
+    }
+
     return Loan(
-      id: json['_id'],
+      id: json['_id'] ?? json['id'],
       userId: json['userId'] ?? '',
       name: json['name'] ?? '',
       category: json['category'] ?? 'other',
       monthlyPayment: (json['monthlyPayment'] ?? 0).toDouble(),
-      paymentDate: json['paymentDate'] != null
-          ? DateTime.parse(json['paymentDate'])
-          : null,
+      paymentDate: parseDate(json['paymentDate']),
       autoPay: json['autoPay'] ?? false,
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
       interestRate: (json['interestRate'] ?? 0).toDouble(),
-      startDate: json['startDate'] != null
-          ? DateTime.parse(json['startDate'])
-          : null,
-      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
+      startDate: parseDate(json['startDate']),
+      endDate: parseDate(json['endDate']),
       remainingBalance: (json['remainingBalance'] ?? 0).toDouble(),
       lender: json['lender'],
       notes: json['notes'],
       status: json['status'] ?? 'active',
-      completedAt: json['completedAt'] != null
-          ? DateTime.parse(json['completedAt'])
-          : null,
+      completedAt: parseDate(json['completedAt']),
       documents: json['documents'] != null
           ? (json['documents'] as List)
                 .map((doc) => doc is String ? doc : DocumentFile.fromJson(doc))
                 .toList()
           : [],
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : null,
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
       propertyAddress: json['propertyAddress'],
       apartmentName: json['apartmentName'],
       amortizationPeriod: json['amortizationPeriod'],

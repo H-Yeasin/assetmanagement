@@ -72,7 +72,7 @@ final GoRouter appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/home',
-          builder: (context, state) => const HomeDashboardScreen(),
+          builder: (context, state) => HomeDashboardScreen(),
         ),
         GoRoute(
           path: '/my-loans',
@@ -237,7 +237,7 @@ final GoRouter appRouter = GoRouter(
       path:
           '/main', // Fallback for direct MainShell navigation if used previously
       builder: (context, state) =>
-          const MainShell(child: HomeDashboardScreen()),
+          MainShell(child: HomeDashboardScreen()),
     ),
     GoRoute(
       path: '/edit-insurance',

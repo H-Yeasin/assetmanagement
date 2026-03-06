@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../Home_Dashboard/widgets.dart';
 import 'loan_widgets.dart';
 import 'models/loan_model.dart';
-import 'services/loan_api_service.dart';
+import '../services/loan_service.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,34 +18,41 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
   int _selectedTab = 0;
   final List<String> _tabs = ['All Loans', 'Active', 'Completed'];
 
-  final LoanApiService _apiService = LoanApiService();
+  final LoanService _loanService = LoanService();
   List<Loan> _allLoans = [];
   bool _isLoading = true;
   String? _error;
 
+  late final StreamSubscription<List<Loan>> _subscription;
+
   @override
   void initState() {
     super.initState();
-    _loadLoans();
+    _subscription = _loanService.streamLoans().listen(
+      (loans) {
+        if (mounted) {
+          setState(() {
+            _allLoans = loans;
+            _isLoading = false;
+            _error = null;
+          });
+        }
+      },
+      onError: (err) {
+        if (mounted) {
+          setState(() {
+            _error = err.toString();
+            _isLoading = false;
+          });
+        }
+      },
+    );
   }
 
-  Future<void> _loadLoans() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final loans = await _apiService.fetchLoans();
-      setState(() {
-        _allLoans = loans;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 
   List<Loan> get _filteredLoans {
@@ -86,7 +94,12 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
             children: [
               Text('Error: $_error', style: const TextStyle(color: brandRed)),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _loadLoans, child: const Text('Retry')),
+              ElevatedButton(onPressed: () {
+                setState(() {
+                  _isLoading = true;
+                  _error = null;
+                });
+              }, child: const Text('Retry')),
             ],
           ),
         ),
@@ -126,10 +139,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                   ),
                   GestureDetector(
                     onTap: () async {
-                      final result = await context.push<bool>('/add-loan');
-                      if (result == true) {
-                        _loadLoans();
-                      }
+                      await context.push<bool>('/add-loan');
                     },
                     child: Container(
                       width: 32,
@@ -243,7 +253,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: FutureBuilder<List<dynamic>>(
-                        future: _apiService.fetchUpcomingPayments(),
+                        future: _loanService.fetchUpcomingPayments(),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
@@ -463,13 +473,10 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                                   : 'Manual payment required',
                               isPaid: loan.autoPay,
                               onTap: () async {
-                                final result = await context.push<bool>(
+                                await context.push<bool>(
                                   '/loan-detail',
                                   extra: loan,
                                 );
-                                if (result == true) {
-                                  _loadLoans();
-                                }
                               },
                             );
                           }).toList(),

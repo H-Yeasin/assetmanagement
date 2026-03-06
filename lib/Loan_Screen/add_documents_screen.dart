@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'services/loan_api_service.dart';
+import '../services/loan_service.dart';
 import 'models/loan_model.dart';
 
 class AddDocumentsScreen extends StatefulWidget {
@@ -26,7 +26,7 @@ class AddDocumentsScreen extends StatefulWidget {
 class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
   late final List<Map<String, dynamic>> _documents;
   final ImagePicker _picker = ImagePicker();
-  final LoanApiService _apiService = LoanApiService();
+  final LoanService _loanService = LoanService();
   bool _isUploading = false;
 
   @override
@@ -61,7 +61,7 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
-      final documentFile = await _apiService.uploadDocument(file);
+      final documentFile = await _loanService.uploadDocument(file);
 
       setState(() {
         _documents.add({
@@ -111,7 +111,7 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
     if (confirm == true) {
       setState(() => _isUploading = true);
       try {
-        await _apiService.deleteDocument(docId);
+        await _loanService.deleteDocument(docId);
         setState(() {
           _documents.removeAt(index);
         });
@@ -165,7 +165,7 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
     if (newName != null && newName.isNotEmpty && newName != currentName) {
       setState(() => _isUploading = true);
       try {
-        await _apiService.renameDocument(docId, newName);
+        await _loanService.renameDocument(docId, newName);
         setState(() {
           _documents[index]['name'] = newName;
         });
@@ -353,17 +353,14 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                                 ),
                                 onTap: () async {
                                   if (doc['path'] != null) {
-                                    final baseUrl = LoanApiService.baseUrl
-                                        .replaceFirst('/api/v1', '');
-                                    final url = Uri.parse(
-                                      '$baseUrl/${doc['path']}',
-                                    );
+                                    final url = Uri.parse(doc['path']);
                                     if (await canLaunchUrl(url)) {
                                       await launchUrl(
                                         url,
                                         mode: LaunchMode.externalApplication,
                                       );
                                     }
+
                                   }
                                 },
                               );
@@ -436,7 +433,15 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, _documents),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Documents saved successfully!'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    Navigator.pop(context, _documents);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFC61C36),
                     shape: RoundedRectangleBorder(

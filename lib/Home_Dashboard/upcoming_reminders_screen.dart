@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
-import '../Loan_Screen/services/loan_api_service.dart';
+import '../services/loan_service.dart';
 import 'package:intl/intl.dart';
 
 class UpcomingRemindersScreen extends StatefulWidget {
@@ -13,40 +13,16 @@ class UpcomingRemindersScreen extends StatefulWidget {
 }
 
 class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
-  final LoanApiService _apiService = LoanApiService();
-  List<dynamic> _reminders = [];
-  bool _isLoading = true;
-  String? _error;
+  final LoanService _loanService = LoanService();
 
   @override
   void initState() {
     super.initState();
-    _loadReminders();
-  }
-
-  Future<void> _loadReminders() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final data = await _apiService.fetchUpcomingReminders();
-      setState(() {
-        _reminders = data;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
   }
 
   Future<void> _markAsDone(String id) async {
     try {
-      await _apiService.markReminderDone(id);
-      _loadReminders(); // Refresh list
+      await _loanService.markReminderDone(id);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to mark reminder as done: $e')),
@@ -91,34 +67,61 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Dummy Reminders
-            ReminderCard(
-              month: 'Jan',
-              day: '01',
-              title: 'Apartment Rent Due',
-              dueInfo: 'Due in 3 days',
-              onTap: () {},
-            ),
-            ReminderCard(
-              month: 'Feb',
-              day: '20',
-              title: 'Car Insurance Renewal',
-              dueInfo: 'February 20, 2025',
-              onTap: () {},
-            ),
-            ReminderCard(
-              month: 'Mar',
-              day: '15',
-              title: 'Health Insurance Premium',
-              dueInfo: 'March 15, 2025',
-              onTap: () {},
-            ),
-            ReminderCard(
-              month: 'Apr',
-              day: '10',
-              title: 'Property Tax Installment',
-              dueInfo: 'April 10, 2025',
-              onTap: () {},
+            StreamBuilder<List<dynamic>>(
+              stream: _loanService.streamUpcomingReminders(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: brandRed));
+                }
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}', style: const TextStyle(color: brandRed));
+                }
+                
+                final reminders = snapshot.data ?? [];
+                if (reminders.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text('No upcoming reminders.', style: TextStyle(color: Colors.grey)),
+                  );
+                }
+
+                return Column(
+                  children: reminders.map<Widget>((r) {
+                    final remindAt = (r['remindAt'] as dynamic).toDate() as DateTime;
+                    final note = r['note'] ?? r['title'] ?? 'Reminder';
+                    final title = r['title'] ?? 'Task';
+                    return ReminderCard(
+                      month: DateFormat('MMM').format(remindAt),
+                      day: DateFormat('dd').format(remindAt),
+                      title: title,
+                      dueInfo: note,
+                      onTap: () {
+                        // could show details, or a dialog to mark as done
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(title),
+                            content: Text(note),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  _markAsDone(r['id']);
+                                },
+                                child: const Text('Mark Done'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  }).toList(),
+                );
+              },
             ),
 
             const SizedBox(height: 24),

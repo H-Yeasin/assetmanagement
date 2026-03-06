@@ -29,29 +29,35 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigateAfterSplash() async {
-    // Check if user is already logged in
-    final loggedIn = await StorageService.isLoggedIn();
-    if (!mounted) return;
-
-    if (loggedIn) {
-      // Skip onboarding and auth — go straight to home via GoRouter
-      context.go('/home');
-    } else {
-      // Check if onboarding has been shown before
-      final seenOnboarding = await StorageService.hasSeenOnboarding();
+    try {
+      final loggedIn = await StorageService.isLoggedIn();
       if (!mounted) return;
 
-      if (seenOnboarding) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        );
+      if (loggedIn) {
+        context.go('/home');
       } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
+        final seenOnboarding = await StorageService.hasSeenOnboarding();
+        if (!mounted) return;
+
+        if (seenOnboarding) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          );
+        }
       }
+    } catch (e) {
+      debugPrint("Navigation error: $e");
+      // Fallback to onboarding if something breaks
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      );
     }
   }
 
@@ -73,6 +79,10 @@ class _SplashScreenState extends State<SplashScreen>
               ..forward().whenComplete(() {
                 if (mounted) _navigateAfterSplash();
               });
+          },
+          errorBuilder: (context, error, stackTrace) {
+            _navigateAfterSplash();
+            return const SizedBox();
           },
         ),
       ),

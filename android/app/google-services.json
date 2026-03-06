@@ -1,0 +1,29 @@
+{
+    "project_info": {
+        "project_number": "165022828842",
+        "project_id": "ffp-vault-app",
+        "storage_bucket": "ffp-vault-app.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:165022828842:android:c2d890fb63c6e260a43653",
+                "android_client_info": {
+                    "package_name": "com.example.anick_giroux"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyA0VTfmHPb4rNQy-Fp7DXrjCmfBQoH--Tc"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}

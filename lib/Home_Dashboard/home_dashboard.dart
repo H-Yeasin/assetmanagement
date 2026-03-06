@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../services/loan_service.dart';
+import '../Loan_Screen/models/loan_model.dart';
 import 'widgets.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
-  const HomeDashboardScreen({super.key});
+  HomeDashboardScreen({super.key});
+
+  final LoanService _loanService = LoanService();
 
   void _showAddItemSheet(BuildContext context) {
     showModalBottomSheet(
@@ -103,14 +108,21 @@ class HomeDashboardScreen extends StatelessWidget {
                 crossAxisSpacing: 16,
                 childAspectRatio: 1.3,
                 children: [
-                  CategoryCard(
-                    iconPath: 'assets/images/icon/loan.png',
-                    title: 'Loans',
-                    subtitle: '2 active',
-                    iconColor: brandRed,
-                    onTap: () {
-                      context.go('/my-loans');
-                    },
+                  StreamBuilder<List<Loan>>(
+                    stream: _loanService.streamLoans(status: 'active'),
+                    builder: (context, snapshot) {
+                      final count = snapshot.hasData ? snapshot.data!.length : 0;
+                      final loadingText = snapshot.connectionState == ConnectionState.waiting ? '...' : '$count active';
+                      return CategoryCard(
+                        iconPath: 'assets/images/icon/loan.png',
+                        title: 'Loans',
+                        subtitle: loadingText,
+                        iconColor: brandRed,
+                        onTap: () {
+                          context.go('/my-loans');
+                        },
+                      );
+                    }
                   ),
                   CategoryCard(
                     iconPath: 'assets/images/icon/housing.png',
@@ -128,12 +140,19 @@ class HomeDashboardScreen extends StatelessWidget {
                     iconColor: Colors.blue,
                     onTap: () => context.push('/my-insurances'),
                   ),
-                  CategoryCard(
-                    iconPath: 'assets/images/icon/doccument.png',
-                    title: 'Documents',
-                    subtitle: '12 stored',
-                    iconColor: Colors.orange,
-                    onTap: () => context.push('/add-documents'),
+                  StreamBuilder<int>(
+                    stream: _loanService.streamDocumentsCount(),
+                    builder: (context, snapshot) {
+                      final count = snapshot.data ?? 0;
+                      final loadingText = snapshot.connectionState == ConnectionState.waiting ? '...' : '$count stored';
+                      return CategoryCard(
+                        iconPath: 'assets/images/icon/doccument.png',
+                        title: 'Documents',
+                        subtitle: loadingText,
+                        iconColor: Colors.orange,
+                        onTap: () => context.push('/add-documents'),
+                      );
+                    }
                   ),
                 ],
               ),
@@ -165,23 +184,45 @@ class HomeDashboardScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              ReminderCard(
-                month: 'Jan',
-                day: '01',
-                title: 'Apartment Rent Due',
-                dueInfo: 'Due in 3 days',
-                onTap: () => context.push('/upcoming-reminders'),
-              ),
-              ReminderCard(
-                month: 'Feb',
-                day: '20',
-                title: 'Car Insurance Renewal',
-                dueInfo: 'February 20, 2025',
-                onTap: () => context.push('/upcoming-reminders'),
+              StreamBuilder<List<dynamic>>(
+                stream: _loanService.streamUpcomingReminders(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: CircularProgressIndicator(color: brandRed)),
+                    );
+                  }
+                  
+                  final reminders = snapshot.data ?? [];
+                  if (reminders.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Text('No upcoming reminders', style: TextStyle(color: Colors.grey)),
+                    );
+                  }
+                  
+                  return Column(
+                    children: reminders.take(2).map((r) {
+                      final remindAt = (r['remindAt'] as dynamic).toDate() as DateTime;
+                      final note = r['note'] ?? r['title'] ?? 'Reminder';
+                      final title = r['title'] ?? 'Task';
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: ReminderCard(
+                          month: DateFormat('MMM').format(remindAt),
+                          day: DateFormat('dd').format(remindAt),
+                          title: title,
+                          dueInfo: note,
+                          onTap: () => context.push('/upcoming-reminders'),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
               // Add New Item Button
               GestureDetector(

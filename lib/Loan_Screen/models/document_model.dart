@@ -48,8 +48,18 @@ class DocumentFile extends HiveObject {
   });
 
   factory DocumentFile.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic date) {
+      if (date == null) return null;
+      if (date is String) return DateTime.parse(date);
+      try {
+        return date.toDate();
+      } catch (_) {
+        return null;
+      }
+    }
+
     return DocumentFile(
-      id: json['_id'] ?? '',
+      id: json['_id'] ?? json['id'] ?? '',
       userId: json['userId'],
       module: json['module'],
       originalName: json['originalName'] ?? '',
@@ -60,12 +70,8 @@ class DocumentFile extends HiveObject {
       path: json['path'] ?? '',
       relatedType: json['relatedType'],
       relatedId: json['relatedId'],
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : null,
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
     );
   }
 

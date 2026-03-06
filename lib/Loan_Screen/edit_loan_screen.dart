@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'add_documents_screen.dart';
 import 'models/loan_model.dart';
-import 'services/loan_api_service.dart';
+import '../services/loan_service.dart';
 import 'package:intl/intl.dart';
 import 'models/document_model.dart';
 
@@ -20,7 +20,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
   late String _selectedCategory;
   late String _selectedAmortization;
   late List<Map<String, dynamic>> _documents;
-  final LoanApiService _apiService = LoanApiService();
+  final LoanService _loanService = LoanService();
   bool _isSaving = false;
 
   late TextEditingController _nameController;
@@ -1032,13 +1032,13 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         'documents': _documents.map((d) => d['id'] as String).toList(),
       };
 
-      await _apiService.updateLoan(widget.loan.id!, updates);
+      await _loanService.updateLoan(widget.loan.id!, updates);
 
       if (mounted) {
-        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Loan updated successfully')),
+          const SnackBar(content: Text('Loan updated successfully'), duration: Duration(seconds: 2)),
         );
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {

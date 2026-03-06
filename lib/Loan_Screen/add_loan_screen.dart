@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'add_documents_screen.dart';
 import 'models/loan_model.dart';
-import 'services/loan_api_service.dart';
+import '../services/loan_service.dart';
 import 'package:intl/intl.dart';
 
 class AddLoanScreen extends StatefulWidget {
@@ -16,7 +16,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
   String _selectedCategory = 'personal';
   bool _autoPayment = true;
   String _selectedAmortization = '';
-  final LoanApiService _apiService = LoanApiService();
+  final LoanService _loanService = LoanService();
   bool _isSaving = false;
 
   final TextEditingController _nameController = TextEditingController();
@@ -957,13 +957,13 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
             : (int.tryParse(_completedPaymentsController.text) ?? 0),
       );
 
-      await _apiService.createLoan(loan);
+      await _loanService.createLoan(loan);
 
       if (mounted) {
-        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Loan added successfully')),
+          const SnackBar(content: Text('Loan added successfully'), duration: Duration(seconds: 2)),
         );
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'widgets.dart';
-import '../Loan_Screen/services/loan_api_service.dart';
+import '../services/loan_service.dart';
 
 class PastActivitiesScreen extends StatefulWidget {
   const PastActivitiesScreen({super.key});
@@ -11,34 +11,11 @@ class PastActivitiesScreen extends StatefulWidget {
 }
 
 class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
-  final LoanApiService _apiService = LoanApiService();
-  List<dynamic> _activityGroups = [];
-  bool _isLoading = true;
-  String? _error;
+  final LoanService _loanService = LoanService();
 
   @override
   void initState() {
     super.initState();
-    _loadActivities();
-  }
-
-  Future<void> _loadActivities() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final groups = await _apiService.fetchPastActivities();
-      setState(() {
-        _activityGroups = groups;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
   }
 
   @override
@@ -65,26 +42,47 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              children: const [
-                PaymentCard(
-                  month: 'Sept',
-                  day: '22',
-                  title: 'Student Loan',
-                  amount: '\$1,300.00',
-                  status: 'Paid',
-                  isPaid: true,
-                ),
-                PaymentCard(
-                  month: 'Sept',
-                  day: '17',
-                  title: 'Car Loan',
-                  amount: '\$2,230.00',
-                  status: 'Manual payment required',
-                  isPaid: false,
-                ),
-              ],
+            child: StreamBuilder<List<dynamic>>(
+              stream: _loanService.streamPastActivities(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: brandRed));
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                
+                final groups = snapshot.data ?? [];
+                if (groups.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 40),
+                      child: Text(
+                        'No past activities found',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  children: groups.expand<Widget>((group) {
+                    final date = DateTime.parse(group['date']);
+                    final items = group['items'] as List;
+                    return items.map((item) {
+                      return PaymentCard(
+                        month: DateFormat('MMM').format(date),
+                        day: DateFormat('dd').format(date),
+                        title: item['name'],
+                        amount: NumberFormat.simpleCurrency().format(item['monthlyPayment']),
+                        status: 'Paid',
+                        isPaid: true,
+                      );
+                    }).toList();
+                  }).toList(),
+                );
+              },
             ),
           ),
 

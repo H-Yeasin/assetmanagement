@@ -4,7 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'dart:ui';
 import '../Home_Dashboard/widgets.dart';
 import 'models/loan_model.dart';
-import 'services/loan_api_service.dart';
+import '../services/loan_service.dart';
 
 // ── Loan Status Badge ───────────────────────────────────────────────────────
 
@@ -178,7 +178,7 @@ class SetupPaymentModal extends StatefulWidget {
 class _SetupPaymentModalState extends State<SetupPaymentModal> {
   late bool _isAutoPayment;
   bool _isProcessing = false;
-  final LoanApiService _apiService = LoanApiService();
+  final LoanService _loanService = LoanService();
   String _selectedMonth = 'January';
   final TextEditingController _amountController = TextEditingController();
 
@@ -221,7 +221,7 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
       final remaining =
           widget.loan.remainingBalance - widget.loan.monthlyPayment;
 
-      await _apiService.updateLoan(widget.loan.id!, {
+      await _loanService.updateLoan(widget.loan.id!, {
         'completedPayments': completedP,
         'remainingBalance': remaining > 0 ? remaining : 0,
       });
