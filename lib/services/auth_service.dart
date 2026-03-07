@@ -8,8 +8,15 @@ import 'package:firebase_core/firebase_core.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
+<<<<<<< HEAD
   static final FirebaseFirestore _db = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'ffpvault');
   static final FirebaseFunctions _functions = FirebaseFunctions.instance;
+=======
+  static final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    region: 'us-central1',
+  );
+>>>>>>> 08e0970 (authentication)
 
   // ── Register (Email/Password) ─────────────────────────────────────────────
   static Future<Map<String, dynamic>> register({
@@ -61,6 +68,21 @@ class AuthService {
       final user = userCredential.user;
       if (user != null) {
         await _safeUpsertUserDoc(user);
+        final twoFactorResult = await requestTwoFactorLogin(email: email);
+        final twoFactorRequired =
+            (twoFactorResult['data']?['twoFactorRequired'] == true);
+        if (twoFactorRequired) {
+          return {
+            'statusCode': 403,
+            'success': false,
+            'message':
+                twoFactorResult['message'] ?? 'Two-factor authentication required',
+            'data': {
+              'twoFactorRequired': true,
+              'email': twoFactorResult['data']?['email'] ?? email,
+            },
+          };
+        }
         return _authSuccess(
           user,
           message: 'Login successful',
@@ -210,32 +232,135 @@ class AuthService {
     };
   }
 
-  // ... Other specialized 2FA methods would ideally use Cloud Functions 
-  // or Firebase's built-in Multi-Factor Authentication (MFA).
-
-  // ── Missing Methods for Build Fix ─────────────────────────────────────────
-
-  static Future<Map<String, dynamic>> disableTwoFactor({
+  static Future<Map<String, dynamic>> requestTwoFactorEnable({
+    required String email,
     required String token,
-    String? password, // Added to match UI call
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('requestTwoFactorEnable');
+      final response = await callable.call({'email': email.trim()});
+      final data = (response.data as Map?)?.cast<String, dynamic>() ?? {};
+      return {
+        'statusCode': 200,
+        'success': true,
+        'message': data['message'] ?? 'Verification code sent',
+        'data': {'email': data['email'] ?? email.trim()},
+      };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? 'Failed to send verification code');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyTwoFactorEnable({
+    required String otp,
+    required String token,
   }) async {
     try {
       final user = _auth.currentUser;
       if (user == null) return _formatError("User not logged in", 401);
 
-      if (password != null &&
-          password.trim().isNotEmpty &&
-          user.email != null &&
-          user.providerData.any((p) => p.providerId == 'password')) {
+      final callable = _functions.httpsCallable('verifyTwoFactorEnable');
+      final response = await callable.call({'otp': otp.trim()});
+      final data = (response.data as Map?)?.cast<String, dynamic>() ?? {};
+
+      return {
+        'statusCode': 200,
+        'success': true,
+        'message': data['message'] ?? 'Two-factor authentication enabled',
+        'data': {
+          'enabled': true,
+          'email': data['email'] ?? user.email ?? '',
+        },
+      };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? 'Invalid verification code');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
+  static Future<Map<String, dynamic>> requestTwoFactorLogin({
+    required String email,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('requestTwoFactorLogin');
+      final response = await callable.call({'email': email.trim()});
+      final data = (response.data as Map?)?.cast<String, dynamic>() ?? {};
+      return {
+        'statusCode': 200,
+        'success': true,
+        'message': data['message'] ?? 'Verification flow ready',
+        'data': {
+          'twoFactorRequired': data['twoFactorRequired'] == true,
+          'email': data['email'] ?? email.trim(),
+        },
+      };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? 'Failed to start 2FA login');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyTwoFactorLogin({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return _formatError("User not logged in", 401);
+
+      final callable = _functions.httpsCallable('verifyTwoFactorLogin');
+      await callable.call({'otp': otp.trim()});
+
+      return _authSuccess(
+        user,
+        message: '2FA verification successful',
+        userName: await _safeResolveDisplayName(user),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? 'Invalid verification code');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
+  static Future<Map<String, dynamic>> disableTwoFactor({
+    required String token,
+    String? password,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return _formatError("User not logged in", 401);
+
+      final isPasswordProvider = user.providerData.any(
+        (p) => p.providerId == 'password',
+      );
+
+      if (isPasswordProvider) {
+        if (user.email == null) {
+          return _formatError('Current account email is missing');
+        }
+        if (password == null || password.trim().isEmpty) {
+          return _formatError('Current password is required to disable 2FA');
+        }
         final credential = EmailAuthProvider.credential(
           email: user.email!,
-          password: password,
+          password: password.trim(),
         );
         await user.reauthenticateWithCredential(credential);
+      } else {
+        return _formatError(
+          '2FA disable requires re-authentication with password. This account is signed in with social login.',
+        );
       }
 
-      await _db.collection('users').doc(user.uid).update({
+      await _db.collection('users').doc(user.uid).set({
         'twoFactorEnabled': false,
+        'twoFactorEmail': '',
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       return {
@@ -246,48 +371,6 @@ class AuthService {
     } catch (e) {
       return _formatError(e.toString());
     }
-  }
-
-  static Future<Map<String, dynamic>> requestTwoFactorEnable({
-    required String email,
-    required String token,
-  }) async {
-    // Without backend/Cloud Functions this is a local flag-only flow.
-    return {
-      'statusCode': 200,
-      'success': true,
-      'message': 'Verification initiated for $email',
-    };
-  }
-
-  static Future<Map<String, dynamic>> verifyTwoFactorEnable({
-    required String otp, // Changed from code to otp
-    required String token,
-  }) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return _formatError("User not logged in", 401);
-
-      await _db.collection('users').doc(user.uid).update({
-        'twoFactorEnabled': true,
-        'twoFactorEmail': user.email,
-      });
-
-      return {
-        'statusCode': 200,
-        'success': true,
-        'message': 'Two-factor authentication enabled',
-      };
-    } catch (e) {
-      return _formatError(e.toString());
-    }
-  }
-
-  static Future<Map<String, dynamic>> verifyTwoFactorLogin({
-    required String email,
-    required String otp,
-  }) async {
-    return _formatError('2FA login verification requires server-side OTP flow.');
   }
 
   static Future<Map<String, dynamic>> verifyEmailOtp({

@@ -57,12 +57,13 @@ class BiometricService {
   /// Returns true on successful authentication.
   static Future<bool> authenticate({
     String reason = 'Verify your identity to continue',
+    bool biometricOnly = false,
   }) async {
     try {
       return await _auth.authenticate(
         localizedReason: reason,
-        options: const AuthenticationOptions(
-          biometricOnly: false, // allow passcode as fallback
+        options: AuthenticationOptions(
+          biometricOnly: biometricOnly,
           stickyAuth: true,
         ),
       );
@@ -75,11 +76,13 @@ class BiometricService {
   /// Returns null if ready, or a human-readable reason string if not.
   static Future<String?> unavailableReason() async {
     final supported = await isHardwareSupported();
-    if (!supported)
+    if (!supported) {
       return 'This device does not support biometric authentication.';
+    }
     final enrolled = await hasEnrolledBiometrics();
-    if (!enrolled)
+    if (!enrolled) {
       return 'No biometric (fingerprint / face) enrolled on this device. Please set one up in device Settings first.';
+    }
     return null; // all good
   }
 }

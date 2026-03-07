@@ -177,8 +177,9 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
         final token = await StorageService.getAccessToken();
         if (token == null) return;
         await AuthService.requestTwoFactorEnable(email: _email, token: token);
+      } else if (_flow == 'login') {
+        await AuthService.requestTwoFactorLogin(email: _email);
       }
-      // For 'login' flow, ask user to go back and log in again (backend sends on login)
       if (mounted) _showSnack('New verification code sent to $_email');
     } catch (_) {
       if (mounted) _showSnack('Failed to resend code.');

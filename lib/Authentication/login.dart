@@ -21,6 +21,24 @@ class _LoginState extends State<Login> {
   bool _loading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadRememberedState();
+  }
+
+  Future<void> _loadRememberedState() async {
+    final remember = await StorageService.getRememberMe();
+    final rememberedEmail = await StorageService.getRememberedEmail() ?? '';
+    if (!mounted) return;
+    setState(() {
+      _rememberMe = remember;
+      if (remember && rememberedEmail.isNotEmpty) {
+        _emailCtrl.text = rememberedEmail;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -54,11 +72,19 @@ class _LoginState extends State<Login> {
           userId: userId,
           email: email,
           name: userName,
+          persistLogin: _rememberMe,
         );
+        await StorageService.setRememberMe(enabled: _rememberMe, email: email);
 
         if (!mounted) return;
         context.go('/home');
       } else {
+        final data = result['data'] as Map<String, dynamic>?;
+        if (data != null && data['twoFactorRequired'] == true) {
+          final tfEmail = data['email'] as String? ?? email;
+          context.push('/two-factor-otp', extra: {'email': tfEmail, 'flow': 'login'});
+          return;
+        }
         _showSnack(result['message'] ?? 'Login failed');
       }
     } catch (e) {
@@ -82,12 +108,19 @@ class _LoginState extends State<Login> {
           email: data['user']?['email'] as String? ?? '',
           name: data['user']?['fullName'] as String? ?? 'User',
           avatar: data['user']?['avatar']?['url'] as String?,
+          persistLogin: _rememberMe,
+        );
+        await StorageService.setRememberMe(
+          enabled: _rememberMe,
+          email: data['user']?['email'] as String? ?? '',
         );
         if (!mounted) return;
         context.go('/home');
       } else {
         _showSnack(result['message'] ?? 'Google login failed');
       }
+    } catch (_) {
+      _showSnack('Google login failed. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -107,12 +140,19 @@ class _LoginState extends State<Login> {
           email: data['user']?['email'] as String? ?? '',
           name: data['user']?['fullName'] as String? ?? 'User',
           avatar: data['user']?['avatar']?['url'] as String?,
+          persistLogin: _rememberMe,
+        );
+        await StorageService.setRememberMe(
+          enabled: _rememberMe,
+          email: data['user']?['email'] as String? ?? '',
         );
         if (!mounted) return;
         context.go('/home');
       } else {
         _showSnack(result['message'] ?? 'Apple login failed');
       }
+    } catch (_) {
+      _showSnack('Apple login failed. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

@@ -20,12 +20,20 @@ class UserService {
       if (user == null) return _formatError("User not logged in", 401);
 
       String? photoUrl;
+      String? uploadWarning;
 
       // Upload image if provided
       if (imageFile != null) {
-        final ref = _storage.ref().child('avatars/${user.uid}.jpg');
-        await ref.putFile(imageFile);
-        photoUrl = await ref.getDownloadURL();
+        try {
+          final ref = _storage.ref().child('avatars/${user.uid}.jpg');
+          await ref.putFile(imageFile);
+          photoUrl = await ref.getDownloadURL();
+        } on FirebaseException catch (e) {
+          uploadWarning =
+              e.code == 'unauthorized'
+                  ? 'Profile name updated, but image upload is not allowed by Firebase Storage rules.'
+                  : 'Profile name updated, but image upload failed.';
+        }
       }
 
       // Update Firebase Auth Profile
@@ -35,19 +43,20 @@ class UserService {
       }
 
       // Update Firestore
-      await _db.collection('users').doc(user.uid).update({
+      await _db.collection('users').doc(user.uid).set({
         'fullName': fullName,
         if (photoUrl != null) 'avatarUrl': photoUrl,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
       return {
         'statusCode': 200,
         'success': true,
-        'message': 'Profile updated successfully',
+        'message': uploadWarning ?? 'Profile updated successfully',
         'data': {
           'fullName': fullName,
           'avatarUrl': photoUrl ?? user.photoURL,
+          'imageUploadFailed': uploadWarning != null,
         },
       };
     } catch (e) {
@@ -69,6 +78,18 @@ class UserService {
       if (newPassword != confirmPassword) {
         return _formatError("New passwords do not match");
       }
+      if (newPassword == currentPassword) {
+        return _formatError("New password must be different");
+      }
+
+      final isPasswordProvider = user.providerData.any(
+        (p) => p.providerId == 'password',
+      );
+      if (!isPasswordProvider || user.email == null) {
+        return _formatError(
+          "Password change is only available for email/password accounts",
+        );
+      }
 
       // Re-authenticate user before sensitive operation
       AuthCredential credential = EmailAuthProvider.credential(
@@ -87,6 +108,57 @@ class UserService {
       };
     } on FirebaseAuthException catch (e) {
       return _formatError(e.message ?? "Error updating password");
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
+  // ── Delete Account ────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> deleteAccount({
+    required String email,
+    String? password,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return _formatError("User not logged in", 401);
+
+      if ((user.email ?? '').toLowerCase() != email.trim().toLowerCase()) {
+        return _formatError("Email does not match current account");
+      }
+
+      final isPasswordProvider = user.providerData.any(
+        (p) => p.providerId == 'password',
+      );
+      if (isPasswordProvider) {
+        if (password == null || password.trim().isEmpty) {
+          return _formatError("Password is required");
+        }
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: password.trim(),
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
+
+      final uid = user.uid;
+
+      // Best-effort cleanup before deleting auth user.
+      try {
+        await _db.collection('users').doc(uid).delete();
+      } catch (_) {}
+      try {
+        await _storage.ref().child('avatars/$uid.jpg').delete();
+      } catch (_) {}
+
+      await user.delete();
+
+      return {
+        'statusCode': 200,
+        'success': true,
+        'message': 'Account deleted successfully',
+      };
+    } on FirebaseAuthException catch (e) {
+      return _formatError(e.message ?? "Failed to delete account");
     } catch (e) {
       return _formatError(e.toString());
     }

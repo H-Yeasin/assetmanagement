@@ -1,29 +1,54 @@
 {
-    "project_info": {
-        "project_number": "165022828842",
-        "project_id": "ffp-vault-app",
-        "storage_bucket": "ffp-vault-app.firebasestorage.app"
-    },
-    "client": [
-        {
-            "client_info": {
-                "mobilesdk_app_id": "1:165022828842:android:c2d890fb63c6e260a43653",
-                "android_client_info": {
-                    "package_name": "com.example.anick_giroux"
-                }
-            },
-            "oauth_client": [],
-            "api_key": [
-                {
-                    "current_key": "AIzaSyA0VTfmHPb4rNQy-Fp7DXrjCmfBQoH--Tc"
-                }
-            ],
-            "services": {
-                "appinvite_service": {
-                    "other_platform_oauth_client": []
-                }
-            }
+  "project_info": {
+    "project_number": "165022828842",
+    "project_id": "ffp-vault-app",
+    "storage_bucket": "ffp-vault-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165022828842:android:0bd66b7017f17ab7a43653",
+        "android_client_info": {
+          "package_name": "com.ffpvault.app"
         }
-    ],
-    "configuration_version": "1"
+      },
+      "oauth_client": [
+        {
+          "client_id": "165022828842-stns3s3d3kcj4d4vbn02j5284ismlp67.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ffpvault.app",
+            "certificate_hash": "f90468a1205343bc8dd48d58448c5ebc0cf7c54f"
+          }
+        },
+        {
+          "client_id": "165022828842-qlgtpni5ejj2le76en89nics43jgmb1s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0VTfmHPb4rNQy-Fp7DXrjCmfBQoH--Tc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "165022828842-qlgtpni5ejj2le76en89nics43jgmb1s.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "165022828842-f91ng888e1mhg3uieth81u9aq4e6j560.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ffpvault.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
 }

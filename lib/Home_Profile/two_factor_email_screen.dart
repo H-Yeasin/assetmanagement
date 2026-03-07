@@ -71,7 +71,7 @@ class _TwoFactorEmailScreenState extends State<TwoFactorEmailScreen> {
         );
       }
     } catch (e) {
-      _showSnack('Network error. Is the backend running?');
+      _showSnack('Failed to send verification code. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

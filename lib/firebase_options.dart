@@ -40,7 +40,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyA0VTfmHPb4rNQy-Fp7DXrjCmfBQoH--Tc',
-    appId: '1:165022828842:android:c2d890fb63c6e260a43653',
+    appId: '1:165022828842:android:0bd66b7017f17ab7a43653',
     messagingSenderId: '165022828842',
     projectId: 'ffp-vault-app',
     storageBucket: 'ffp-vault-app.firebasestorage.app',
@@ -48,10 +48,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCEDR8v5-mFT5uR0-LbJScgAo0Srcf-ysc',
-    appId: '1:165022828842:ios:29e46e2b0adab83ba43653',
+    appId: '1:165022828842:ios:39a3d8027653e990a43653',
     messagingSenderId: '165022828842',
     projectId: 'ffp-vault-app',
     storageBucket: 'ffp-vault-app.firebasestorage.app',
-    iosBundleId: 'com.example.anickGiroux',
+    iosBundleId: 'com.ffpvault.app',
   );
 }

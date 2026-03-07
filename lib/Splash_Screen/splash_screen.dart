@@ -30,16 +30,46 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _navigateAfterSplash() async {
     try {
+      final seenOnboarding = await StorageService.hasSeenOnboarding();
+      if (!mounted) return;
+
+      if (!seenOnboarding) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+        return;
+      }
+
       final loggedIn = await StorageService.isLoggedIn();
       if (!mounted) return;
 
       if (loggedIn) {
+<<<<<<< HEAD
         context.go('/home');
       } else {
         // Force the sequential flow: Splash -> Onboarding -> Welcome
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+=======
+        final keepLoggedIn = await StorageService.isSessionPersistent();
+        if (!mounted) return;
+        if (!keepLoggedIn) {
+          await StorageService.clearSession();
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+          );
+          return;
+        }
+        context.go('/home');
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+>>>>>>> 08e0970 (authentication)
         );
       }
     } catch (e) {

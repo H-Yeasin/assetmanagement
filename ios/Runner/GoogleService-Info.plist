@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>165022828842-f91ng888e1mhg3uieth81u9aq4e6j560.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.165022828842-f91ng888e1mhg3uieth81u9aq4e6j560</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>165022828842-acubg8b0jlv24c4k777v7kh336csv2o7.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCEDR8v5-mFT5uR0-LbJScgAo0Srcf-ysc</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.anickGiroux</string>
+	<string>com.ffpvault.app</string>
 	<key>PROJECT_ID</key>
 	<string>ffp-vault-app</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:165022828842:ios:29e46e2b0adab83ba43653</string>
+	<string>1:165022828842:ios:39a3d8027653e990a43653</string>
 </dict>
 </plist>

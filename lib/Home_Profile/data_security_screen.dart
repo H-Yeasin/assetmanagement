@@ -59,11 +59,24 @@ class _DataSecurityScreenState extends State<DataSecurityScreen> {
         return;
       }
       // Navigate to fingerprint setup screen
-      context.push('/fingerprint');
+      await context.push('/fingerprint');
+      await _loadSecurityState();
     } else {
-      // Disabling biometric
+      // Disabling biometric requires biometric verification.
+      final ok = await BiometricService.authenticate(
+        reason:
+            'Verify your ${_biometricLabel.toLowerCase()} to disable biometric unlock',
+        biometricOnly: true,
+      );
+      if (!ok) {
+        _showSnack(
+          'Could not verify ${_biometricLabel.toLowerCase()}. Biometric unlock is still enabled.',
+        );
+        return;
+      }
       await SecurityService.setBiometricEnabled(false);
       setState(() => _fingerprintEnabled = false);
+      _showSnack('$_biometricLabel unlock disabled.');
     }
   }
 
@@ -71,13 +84,15 @@ class _DataSecurityScreenState extends State<DataSecurityScreen> {
   Future<void> _onPinToggle(bool val) async {
     if (val) {
       // Navigate to PIN setup
-      context.push('/set-pin');
+      await context.push('/set-pin');
+      await _loadSecurityState();
     } else {
-      // Confirm disable
-      final confirmed = await _showDisablePinDialog();
+      // Disable PIN only after verifying current PIN.
+      final confirmed = await _verifyAndDisablePinDialog();
       if (confirmed == true) {
         await SecurityService.clearPin();
         setState(() => _pinEnabled = false);
+        _showSnack('PIN lock disabled.');
       }
     }
   }
@@ -122,35 +137,236 @@ class _DataSecurityScreenState extends State<DataSecurityScreen> {
     );
   }
 
-  Future<bool?> _showDisablePinDialog() {
+  Future<bool?> _verifyAndDisablePinDialog() {
     return showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Disable PIN?',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-        ),
-        content: const Text(
-          'Your PIN will be removed and the Vault will no longer require it for access.',
-          style: TextStyle(fontSize: 14, color: Color(0xFF555555), height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF888888)),
+      barrierDismissible: false,
+      builder: (ctx) {
+        String pin = '';
+        String? errorText;
+        bool isVerifying = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Disable',
-              style: TextStyle(color: brandRed, fontWeight: FontWeight.w600),
+            title: const Text(
+              'Disable PIN?',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
             ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Enter your current PIN to disable Vault PIN lock.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF555555),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(4, (i) {
+                    final filled = i < pin.length;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: filled ? brandRed : const Color(0xFFDDDDDD),
+                      ),
+                    );
+                  }),
+                ),
+                if (errorText != null) ...[
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      errorText!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _PinPadButton(
+                      label: '1',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '1';
+                        errorText = null;
+                      }),
+                    ),
+                    _PinPadButton(
+                      label: '2',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '2';
+                        errorText = null;
+                      }),
+                    ),
+                    _PinPadButton(
+                      label: '3',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '3';
+                        errorText = null;
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _PinPadButton(
+                      label: '4',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '4';
+                        errorText = null;
+                      }),
+                    ),
+                    _PinPadButton(
+                      label: '5',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '5';
+                        errorText = null;
+                      }),
+                    ),
+                    _PinPadButton(
+                      label: '6',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '6';
+                        errorText = null;
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _PinPadButton(
+                      label: '7',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '7';
+                        errorText = null;
+                      }),
+                    ),
+                    _PinPadButton(
+                      label: '8',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '8';
+                        errorText = null;
+                      }),
+                    ),
+                    _PinPadButton(
+                      label: '9',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '9';
+                        errorText = null;
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    const _PinPadEmpty(),
+                    _PinPadButton(
+                      label: '0',
+                      onTap: () => setDialogState(() {
+                        if (pin.length < 4) pin += '0';
+                        errorText = null;
+                      }),
+                    ),
+                    _PinPadDelete(
+                      onTap: () => setDialogState(() {
+                        if (pin.isNotEmpty) {
+                          pin = pin.substring(0, pin.length - 1);
+                        }
+                        errorText = null;
+                      }),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              if (!isVerifying)
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Color(0xFF888888)),
+                  ),
+                ),
+              TextButton(
+                onPressed: isVerifying
+                    ? null
+                    : () async {
+                        if (pin.length != 4) {
+                          setDialogState(() {
+                            errorText = 'Enter valid 4-digit PIN';
+                          });
+                          return;
+                        }
+
+                        setDialogState(() {
+                          isVerifying = true;
+                          errorText = null;
+                        });
+
+                        final ok = await SecurityService.verifyPin(pin);
+                        if (!context.mounted) return;
+
+                        if (ok) {
+                          Navigator.pop(ctx, true);
+                          return;
+                        }
+
+                        setDialogState(() {
+                          isVerifying = false;
+                          errorText = 'Incorrect PIN';
+                        });
+                      },
+                child: isVerifying
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Disable',
+                        style: TextStyle(
+                          color: brandRed,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: const Color(0xFF333333),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -429,5 +645,67 @@ class _SecurityOptionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _PinPadButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _PinPadButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 62,
+        height: 42,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEBEBEB),
+          borderRadius: BorderRadius.circular(21),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF111111),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PinPadDelete extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PinPadDelete({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: const SizedBox(
+        width: 62,
+        height: 42,
+        child: Center(
+          child: Icon(Icons.backspace_outlined, size: 22, color: Colors.black),
+        ),
+      ),
+    );
+  }
+}
+
+class _PinPadEmpty extends StatelessWidget {
+  const _PinPadEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(width: 62, height: 42);
   }
 }

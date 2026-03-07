@@ -19,6 +19,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   File? _imageFile;
+  String? _existingAvatarUrl;
   bool _isLoading = false;
   // ← starts OFF; toggling ON navigates to two-factor email screen
   bool _twoFactor = false;
@@ -32,11 +33,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _loadData() async {
     final name = await StorageService.getUserName() ?? '';
     final email = await StorageService.getUserEmail() ?? '';
+    final avatar = await StorageService.getUserAvatar();
     final is2fa = await SecurityService.is2faEnabled();
     if (mounted) {
       setState(() {
         _nameController.text = name;
         _emailController.text = email;
+        _existingAvatarUrl =
+            (avatar != null && avatar.trim().isNotEmpty) ? avatar : null;
         _twoFactor = is2fa;
       });
     }
@@ -56,7 +60,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isLoading = true);
     try {
       final token = await StorageService.getAccessToken();
-      if (token == null) return;
+      if (token == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Session expired. Please log in again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       final res = await UserService.updateProfile(
         token: token,
@@ -68,21 +82,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (res['success'] == true) {
         // Update local storage name & avatar
-        final userAvatar = res['data']?['avatar']?['url'] as String?;
+        final userAvatar = res['data']?['avatarUrl'] as String?;
+        final message = res['message'] as String? ?? 'Profile saved successfully!';
+        final imageUploadFailed =
+            (res['data']?['imageUploadFailed'] as bool?) ?? false;
         await StorageService.saveSession(
           accessToken: token,
           refreshToken: await StorageService.getRefreshToken() ?? '',
           userId: await StorageService.getUserId() ?? '',
-          email: _emailController
-              .text, // User email reading from field but backend may ignore
+          email: _emailController.text,
           name: _nameController.text.trim(),
           avatar: userAvatar,
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile saved successfully!'),
-            backgroundColor: brandRed,
+          SnackBar(
+            content: Text(message),
+            backgroundColor: imageUploadFailed ? Colors.orange : brandRed,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -98,8 +114,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Network error. Is the backend running?'),
+        SnackBar(
+          content: Text('Failed to update profile: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -173,7 +189,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? null
                       : () async {
                           final pass = passwordCtrl.text.trim();
-                          if (pass.isEmpty) return;
+                          if (pass.isEmpty) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Please enter your current password.',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
 
                           setDialogState(() => isDisabling = true);
                           final token = await StorageService.getAccessToken();
@@ -315,11 +341,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                           _imageFile!,
                                           fit: BoxFit.cover,
                                         )
-                                      : const Icon(
-                                          Icons.person,
-                                          size: 56,
-                                          color: Color(0xFF999999),
-                                        ),
+                                      : (_existingAvatarUrl != null
+                                            ? Image.network(
+                                                _existingAvatarUrl!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (_, __, ___) => const Icon(
+                                                      Icons.person,
+                                                      size: 56,
+                                                      color: Color(0xFF999999),
+                                                    ),
+                                              )
+                                            : const Icon(
+                                                Icons.person,
+                                                size: 56,
+                                                color: Color(0xFF999999),
+                                              ))
                                 ),
                               ),
                               Positioned(
@@ -557,15 +594,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 // ── Text Input Field ──────────────────────────────────────────────────────────
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
-  final TextInputType? keyboardType;
 
-  const _InputField({required this.controller, this.keyboardType});
+  const _InputField({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      keyboardType: keyboardType,
       style: const TextStyle(fontSize: 15, color: Color(0xFF111111)),
       decoration: InputDecoration(
         filled: true,

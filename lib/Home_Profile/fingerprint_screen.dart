@@ -46,6 +46,7 @@ class _FingerprintScreenState extends State<FingerprintScreen> {
     final success = await BiometricService.authenticate(
       reason:
           'Confirm your ${_biometricLabel.toLowerCase()} to enable biometric unlock',
+      biometricOnly: true,
     );
 
     if (!mounted) return;

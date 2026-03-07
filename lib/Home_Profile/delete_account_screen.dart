@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/auth_service.dart';
+import '../services/storage_service.dart';
+import '../services/user_service.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -9,8 +13,65 @@ class DeleteAccountScreen extends StatefulWidget {
 }
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
-  final _emailController = TextEditingController(text: 'you@gmail.com');
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillEmail();
+  }
+
+  Future<void> _prefillEmail() async {
+    final email = await StorageService.getUserEmail() ?? '';
+    if (!mounted) return;
+    _emailController.text = email;
+  }
+
+  Future<void> _onConfirmDelete() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty) {
+      _showSnack('Please enter your email');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final result = await UserService.deleteAccount(
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) return;
+      if (result['success'] == true) {
+        await AuthService.logout();
+        await StorageService.clearSession();
+        if (!mounted) return;
+        _showSnack('Account deleted successfully.');
+        context.go('/');
+      } else {
+        _showSnack(result['message'] ?? 'Failed to delete account');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Failed to delete account: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: brandRed,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -71,17 +132,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Logic for deletion would go here. For now, pop after showing message.
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Account deleted.'),
-                        backgroundColor: brandRed,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    Navigator.pop(context); // Go back
-                  },
+                  onPressed: _isLoading ? null : _onConfirmDelete,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandRed,
                     foregroundColor: Colors.white,
@@ -90,10 +141,22 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    'Confirm',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : const Text(
+                          'Confirm',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ),
               ),
             ],
