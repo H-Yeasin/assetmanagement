@@ -1,11 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
-  // ── Register ───────────────────────────────────────────────────────────────
+  // ── Register (Email/Password) ─────────────────────────────────────────────
   static Future<Map<String, dynamic>> register({
     required String fullName,
     required String email,
@@ -24,23 +29,14 @@ class AuthService {
 
       final user = userCredential.user;
       if (user != null) {
-        // Update display name
         await user.updateDisplayName(fullName);
-        
-        // Store extra data in Firestore
-        await _db.collection('users').doc(user.uid).set({
-          'fullName': fullName,
-          'email': email,
-          'createdAt': FieldValue.serverTimestamp(),
-          'twoFactorEnabled': false,
-        });
-
-        return {
-          'statusCode': 200,
-          'success': true,
-          'message': 'Registration successful',
-          'data': {'userId': user.uid},
-        };
+        await user.reload();
+        await _safeUpsertUserDoc(user, fallbackName: fullName);
+        return _authSuccess(
+          user,
+          message: 'Registration successful',
+          userName: fullName,
+        );
       }
       return _formatError("Registration failed");
     } on FirebaseAuthException catch (e) {
@@ -63,29 +59,12 @@ class AuthService {
 
       final user = userCredential.user;
       if (user != null) {
-        // Fetch additional data from Firestore
-        final userDoc = await _db.collection('users').doc(user.uid).get();
-        final userData = userDoc.data();
-
-        // Check for 2FA (simplified for now)
-        if (userData != null && userData['twoFactorEnabled'] == true) {
-          // In a real app, you'd trigger an OTP here. 
-          // For now, let's keep it simple or return a special flag.
-        }
-
-        return {
-          'statusCode': 200,
-          'success': true,
-          'message': 'Login successful',
-          'data': {
-            'token': await user.getIdToken(),
-            'user': {
-              'uid': user.uid,
-              'email': user.email,
-              'fullName': user.displayName ?? userData?['fullName'] ?? '',
-            }
-          },
-        };
+        await _safeUpsertUserDoc(user);
+        return _authSuccess(
+          user,
+          message: 'Login successful',
+          userName: await _safeResolveDisplayName(user),
+        );
       }
       return _formatError("Login failed");
     } on FirebaseAuthException catch (e) {
@@ -95,19 +74,103 @@ class AuthService {
     }
   }
 
-  // ── Forgot Password ──────────────────────────────────────────────────────
+  // ── Google Sign-In ────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> loginWithGoogle() async {
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        return _formatError('Google sign-in was cancelled.');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) return _formatError('Google sign-in failed.');
+
+      await _safeUpsertUserDoc(user);
+      return _authSuccess(
+        user,
+        message: 'Google login successful',
+        userName: await _safeResolveDisplayName(user),
+      );
+    } on FirebaseAuthException catch (e) {
+      return _formatError(e.message ?? 'Google sign-in failed.');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
+  // ── Apple Sign-In ─────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> loginWithApple() async {
+    try {
+      if (!(defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS)) {
+        return _formatError('Apple sign-in is only available on iOS/macOS.');
+      }
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      final user = userCredential.user;
+      if (user == null) return _formatError('Apple sign-in failed.');
+
+      if ((user.displayName ?? '').trim().isEmpty) {
+        final fullName = [
+          appleCredential.givenName,
+          appleCredential.familyName,
+        ].whereType<String>().where((e) => e.trim().isNotEmpty).join(' ');
+        if (fullName.isNotEmpty) {
+          await user.updateDisplayName(fullName);
+        }
+      }
+
+      await _safeUpsertUserDoc(user);
+      return _authSuccess(
+        user,
+        message: 'Apple login successful',
+        userName: await _safeResolveDisplayName(user),
+      );
+    } on FirebaseAuthException catch (e) {
+      return _formatError(e.message ?? 'Apple sign-in failed.');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
+  // ── Forgot Password ───────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> forgotPassword({
     required String email,
   }) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email);
+      final callable = _functions.httpsCallable('requestPasswordResetOtp');
+      await callable.call({'email': email.trim()});
       return {
         'statusCode': 200,
         'success': true,
-        'message': 'Password reset email sent',
+        'message': 'OTP sent to your email',
       };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(
+        (e.message ?? 'Error sending OTP'),
+        400,
+      );
     } on FirebaseAuthException catch (e) {
-      return _formatError(e.message ?? "Error sending reset email");
+      return _formatError(e.message ?? "Error sending OTP");
     } catch (e) {
       return _formatError(e.toString());
     }
@@ -116,6 +179,7 @@ class AuthService {
   // ── Logout ─────────────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> logout({String? token}) async {
     try {
+      await GoogleSignIn().signOut();
       await _auth.signOut();
       return {
         'statusCode': 200,
@@ -158,8 +222,17 @@ class AuthService {
       final user = _auth.currentUser;
       if (user == null) return _formatError("User not logged in", 401);
 
-      // In a real app, we might verify password here if provided
-      
+      if (password != null &&
+          password.trim().isNotEmpty &&
+          user.email != null &&
+          user.providerData.any((p) => p.providerId == 'password')) {
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: password,
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
+
       await _db.collection('users').doc(user.uid).update({
         'twoFactorEnabled': false,
       });
@@ -178,11 +251,11 @@ class AuthService {
     required String email,
     required String token,
   }) async {
-    // Placeholder: In a real migration, this would send an OTP via Cloud Functions
+    // Without backend/Cloud Functions this is a local flag-only flow.
     return {
       'statusCode': 200,
       'success': true,
-      'message': 'OTP sent to $email',
+      'message': 'Verification initiated for $email',
     };
   }
 
@@ -194,10 +267,9 @@ class AuthService {
       final user = _auth.currentUser;
       if (user == null) return _formatError("User not logged in", 401);
 
-      // Placeholder: Verify code here (Cloud Function)
-      
       await _db.collection('users').doc(user.uid).update({
         'twoFactorEnabled': true,
+        'twoFactorEmail': user.email,
       });
 
       return {
@@ -212,55 +284,142 @@ class AuthService {
 
   static Future<Map<String, dynamic>> verifyTwoFactorLogin({
     required String email,
-    required String otp, // Changed from code to otp
+    required String otp,
   }) async {
-    // Placeholder for 2FA login verification
-    return {
-      'statusCode': 200,
-      'success': true,
-      'message': '2FA verification successful',
-      'data': {
-        'token': 'mock_token',
-        'user': {'email': email}
-      },
-    };
+    return _formatError('2FA login verification requires server-side OTP flow.');
   }
 
   static Future<Map<String, dynamic>> verifyEmailOtp({
     required String email,
-    required String otp, // Changed from code to otp
+    required String otp,
   }) async {
-    // Firebase Auth usually uses verification links, not codes for registration.
-    // Mocking success to allow the UI to proceed.
-    return {
-      'statusCode': 200,
-      'success': true,
-      'message': 'OTP verified',
-      'data': {'userId': 'mock_uid'}
-    };
+    return _formatError(
+      'Email OTP verification is not enabled. Use email verification link or phone OTP.',
+    );
   }
 
   static Future<Map<String, dynamic>> resetPassword({
-    String? email, // Added to match UI call
-    required String otp, // Changed from code to otp
+    String? email,
+    required String otp,
     required String newPassword,
-    String? confirmPassword, // Made optional to match UI call
+    String? confirmPassword,
   }) async {
     try {
       if (confirmPassword != null && newPassword != confirmPassword) {
         return _formatError("Passwords do not match");
       }
-      await _auth.confirmPasswordReset(code: otp, newPassword: newPassword);
+      if (email == null || email.trim().isEmpty) {
+        return _formatError('Email is required');
+      }
+      final callable = _functions.httpsCallable('resetPasswordWithOtp');
+      await callable.call({
+        'email': email.trim(),
+        'otp': otp.trim(),
+        'newPassword': newPassword,
+      });
       return {
         'statusCode': 200,
         'success': true,
         'message': 'Password reset successful',
       };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? "Error resetting password");
     } on FirebaseAuthException catch (e) {
       return _formatError(e.message ?? "Error resetting password");
     } catch (e) {
       return _formatError(e.toString());
     }
+  }
+
+  static Future<Map<String, dynamic>> verifyPasswordResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('verifyPasswordResetOtp');
+      await callable.call({
+        'email': email.trim(),
+        'otp': otp.trim(),
+      });
+      return {
+        'statusCode': 200,
+        'success': true,
+        'message': 'OTP verified',
+      };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? 'Invalid OTP');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
+  static Future<void> _upsertUserDoc(User user, {String? fallbackName}) async {
+    final userRef = _db.collection('users').doc(user.uid);
+    final existing = await userRef.get();
+    await userRef.set({
+      'fullName': user.displayName ?? fallbackName ?? '',
+      'email': user.email ?? '',
+      'phone': user.phoneNumber ?? '',
+      'avatarUrl': user.photoURL ?? '',
+      if (!existing.exists) 'twoFactorEnabled': false,
+      if (!existing.exists) 'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  static Future<void> _safeUpsertUserDoc(
+    User user, {
+    String? fallbackName,
+  }) async {
+    try {
+      await _upsertUserDoc(user, fallbackName: fallbackName);
+    } catch (_) {
+      // Firestore unavailability should not block successful authentication.
+    }
+  }
+
+  static Future<String> _resolveDisplayName(User user) async {
+    final displayName = user.displayName?.trim() ?? '';
+    if (displayName.isNotEmpty) return displayName;
+    final doc = await _db.collection('users').doc(user.uid).get();
+    return (doc.data()?['fullName'] as String?)?.trim().isNotEmpty == true
+        ? (doc.data()?['fullName'] as String)
+        : 'User';
+  }
+
+  static Future<String> _safeResolveDisplayName(User user) async {
+    try {
+      return await _resolveDisplayName(user);
+    } catch (_) {
+      final fallback = user.displayName?.trim() ?? '';
+      return fallback.isNotEmpty ? fallback : 'User';
+    }
+  }
+
+  static Future<Map<String, dynamic>> _authSuccess(
+    User user, {
+    required String message,
+    required String userName,
+  }) async {
+    final idToken = await user.getIdToken();
+    return {
+      'statusCode': 200,
+      'success': true,
+      'message': message,
+      'data': {
+        // Keep these keys to avoid breaking existing UI.
+        'accessToken': idToken,
+        'refreshToken': user.refreshToken ?? '',
+        '_id': user.uid,
+        'user': {
+          '_id': user.uid,
+          'email': user.email ?? '',
+          'phone': user.phoneNumber ?? '',
+          'fullName': userName,
+          'avatar': {'url': user.photoURL ?? ''},
+        },
+      },
+    };
   }
 
   // ── Helper ───────────────────────────────────────────────────────────────

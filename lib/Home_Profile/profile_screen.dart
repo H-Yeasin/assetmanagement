@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -206,6 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             TextButton(
                               onPressed: () async {
                                 Navigator.pop(ctx);
+                                await AuthService.logout();
                                 await StorageService.clearSession();
                                 if (context.mounted) context.go('/');
                               },

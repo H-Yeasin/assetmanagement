@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 import 'shared_widgets.dart';
 import 'login.dart';
 
@@ -66,29 +67,26 @@ class _SignInState extends State<SignIn> {
         final accessToken = data['accessToken'] as String? ?? '';
         final refreshToken = data['refreshToken'] as String? ?? '';
         final userId = data['_id'] as String? ?? '';
-
-        if (accessToken.isNotEmpty) {
-          if (mounted) {
-            _showSnack('Account created successfully. Please login.');
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const Login()),
-            );
-          }
+        final displayName = data['user']?['fullName'] as String? ?? name;
+        final userEmail = data['user']?['email'] as String? ?? email;
+        if (accessToken.isNotEmpty && userId.isNotEmpty) {
+          await StorageService.saveSession(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            userId: userId,
+            email: userEmail,
+            name: displayName,
+          );
+          if (!mounted) return;
+          context.go('/home');
         } else {
-          // OTP verification required
-          if (mounted) {
-            context.push(
-              '/verify-otp',
-              extra: {'email': email, 'flow': 'register'},
-            );
-          }
+          _showSnack('Registration completed. Please log in.');
         }
       } else {
         _showSnack(result['message'] ?? 'Registration failed');
       }
     } catch (e) {
-      _showSnack('Network error. Is the backend running?');
+      _showSnack('Registration failed. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

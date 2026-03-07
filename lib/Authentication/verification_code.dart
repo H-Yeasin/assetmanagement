@@ -102,12 +102,18 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     setState(() => _loading = true);
     try {
       if (widget.flow == 'forgot') {
-        // Don't call backend yet — go to reset password screen with otp
-        if (mounted) {
+        final result = await AuthService.verifyPasswordResetOtp(
+          email: widget.email,
+          otp: otp,
+        );
+        if (!mounted) return;
+        if (result['success'] == true) {
           context.push(
             '/reset-password',
             extra: {'email': widget.email, 'otp': otp},
           );
+        } else {
+          _showSnack(result['message'] ?? 'Invalid OTP');
         }
         return;
       }

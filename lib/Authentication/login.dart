@@ -44,8 +44,6 @@ class _LoginState extends State<Login> {
 
       if (result['success'] == true) {
         final data = result['data'] as Map<String, dynamic>;
-
-        // Normal login — save session
         final accessToken = data['accessToken'] as String? ?? '';
         final refreshToken = data['refreshToken'] as String? ?? '';
         final userId = data['_id'] as String? ?? '';
@@ -61,21 +59,60 @@ class _LoginState extends State<Login> {
         if (!mounted) return;
         context.go('/home');
       } else {
-        // Backend returns success: false and statusCode: 403 when 2FA is required
-        final data = result['data'] as Map<String, dynamic>?;
-        if (data != null && data['twoFactorRequired'] == true) {
-          final tfEmail = data['email'] as String? ?? email;
-          context.push(
-            '/two-factor-otp',
-            extra: {'email': tfEmail, 'flow': 'login'},
-          );
-          return;
-        }
-
         _showSnack(result['message'] ?? 'Login failed');
       }
     } catch (e) {
-      _showSnack('Network error. Is the backend running?');
+      _showSnack('Login failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _loading = true);
+    try {
+      final result = await AuthService.loginWithGoogle();
+      if (!mounted) return;
+      if (result['success'] == true) {
+        final data = result['data'] as Map<String, dynamic>;
+        await StorageService.saveSession(
+          accessToken: data['accessToken'] as String? ?? '',
+          refreshToken: data['refreshToken'] as String? ?? '',
+          userId: data['_id'] as String? ?? '',
+          email: data['user']?['email'] as String? ?? '',
+          name: data['user']?['fullName'] as String? ?? 'User',
+          avatar: data['user']?['avatar']?['url'] as String?,
+        );
+        if (!mounted) return;
+        context.go('/home');
+      } else {
+        _showSnack(result['message'] ?? 'Google login failed');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _handleAppleLogin() async {
+    setState(() => _loading = true);
+    try {
+      final result = await AuthService.loginWithApple();
+      if (!mounted) return;
+      if (result['success'] == true) {
+        final data = result['data'] as Map<String, dynamic>;
+        await StorageService.saveSession(
+          accessToken: data['accessToken'] as String? ?? '',
+          refreshToken: data['refreshToken'] as String? ?? '',
+          userId: data['_id'] as String? ?? '',
+          email: data['user']?['email'] as String? ?? '',
+          name: data['user']?['fullName'] as String? ?? 'User',
+          avatar: data['user']?['avatar']?['url'] as String?,
+        );
+        if (!mounted) return;
+        context.go('/home');
+      } else {
+        _showSnack(result['message'] ?? 'Apple login failed');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -232,7 +269,7 @@ class _LoginState extends State<Login> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   AppSocialButton(
-                    onTap: () {},
+                    onTap: _loading ? () {} : _handleGoogleLogin,
                     child: Image.network(
                       'https://www.google.com/favicon.ico',
                       width: 26,
@@ -246,7 +283,7 @@ class _LoginState extends State<Login> {
                   ),
                   const SizedBox(width: 16),
                   AppSocialButton(
-                    onTap: () {},
+                    onTap: _loading ? () {} : _handleAppleLogin,
                     child: const Icon(
                       Icons.apple_rounded,
                       size: 28,

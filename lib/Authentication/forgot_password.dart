@@ -3,8 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import 'shared_widgets.dart';
 
-/// Step 1 of Forgot Password: enter email → send OTP.
-/// Navigates to the OTP verification screen on success.
+/// Enter email and send password reset OTP.
 class ForgotPassword extends StatefulWidget {
   const ForgotPassword({super.key});
 
@@ -35,13 +34,12 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       if (!mounted) return;
 
       if (result['success'] == true) {
-        // Navigate to OTP screen, passing email and flow = 'forgot'
         context.push('/verify-otp', extra: {'email': email, 'flow': 'forgot'});
       } else {
         _showSnack(result['message'] ?? 'Failed to send OTP');
       }
     } catch (e) {
-      _showSnack('Network error. Is the backend running?');
+      _showSnack('Failed to send OTP');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
