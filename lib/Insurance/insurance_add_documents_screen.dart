@@ -74,11 +74,25 @@ class _InsuranceAddDocumentsScreenState
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? image = await _picker.pickImage(source: source);
-
-    if (image != null) {
-      File file = File(image.path);
-      await _uploadDocument(file, image.name);
+    if (source == ImageSource.gallery) {
+      // Use FilePicker for gallery to get original filename
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
+      if (result != null && result.files.single.path != null) {
+        File file = File(result.files.single.path!);
+        await _uploadDocument(file, result.files.single.name);
+      }
+    } else {
+      // Use ImagePicker for camera
+      final XFile? image = await _picker.pickImage(source: source);
+      if (image != null) {
+        File file = File(image.path);
+        // Generate a descriptive name for camera photos
+        String timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+        String extension = image.path.split('.').last.toLowerCase();
+        await _uploadDocument(file, 'IMG_$timestamp.$extension');
+      }
     }
   }
 
