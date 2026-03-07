@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:ui';
 import 'package:intl/intl.dart';
 import '../services/loan_service.dart';
 import '../Loan_Screen/models/loan_model.dart';
@@ -15,7 +16,26 @@ class HomeDashboardScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const AddItemBottomSheet(),
+      barrierColor: Colors.transparent, // We handle blur & darkening in the builder
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+        child: GestureDetector(
+          onTap: () => Navigator.pop(ctx),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.10), // Subtle darkening
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: () {}, // Prevent taps on the sheet from dismissing
+                  child: const AddItemBottomSheet(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -150,7 +170,7 @@ class HomeDashboardScreen extends StatelessWidget {
                         title: 'Documents',
                         subtitle: loadingText,
                         iconColor: Colors.orange,
-                        onTap: () => context.push('/add-documents'),
+                        onTap: () => context.push('/vault'),
                       );
                     }
                   ),

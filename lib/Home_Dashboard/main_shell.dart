@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:go_router/go_router.dart';
 import 'widgets.dart';
 
@@ -47,7 +48,26 @@ class _MainShellState extends State<MainShell> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const AddItemBottomSheet(),
+      barrierColor: Colors.transparent,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+        child: GestureDetector(
+          onTap: () => Navigator.pop(ctx),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: () {},
+                  child: const AddItemBottomSheet(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

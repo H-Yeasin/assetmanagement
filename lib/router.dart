@@ -80,7 +80,10 @@ final GoRouter appRouter = GoRouter(
         ),
         GoRoute(
           path: '/vault',
-          builder: (context, state) => const VaultScreen(),
+          builder: (context, state) {
+            final category = state.extra as String?;
+            return VaultScreen(initialCategory: category);
+          },
         ),
         GoRoute(
           path: '/profile',
@@ -132,6 +135,34 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) {
             final policy = state.extra as InsurancePolicy;
             return InsuranceAdditionalDetailsScreen(policy: policy);
+          },
+        ),
+        GoRoute(
+          path: '/vault-category',
+          builder: (context, state) {
+            final categoryName = state.extra as String;
+            return VaultCategoryScreen(categoryName: categoryName);
+          },
+        ),
+        GoRoute(
+          path: '/vault-subfolder',
+          builder: (context, state) {
+            final folderName = state.extra as String;
+            return VaultSubfolderScreen(folderName: folderName);
+          },
+        ),
+        GoRoute(
+          path: '/vault-edit-folder',
+          builder: (context, state) {
+            final folderName = state.extra as String;
+            return VaultEditFolderScreen(folderName: folderName);
+          },
+        ),
+        GoRoute(
+          path: '/vault-create-subfolder',
+          builder: (context, state) {
+            final categoryName = state.extra as String;
+            return VaultCreateSubfolderScreen(categoryName: categoryName);
           },
         ),
       ],
@@ -255,34 +286,6 @@ final GoRouter appRouter = GoRouter(
           initialDocuments:
               extra?['initialDocuments'] as List<Map<String, dynamic>>?,
         );
-      },
-    ),
-    GoRoute(
-      path: '/vault-category',
-      builder: (context, state) {
-        final categoryName = state.extra as String;
-        return VaultCategoryScreen(categoryName: categoryName);
-      },
-    ),
-    GoRoute(
-      path: '/vault-subfolder',
-      builder: (context, state) {
-        final folderName = state.extra as String;
-        return VaultSubfolderScreen(folderName: folderName);
-      },
-    ),
-    GoRoute(
-      path: '/vault-edit-folder',
-      builder: (context, state) {
-        final folderName = state.extra as String;
-        return VaultEditFolderScreen(folderName: folderName);
-      },
-    ),
-    GoRoute(
-      path: '/vault-create-subfolder',
-      builder: (context, state) {
-        final categoryName = state.extra as String;
-        return VaultCreateSubfolderScreen(categoryName: categoryName);
       },
     ),
     // ── Auth flow routes ──────────────────────────────────────────────────────

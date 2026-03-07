@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -226,7 +227,7 @@ class _InsuranceAddDocumentsScreenState
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context, _documents),
+                    onTap: () => context.pop(_documents),
                     child: const Icon(
                       Icons.arrow_back,
                       size: 24,
@@ -385,16 +386,8 @@ class _InsuranceAddDocumentsScreenState
                                   index,
                                   doc['name'],
                                 ),
-                                onTap: () async {
-                                  if (doc['path'] != null) {
-                                    final url = Uri.parse(doc['path']);
-                                    if (await canLaunchUrl(url)) {
-                                      await launchUrl(
-                                        url,
-                                        mode: LaunchMode.externalApplication,
-                                      );
-                                    }
-                                  }
+                                onTap: () {
+                                  context.go('/vault', extra: 'Insurance');
                                 },
                               );
                             },
@@ -453,7 +446,7 @@ class _InsuranceAddDocumentsScreenState
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, _documents),
+                  onPressed: () => context.pop(_documents),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFC61C36),
                     shape: RoundedRectangleBorder(
@@ -542,20 +535,7 @@ class _InsuranceAddDocumentsScreenState
           subtitle,
           style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
         ),
-        trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: Color(0xFF111111)),
-          onSelected: (value) {
-            if (value == 'rename') onRename?.call();
-            if (value == 'delete') onDelete?.call();
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'rename', child: Text('Rename')),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
+        trailing: const SizedBox.shrink(), // Access restricted to Vault
       ),
     );
   }

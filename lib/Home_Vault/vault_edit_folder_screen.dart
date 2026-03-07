@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 
 class VaultEditFolderScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => context.pop(),
                     child: const Icon(
                       Icons.arrow_back,
                       size: 20,
@@ -159,7 +160,7 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
                   ),
                   onPressed: () {
                     // Placeholder — save logic later
-                    Navigator.pop(context);
+                    context.pop();
                   },
                   child: const Text(
                     'Save & Continue',

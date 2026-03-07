@@ -396,7 +396,7 @@ class AddItemBottomSheet extends StatelessWidget {
                 iconColor: Colors.orange,
                 onTap: () {
                   Navigator.pop(context);
-                  context.push('/add-documents');
+                  context.push('/vault');
                 },
               ),
             ],

@@ -8,7 +8,8 @@ import '../services/housing_service.dart';
 import '../services/insurance_service.dart';
 
 class VaultScreen extends StatefulWidget {
-  const VaultScreen({super.key});
+  final String? initialCategory;
+  const VaultScreen({super.key, this.initialCategory});
 
   @override
   State<VaultScreen> createState() => _VaultScreenState();
@@ -36,6 +37,13 @@ class _VaultScreenState extends State<VaultScreen> {
         _unlocked = true;
         _isChecking = false;
       });
+      if (widget.initialCategory != null) {
+        Future.delayed(Duration.zero, () {
+          if (mounted) {
+            context.push('/vault-category', extra: widget.initialCategory);
+          }
+        });
+      }
       return;
     }
 
@@ -52,6 +60,13 @@ class _VaultScreenState extends State<VaultScreen> {
             _unlocked = true;
             _isChecking = false;
           });
+          if (widget.initialCategory != null) {
+            Future.delayed(Duration.zero, () {
+              if (mounted) {
+                context.push('/vault-category', extra: widget.initialCategory);
+              }
+            });
+          }
           return;
         }
         // Biometric failed/cancelled – fall through to PIN if set
@@ -66,6 +81,13 @@ class _VaultScreenState extends State<VaultScreen> {
       if (mounted) {
         if (result == true) {
           setState(() => _unlocked = true);
+          if (widget.initialCategory != null) {
+            Future.delayed(Duration.zero, () {
+              if (mounted) {
+                context.push('/vault-category', extra: widget.initialCategory);
+              }
+            });
+          }
         } else {
           // Navigated back without unlocking
           context.go('/home');

@@ -36,20 +36,11 @@ class _SplashScreenState extends State<SplashScreen>
       if (loggedIn) {
         context.go('/home');
       } else {
-        final seenOnboarding = await StorageService.hasSeenOnboarding();
-        if (!mounted) return;
-
-        if (seenOnboarding) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-          );
-        }
+        // Force the sequential flow: Splash -> Onboarding -> Welcome
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
       }
     } catch (e) {
       debugPrint("Navigation error: $e");

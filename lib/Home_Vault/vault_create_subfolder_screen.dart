@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 
 class VaultCreateSubfolderScreen extends StatefulWidget {
@@ -34,7 +35,7 @@ class _VaultCreateSubfolderScreenState
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => context.pop(),
                     child: const Icon(
                       Icons.arrow_back,
                       size: 20,
@@ -170,7 +171,7 @@ class _VaultCreateSubfolderScreenState
                   ),
                   onPressed: () {
                     // Placeholder — create logic later
-                    Navigator.pop(context);
+                    context.pop();
                   },
                   child: const Text(
                     'Create Subfolder',

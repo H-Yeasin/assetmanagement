@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/loan_service.dart';
 import '../Loan_Screen/models/document_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class VaultSubfolderScreen extends StatelessWidget {
   final String folderName;
@@ -22,7 +23,7 @@ class VaultSubfolderScreen extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => context.pop(),
                     child: const Icon(
                       Icons.arrow_back,
                       size: 20,
@@ -139,6 +140,7 @@ class VaultSubfolderScreen extends StatelessWidget {
                               fileName: doc.displayName,
                               fileInfo: '${doc.size != null ? (doc.size! / 1024).toStringAsFixed(1) : "0"} KB',
                               fileType: isPdf ? 'pdf' : 'image',
+                              onTap: () => _previewDocument(context, doc),
                               onMenuTap: () => _showFileMenu(context, doc.displayName),
                             );
                           },
@@ -182,17 +184,17 @@ class VaultSubfolderScreen extends StatelessWidget {
             _MenuOption(
               icon: 'assets/images/black_delete.png',
               label: 'Delete',
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
             ),
             _MenuOption(
               icon: 'assets/images/black_download.png',
               label: 'Download',
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
             ),
             _MenuOption(
               icon: 'assets/images/black_share.png',
               label: 'Share/Send',
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
             ),
             SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
           ],
@@ -204,6 +206,62 @@ class VaultSubfolderScreen extends StatelessWidget {
     // For now, mapping folders to modules or just showing all 'loans' for demo
     // In a full implementation, we'd filter by folderId
     return LoanService().fetchDocumentsByModule('loans');
+  }
+
+  void _previewDocument(BuildContext context, DocumentFile doc) {
+    final isPdf = doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
+    if (isPdf) {
+      _launchURL(doc.path);
+    } else {
+      _showImagePreview(context, doc);
+    }
+  }
+
+  Future<void> _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('Could not launch $url');
+    }
+  }
+
+  void _showImagePreview(BuildContext context, DocumentFile doc) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: InteractiveViewer(
+                child: Image.network(
+                  doc.path,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -256,12 +314,14 @@ class _UploadedFileRow extends StatelessWidget {
   final String fileName;
   final String fileInfo;
   final String fileType;
+  final VoidCallback onTap;
   final VoidCallback onMenuTap;
 
   const _UploadedFileRow({
     required this.fileName,
     required this.fileInfo,
     required this.fileType,
+    required this.onTap,
     required this.onMenuTap,
   });
 
@@ -269,10 +329,13 @@ class _UploadedFileRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        child: Row(
-          children: [
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Row(
+            children: [
             Container(
               width: 42,
               height: 42,
@@ -331,8 +394,9 @@ class _UploadedFileRow extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ── Menu Option (reusable) ───────────────────────────────────────────────────
