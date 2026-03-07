@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
-import 'services/insurance_api_service.dart';
+import '../services/insurance_service.dart';
 import 'models/insurance_model.dart';
 import 'insurance_widgets.dart';
 
@@ -17,7 +17,7 @@ class InsuranceDetailScreen extends StatefulWidget {
 }
 
 class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
-  final InsuranceApiService _apiService = InsuranceApiService();
+  final InsuranceService _apiService = InsuranceService();
   late InsurancePolicy _policy;
   bool _reminderEnabled = true;
   final String _reminderTiming = 'Same day';

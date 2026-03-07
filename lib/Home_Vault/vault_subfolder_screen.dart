@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/loan_service.dart';
+import '../Loan_Screen/models/document_model.dart';
 
 class VaultSubfolderScreen extends StatelessWidget {
   final String folderName;
@@ -108,19 +110,40 @@ class VaultSubfolderScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Dummy uploaded files
-                    _UploadedFileRow(
-                      fileName: 'Property_Deed.pdf',
-                      fileInfo: '2.4 MB',
-                      fileType: 'pdf',
-                      onMenuTap: () =>
-                          _showFileMenu(context, 'Property_Deed.pdf'),
-                    ),
-                    _UploadedFileRow(
-                      fileName: 'ID_Front.jpg',
-                      fileInfo: 'Jan 08 2024 • 2.4 MB',
-                      fileType: 'image',
-                      onMenuTap: () => _showFileMenu(context, 'ID_Front.jpg'),
+                    FutureBuilder<List<DocumentFile>>(
+                      future: _fetchFolderDocuments(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator(color: brandRed));
+                        }
+                        final docs = snapshot.data ?? [];
+                        if (docs.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Text(
+                                'No documents found in this folder.',
+                                style: TextStyle(color: Color(0xFF888888)),
+                              ),
+                            ),
+                          );
+                        }
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final doc = docs[index];
+                            final isPdf = doc.mimeType == 'application/pdf' || doc.displayName.endsWith('.pdf');
+                            return _UploadedFileRow(
+                              fileName: doc.displayName,
+                              fileInfo: '${doc.size != null ? (doc.size! / 1024).toStringAsFixed(1) : "0"} KB',
+                              fileType: isPdf ? 'pdf' : 'image',
+                              onMenuTap: () => _showFileMenu(context, doc.displayName),
+                            );
+                          },
+                        );
+                      }
                     ),
 
                     const SizedBox(height: 32),
@@ -176,6 +199,11 @@ class VaultSubfolderScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+  Future<List<DocumentFile>> _fetchFolderDocuments() async {
+    // For now, mapping folders to modules or just showing all 'loans' for demo
+    // In a full implementation, we'd filter by folderId
+    return LoanService().fetchDocumentsByModule('loans');
   }
 }
 

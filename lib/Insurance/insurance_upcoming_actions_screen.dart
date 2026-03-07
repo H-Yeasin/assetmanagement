@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
-import 'services/insurance_api_service.dart';
+import '../services/insurance_service.dart';
 import 'models/insurance_model.dart';
 import 'package:anick_giroux/Insurance/insurance_widgets.dart';
 import 'package:intl/intl.dart';
@@ -15,7 +15,7 @@ class InsuranceUpcomingActionsScreen extends StatefulWidget {
 
 class _InsuranceUpcomingActionsScreenState
     extends State<InsuranceUpcomingActionsScreen> {
-  final InsuranceApiService _apiService = InsuranceApiService();
+  final InsuranceService _apiService = InsuranceService();
   List<InsurancePolicy> _upcomingPolicies = [];
   bool _isLoading = true;
   String? _error;

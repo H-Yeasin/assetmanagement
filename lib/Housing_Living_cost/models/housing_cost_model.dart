@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HousingCost {
   final String? id;
@@ -29,22 +30,26 @@ class HousingCost {
 
   factory HousingCost.fromJson(Map<String, dynamic> json) {
     return HousingCost(
-      id: json['_id'],
+      id: json['id'] ?? json['_id'],
       userId: json['userId'] ?? '',
       name: json['name'] ?? '',
       category: json['category'] ?? 'other',
       amount: (json['amount'] ?? 0).toDouble(),
-      dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
+      dueDate: _parseDate(json['dueDate']),
       autoPay: json['autoPay'] ?? false,
       notes: json['notes'],
       documents: json['documents'] != null ? (json['documents'] as List) : [],
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : null,
+      createdAt: _parseDate(json['createdAt']),
+      updatedAt: _parseDate(json['updatedAt']),
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> toJson() {

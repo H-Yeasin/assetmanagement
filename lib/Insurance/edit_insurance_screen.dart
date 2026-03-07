@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'models/insurance_model.dart';
-import 'services/insurance_api_service.dart';
-import '../Loan_Screen/add_documents_screen.dart';
+import '../services/insurance_service.dart';
+import 'insurance_add_documents_screen.dart';
 
 class EditInsuranceScreen extends StatefulWidget {
   final InsurancePolicy policy;
@@ -15,7 +15,7 @@ class EditInsuranceScreen extends StatefulWidget {
 }
 
 class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
-  final InsuranceApiService _apiService = InsuranceApiService();
+  final InsuranceService _apiService = InsuranceService();
   late TextEditingController _nameController;
   late TextEditingController _providerController;
   late TextEditingController _amountController;
@@ -954,7 +954,10 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments, module: 'insurance'),
+              builder: (_) => InsuranceAddDocumentsScreen(
+                initialDocuments: _uploadedDocuments.isEmpty ? null : _uploadedDocuments,
+                policy: widget.policy,
+              ),
             ),
           );
           if (result != null && result is List<Map<String, dynamic>>) {

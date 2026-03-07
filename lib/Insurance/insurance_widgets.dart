@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'models/insurance_model.dart';
-import 'services/insurance_api_service.dart';
+import '../services/insurance_service.dart';
 import '../Loan_Screen/loan_widgets.dart';
 
 class InsuranceListItem extends StatelessWidget {
@@ -373,7 +373,7 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
         documents: widget.policy.documents,
       );
 
-      await InsuranceApiService().updateInsurance(
+      await InsuranceService().updateInsurance(
         widget.policy.id!,
         tempPolicy.toJson(),
       );
@@ -680,7 +680,7 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
         _selectedTime.minute,
       );
 
-      await InsuranceApiService().createReminder(
+      await InsuranceService().createReminder(
         itemId: widget.policy.id!,
         itemType: 'insurance',
         title: 'Insurance Renewal: ${widget.policy.name}',

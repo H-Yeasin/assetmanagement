@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'models/housing_cost_model.dart';
-import 'services/housing_api_service.dart';
+import '../services/housing_service.dart';
 import '../Loan_Screen/add_documents_screen.dart';
 
 class EditHousingCostScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class EditHousingCostScreen extends StatefulWidget {
 }
 
 class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
-  final HousingApiService _apiService = HousingApiService();
+  final HousingService _apiService = HousingService();
   late TextEditingController _nameController;
   late TextEditingController _amountController;
   late TextEditingController _dueDateController;

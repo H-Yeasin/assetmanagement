@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/security_service.dart';
 import '../services/biometric_service.dart';
+import '../services/loan_service.dart';
+import '../services/housing_service.dart';
+import '../services/insurance_service.dart';
 
 class VaultScreen extends StatefulWidget {
   const VaultScreen({super.key});
@@ -75,6 +78,31 @@ class _VaultScreenState extends State<VaultScreen> {
     if (!mounted) return;
     setState(() => _isChecking = false);
     if (mounted) context.go('/home');
+  }
+
+  Future<Map<String, String>> _fetchVaultStats() async {
+    try {
+      final results = await Future.wait([
+        LoanService().fetchLoans(),
+        HousingService().fetchHousingCosts(),
+        InsuranceService().fetchInsurances(),
+        LoanService().fetchDocumentsByModule('loans'), // Just an example
+      ]);
+
+      return {
+        'loans': results[0].length.toString(),
+        'housing': results[1].length.toString(),
+        'insurance': results[2].length.toString(),
+        'documents': results[3].length.toString(), // Simplified
+      };
+    } catch (e) {
+      return {
+        'loans': '0',
+        'housing': '0',
+        'insurance': '0',
+        'documents': '0',
+      };
+    }
   }
 
   @override
@@ -167,53 +195,64 @@ class _VaultScreenState extends State<VaultScreen> {
                     const SizedBox(height: 24),
 
                     // ── Category Grid (2x2) ──
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 14,
-                      crossAxisSpacing: 14,
-                      childAspectRatio: 1.3,
-                      children: [
-                        _VaultCategoryCard(
-                          iconPath: 'assets/images/icon/loan.png',
-                          title: 'Loans',
-                          subtitle: '2 active',
-                          iconColor: brandRed,
-                          onTap: () =>
-                              context.push('/vault-category', extra: 'Loans'),
-                        ),
-                        _VaultCategoryCard(
-                          iconPath: 'assets/images/icon/housing.png',
-                          title: 'Housing / Living Costs',
-                          subtitle: 'up to date',
-                          iconColor: const Color(0xFF9C27B0),
-                          onTap: () => context.push(
-                            '/vault-category',
-                            extra: 'Housing / Living Costs',
-                          ),
-                        ),
-                        _VaultCategoryCard(
-                          iconPath: 'assets/images/icon/insurance.png',
-                          title: 'Insurance',
-                          subtitle: '3 policies',
-                          iconColor: const Color(0xFF2196F3),
-                          onTap: () => context.push(
-                            '/vault-category',
-                            extra: 'Insurance',
-                          ),
-                        ),
-                        _VaultCategoryCard(
-                          iconPath: 'assets/images/icon/doccument.png',
-                          title: 'Documents',
-                          subtitle: '12 saved',
-                          iconColor: const Color(0xFFFF9800),
-                          onTap: () => context.push(
-                            '/vault-category',
-                            extra: 'Documents',
-                          ),
-                        ),
-                      ],
+                    FutureBuilder<Map<String, String>>(
+                      future: _fetchVaultStats(),
+                      builder: (context, snapshot) {
+                        final stats = snapshot.data ?? {
+                          'loans': '...',
+                          'housing': '...',
+                          'insurance': '...',
+                          'documents': '...',
+                        };
+                        return GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 14,
+                          crossAxisSpacing: 14,
+                          childAspectRatio: 1.3,
+                          children: [
+                            _VaultCategoryCard(
+                              iconPath: 'assets/images/icon/loan.png',
+                              title: 'Loans',
+                              subtitle: '${stats['loans']} records',
+                              iconColor: brandRed,
+                              onTap: () =>
+                                  context.push('/vault-category', extra: 'Loans'),
+                            ),
+                            _VaultCategoryCard(
+                              iconPath: 'assets/images/icon/housing.png',
+                              title: 'Housing / Living Costs',
+                              subtitle: '${stats['housing']} records',
+                              iconColor: const Color(0xFF9C27B0),
+                              onTap: () => context.push(
+                                '/vault-category',
+                                extra: 'Housing / Living Costs',
+                              ),
+                            ),
+                            _VaultCategoryCard(
+                              iconPath: 'assets/images/icon/insurance.png',
+                              title: 'Insurance',
+                              subtitle: '${stats['insurance']} records',
+                              iconColor: const Color(0xFF2196F3),
+                              onTap: () => context.push(
+                                '/vault-category',
+                                extra: 'Insurance',
+                              ),
+                            ),
+                            _VaultCategoryCard(
+                              iconPath: 'assets/images/icon/doccument.png',
+                              title: 'Documents',
+                              subtitle: '${stats['documents']} saved',
+                              iconColor: const Color(0xFFFF9800),
+                              onTap: () => context.push(
+                                '/vault-category',
+                                extra: 'Documents',
+                              ),
+                            ),
+                          ],
+                        );
+                      }
                     ),
 
                     const SizedBox(height: 32),

@@ -421,55 +421,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                               MaterialPageRoute(
                                 builder: (_) => AddDocumentsScreen(
                                   loan: _currentLoan,
-                                  initialDocuments: _currentLoan.documents.map((
-                                    doc,
-                                  ) {
-                                    if (doc is Map<String, dynamic>) {
-                                      return {
-                                        'id': doc['_id'] ?? doc['id'] ?? '',
-                                        'name':
-                                            doc['displayName'] ??
-                                            doc['name'] ??
-                                            'Existing Document',
-                                        'type':
-                                            (doc['mimeType']
-                                                        ?.toString()
-                                                        .contains('pdf') ==
-                                                    true) ||
-                                                doc['type'] == 'pdf'
-                                            ? 'pdf'
-                                            : 'image',
-                                        'date': doc['createdAt'] != null
-                                            ? DateTime.tryParse(
-                                                    doc['createdAt'],
-                                                  ) ??
-                                                  DateTime.now()
-                                            : (doc['date'] is DateTime
-                                                  ? doc['date']
-                                                  : DateTime.now()),
-                                        'path': doc['path'],
-                                      };
-                                    }
-                                    if (doc is DocumentFile) {
-                                      return {
-                                        'id': doc.id,
-                                        'name': doc.displayName,
-                                        'type': doc.mimeType.contains('pdf')
-                                            ? 'pdf'
-                                            : 'image',
-                                        'date': doc.createdAt ?? DateTime.now(),
-                                        'path': doc.path,
-                                      };
-                                    }
-                                    return {
-                                      'id': doc is String
-                                          ? doc
-                                          : doc.toString(),
-                                      'name': 'Existing Document',
-                                      'type': 'pdf',
-                                      'date': DateTime.now(),
-                                    };
-                                  }).toList(),
+                                  module: 'loans',
+                                  initialDocuments: null,
                                 ),
                               ),
                             );

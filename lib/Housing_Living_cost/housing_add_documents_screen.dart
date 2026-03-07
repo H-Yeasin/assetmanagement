@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'services/housing_api_service.dart';
+import '../services/housing_service.dart';
 import 'models/housing_cost_model.dart';
 
 class HousingAddDocumentsScreen extends StatefulWidget {
@@ -23,17 +23,40 @@ class HousingAddDocumentsScreen extends StatefulWidget {
 }
 
 class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
-  late final List<Map<String, dynamic>> _documents;
+  List<Map<String, dynamic>> _documents = [];
   final ImagePicker _picker = ImagePicker();
-  final HousingApiService _apiService = HousingApiService();
+  final HousingService _apiService = HousingService();
   bool _isUploading = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _documents = widget.initialDocuments != null
-        ? List.from(widget.initialDocuments!)
-        : [];
+    if (widget.initialDocuments != null && widget.initialDocuments!.isNotEmpty) {
+      _documents = List.from(widget.initialDocuments!);
+    } else {
+      _fetchExistingDocuments();
+    }
+  }
+
+  Future<void> _fetchExistingDocuments() async {
+    setState(() => _isLoading = true);
+    try {
+      final existing = await _apiService.fetchDocumentsByModule('housing');
+      setState(() {
+        _documents = existing.map((doc) => {
+          'id': doc.id,
+          'name': doc.displayName,
+          'type': doc.mimeType.contains('pdf') ? 'pdf' : 'image',
+          'date': doc.createdAt ?? DateTime.now(),
+          'path': doc.path,
+        }).toList();
+      });
+    } catch (e) {
+      debugPrint('Error fetching existing: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _pickFile() async {
@@ -60,7 +83,11 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
-      final documentFile = await _apiService.uploadDocument(file);
+      final documentFile = await _apiService.uploadDocument(
+        file,
+        relatedType: 'housing',
+        relatedId: widget.cost?.id,
+      );
 
       setState(() {
         _documents.add({
@@ -317,7 +344,14 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        if (_documents.isEmpty)
+                         if (_isLoading)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: CircularProgressIndicator(color: brandRed),
+                            ),
+                          )
+                        else if (_documents.isEmpty)
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 20),
@@ -352,11 +386,7 @@ class _HousingAddDocumentsScreenState extends State<HousingAddDocumentsScreen> {
                                 ),
                                 onTap: () async {
                                   if (doc['path'] != null) {
-                                    final baseUrl = HousingApiService.baseUrl
-                                        .replaceFirst('/api/v1', '');
-                                    final url = Uri.parse(
-                                      '$baseUrl/${doc['path']}',
-                                    );
+                                    final url = Uri.parse(doc['path']);
                                     if (await canLaunchUrl(url)) {
                                       await launchUrl(
                                         url,

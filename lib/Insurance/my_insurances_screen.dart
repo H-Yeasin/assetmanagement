@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'insurance_widgets.dart';
 import 'models/insurance_model.dart';
-import 'services/insurance_api_service.dart';
+import '../services/insurance_service.dart';
 
 class MyInsurancesScreen extends StatefulWidget {
   const MyInsurancesScreen({super.key});
@@ -14,7 +14,7 @@ class MyInsurancesScreen extends StatefulWidget {
 }
 
 class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
-  final InsuranceApiService _apiService = InsuranceApiService();
+  final InsuranceService _apiService = InsuranceService();
   List<InsurancePolicy> _policies = [];
   List<InsurancePolicy> _upcomingPolicies = [];
   bool _isLoading = true;

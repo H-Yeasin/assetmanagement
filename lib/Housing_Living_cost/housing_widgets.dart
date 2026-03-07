@@ -4,7 +4,7 @@ import 'dart:ui';
 import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'models/housing_cost_model.dart';
-import 'services/housing_api_service.dart';
+import '../services/housing_service.dart';
 
 // ── Housing Cost List Item ─────────────────────────────────────────────────
 
@@ -169,7 +169,7 @@ class HousingPaymentModal extends StatefulWidget {
 class _HousingPaymentModalState extends State<HousingPaymentModal> {
   late bool _isAutoPayment;
   bool _isProcessing = false;
-  final HousingApiService _apiService = HousingApiService();
+  final HousingService _apiService = HousingService();
   String _selectedMonth = 'January';
   final TextEditingController _amountController = TextEditingController();
 
@@ -488,7 +488,7 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
   bool _isSaving = false;
-  final HousingApiService _apiService = HousingApiService();
+  final HousingService _apiService = HousingService();
 
   void _openCalendar() async {
     final DateTime? result = await showDialog<DateTime>(

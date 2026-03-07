@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/loan_service.dart';
+import '../Loan_Screen/models/document_model.dart';
 
 class VaultCategoryScreen extends StatelessWidget {
   final String categoryName;
@@ -156,19 +158,40 @@ class VaultCategoryScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Dummy recent files
-                    _RecentFileRow(
-                      fileName: 'Property_Deed.pdf',
-                      fileInfo: '2.4 MB',
-                      fileType: 'pdf',
-                      onMenuTap: () =>
-                          _showFileMenu(context, 'Property_Deed.pdf'),
-                    ),
-                    _RecentFileRow(
-                      fileName: 'ID_Front.jpg',
-                      fileInfo: 'Jan 08 2024 • 2.4 MB',
-                      fileType: 'image',
-                      onMenuTap: () => _showFileMenu(context, 'ID_Front.jpg'),
+                    FutureBuilder<List<DocumentFile>>(
+                      future: _fetchCategoryDocuments(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator(color: brandRed));
+                        }
+                        final docs = snapshot.data ?? [];
+                        if (docs.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Text(
+                                'No documents found in this category.',
+                                style: TextStyle(color: Color(0xFF888888)),
+                              ),
+                            ),
+                          );
+                        }
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final doc = docs[index];
+                            final isPdf = doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
+                            return _RecentFileRow(
+                              fileName: doc.displayName,
+                              fileInfo: '${doc.size != null ? (doc.size! / 1024).toStringAsFixed(1) : "0"} KB',
+                              fileType: isPdf ? 'pdf' : 'image',
+                              onMenuTap: () => _showFileMenu(context, doc.displayName),
+                            );
+                          },
+                        );
+                      }
                     ),
 
                     const SizedBox(height: 32),
@@ -264,6 +287,14 @@ class VaultCategoryScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+  Future<List<DocumentFile>> _fetchCategoryDocuments() async {
+    String module = 'loans';
+    if (categoryName.contains('Housing')) module = 'housing';
+    if (categoryName.contains('Insurance')) module = 'insurance';
+    if (categoryName.contains('Documents')) module = 'loans'; // default or shared
+
+    return LoanService().fetchDocumentsByModule(module);
   }
 }
 

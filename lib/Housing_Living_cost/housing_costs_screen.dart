@@ -4,7 +4,7 @@ import 'housing_widgets.dart';
 import 'add_housing_cost_screen.dart';
 import 'housing_cost_detail_screen.dart';
 import 'models/housing_cost_model.dart';
-import 'services/housing_api_service.dart';
+import '../services/housing_service.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,7 +16,7 @@ class HousingCostsScreen extends StatefulWidget {
 }
 
 class _HousingCostsScreenState extends State<HousingCostsScreen> {
-  final HousingApiService _apiService = HousingApiService();
+  final HousingService _apiService = HousingService();
   List<HousingCost> _costs = [];
   bool _isLoading = true;
   String? _error;

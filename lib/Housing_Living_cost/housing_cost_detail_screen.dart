@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'models/housing_cost_model.dart';
-import 'services/housing_api_service.dart';
+import '../services/housing_service.dart';
 import 'housing_widgets.dart';
 import 'housing_additional_details_screen.dart';
 import 'edit_housing_cost_screen.dart';
@@ -21,7 +21,7 @@ class HousingCostDetailScreen extends StatefulWidget {
 }
 
 class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
-  final HousingApiService _apiService = HousingApiService();
+  final HousingService _apiService = HousingService();
   late HousingCost _cost;
 
   bool _reminderEnabled = true;
@@ -311,53 +311,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                               MaterialPageRoute(
                                 builder: (_) => HousingAddDocumentsScreen(
                                   cost: _cost,
-                                  initialDocuments: _cost.documents.map((doc) {
-                                    if (doc is Map<String, dynamic>) {
-                                      return {
-                                        'id': doc['_id'] ?? doc['id'] ?? '',
-                                        'name':
-                                            doc['displayName'] ??
-                                            doc['name'] ??
-                                            'Existing Document',
-                                        'type':
-                                            (doc['mimeType']
-                                                        ?.toString()
-                                                        .contains('pdf') ==
-                                                    true) ||
-                                                doc['type'] == 'pdf'
-                                            ? 'pdf'
-                                            : 'image',
-                                        'date': doc['createdAt'] != null
-                                            ? DateTime.tryParse(
-                                                    doc['createdAt'],
-                                                  ) ??
-                                                  DateTime.now()
-                                            : (doc['date'] is DateTime
-                                                  ? doc['date']
-                                                  : DateTime.now()),
-                                        'path': doc['path'],
-                                      };
-                                    }
-                                    if (doc is DocumentFile) {
-                                      return {
-                                        'id': doc.id,
-                                        'name': doc.displayName,
-                                        'type': doc.mimeType.contains('pdf')
-                                            ? 'pdf'
-                                            : 'image',
-                                        'date': doc.createdAt ?? DateTime.now(),
-                                        'path': doc.path,
-                                      };
-                                    }
-                                    return {
-                                      'id': doc is String
-                                          ? doc
-                                          : doc.toString(),
-                                      'name': 'Existing Document',
-                                      'type': 'pdf',
-                                      'date': DateTime.now(),
-                                    };
-                                  }).toList(),
+                                  initialDocuments: null,
                                 ),
                               ),
                             );

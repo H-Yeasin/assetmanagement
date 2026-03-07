@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'models/insurance_model.dart';
-import 'services/insurance_api_service.dart';
+import '../services/insurance_service.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'dart:ui';
 
@@ -15,7 +15,7 @@ class AddInsuranceScreen extends StatefulWidget {
 }
 
 class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
-  final InsuranceApiService _apiService = InsuranceApiService();
+  final InsuranceService _apiService = InsuranceService();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _providerController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
@@ -1021,7 +1021,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         onPressed: () async {
           final result = await context.push(
             '/insurance-add-documents',
-            extra: {'initialDocuments': <Map<String, dynamic>>[]},
+            extra: {'initialDocuments': null},
           );
           if (result != null && result is List<Map<String, dynamic>>) {
             setState(() {

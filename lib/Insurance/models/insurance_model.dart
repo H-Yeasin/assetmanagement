@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class InsurancePolicy {
@@ -81,24 +82,18 @@ class InsurancePolicy {
     }
 
     return InsurancePolicy(
-      id: json['_id'],
+      id: json['id'] ?? json['_id'],
       userId: json['userId'] ?? '',
       name: json['name'] ?? '',
       category: json['category'] ?? 'other',
       premium: (json['premium'] ?? 0).toDouble(),
       paymentFrequency: json['paymentFrequency'],
       provider: json['provider'],
-      renewalDate: json['renewalDate'] != null
-          ? DateTime.parse(json['renewalDate'])
-          : null,
+      renewalDate: _parseDate(json['renewalDate']),
       coverageNotes: displayNotes,
       documents: json['documents'] != null ? (json['documents'] as List) : [],
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : null,
+      createdAt: _parseDate(json['createdAt']),
+      updatedAt: _parseDate(json['updatedAt']),
 
       policyNumber: json['policyNumber'] ?? extraData['policyNumber'],
       coverageType: json['coverageType'] ?? extraData['coverageType'],
@@ -111,21 +106,27 @@ class InsurancePolicy {
       paymentsCompleted:
           json['paymentsCompleted'] ?? extraData['paymentsCompleted'],
       totalPayments: json['totalPayments'] ?? extraData['totalPayments'],
-      startDate: json['startDate'] != null
-          ? DateTime.parse(json['startDate'])
-          : (extraData['startDate'] != null
-                ? DateTime.parse(extraData['startDate'])
-                : null),
-      endDate: json['endDate'] != null
-          ? DateTime.parse(json['endDate'])
-          : (extraData['endDate'] != null
-                ? DateTime.parse(extraData['endDate'])
-                : null),
+      startDate: _parseDate(json['startDate']) ??
+          (extraData['startDate'] != null
+              ? _parseDate(extraData['startDate'])
+              : null),
+      endDate: _parseDate(json['endDate']) ??
+          (extraData['endDate'] != null
+              ? _parseDate(extraData['endDate'])
+              : null),
       isAutoPay: json['isAutoPay'] ?? extraData['isAutoPay'],
       paymentDay: json['paymentDay'] ?? extraData['paymentDay'],
       personalInsuranceType:
           json['personalInsuranceType'] ?? extraData['personalInsuranceType'],
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> toJson() {
