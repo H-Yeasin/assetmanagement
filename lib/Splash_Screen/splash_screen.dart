@@ -45,14 +45,6 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
 
       if (loggedIn) {
-<<<<<<< HEAD
-        context.go('/home');
-      } else {
-        // Force the sequential flow: Splash -> Onboarding -> Welcome
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-=======
         final keepLoggedIn = await StorageService.isSessionPersistent();
         if (!mounted) return;
         if (!keepLoggedIn) {
@@ -69,7 +61,6 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const WelcomeScreen()),
->>>>>>> 08e0970 (authentication)
         );
       }
     } catch (e) {

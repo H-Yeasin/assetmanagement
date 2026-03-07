@@ -8,15 +8,10 @@ import 'package:firebase_core/firebase_core.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
-<<<<<<< HEAD
-  static final FirebaseFirestore _db = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'ffpvault');
-  static final FirebaseFunctions _functions = FirebaseFunctions.instance;
-=======
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
   static final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
     region: 'us-central1',
   );
->>>>>>> 08e0970 (authentication)
 
   // ── Register (Email/Password) ─────────────────────────────────────────────
   static Future<Map<String, dynamic>> register({
