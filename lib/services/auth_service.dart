@@ -1,9 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
-  static final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static final FirebaseFirestore _db = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'ffpvault');
+  static final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   // ── Register (Email/Password) ─────────────────────────────────────────────
   static Future<Map<String, dynamic>> register({
