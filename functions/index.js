@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import nodemailer from "nodemailer";
 import admin from "firebase-admin";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
 
 admin.initializeApp();
 
@@ -41,7 +41,7 @@ function transporter() {
   if (!host || !user || !pass || !from) {
     throw new HttpsError(
       "failed-precondition",
-      "SMTP env is missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM."
+      "SMTP env is missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM.",
     );
   }
 
@@ -51,13 +51,13 @@ function transporter() {
       host,
       port,
       secure: port === 465,
-      auth: { user, pass },
+      auth: {user, pass},
     }),
   };
 }
 
 async function sendOtpEmail(email, otp) {
-  const { from, client } = transporter();
+  const {from, client} = transporter();
   await client.sendMail({
     from,
     to: email,
@@ -77,8 +77,8 @@ async function sendOtpEmail(email, otp) {
 async function getOtpState(email) {
   const ref = db.collection(OTP_COLLECTION).doc(docIdForEmail(email));
   const snap = await ref.get();
-  if (!snap.exists) return { ref, data: null };
-  return { ref, data: snap.data() };
+  if (!snap.exists) return {ref, data: null};
+  return {ref, data: snap.data()};
 }
 
 export const requestPasswordResetOtp = onCall(async (request) => {
@@ -96,14 +96,14 @@ export const requestPasswordResetOtp = onCall(async (request) => {
   }
 
   if (!userRecord) {
-    return { success: true, message: "OTP sent if account exists." };
+    return {success: true, message: "OTP sent if account exists."};
   }
 
   const otp = generateOtp();
   const salt = crypto.randomBytes(16).toString("hex");
   const otpHash = hashOtp(email, otp, salt);
   const expiresAt = admin.firestore.Timestamp.fromDate(
-    new Date(Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000)
+    new Date(Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000),
   );
 
   const ref = db.collection(OTP_COLLECTION).doc(docIdForEmail(email));
@@ -118,11 +118,11 @@ export const requestPasswordResetOtp = onCall(async (request) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     },
-    { merge: true }
+    {merge: true},
   );
 
   await sendOtpEmail(email, otp);
-  return { success: true, message: "OTP sent successfully." };
+  return {success: true, message: "OTP sent successfully."};
 });
 
 export const verifyPasswordResetOtp = onCall(async (request) => {
@@ -133,7 +133,7 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Email and 6-digit OTP required.");
   }
 
-  const { ref, data } = await getOtpState(email);
+  const {ref, data} = await getOtpState(email);
   if (!data) {
     throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
   }
@@ -162,7 +162,7 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  return { success: true, message: "OTP verified." };
+  return {success: true, message: "OTP verified."};
 });
 
 export const resetPasswordWithOtp = onCall(async (request) => {
@@ -173,11 +173,11 @@ export const resetPasswordWithOtp = onCall(async (request) => {
   if (!validateEmail(email) || otp.length != 6 || newPassword.length < 6) {
     throw new HttpsError(
       "invalid-argument",
-      "Email, 6-digit OTP, and new password (min 6) are required."
+      "Email, 6-digit OTP, and new password (min 6) are required.",
     );
   }
 
-  const { ref, data } = await getOtpState(email);
+  const {ref, data} = await getOtpState(email);
   if (!data) {
     throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
   }
@@ -197,8 +197,8 @@ export const resetPasswordWithOtp = onCall(async (request) => {
     uid = user.uid;
   }
 
-  await admin.auth().updateUser(uid, { password: newPassword });
+  await admin.auth().updateUser(uid, {password: newPassword});
   await ref.delete();
 
-  return { success: true, message: "Password reset successful." };
+  return {success: true, message: "Password reset successful."};
 });
