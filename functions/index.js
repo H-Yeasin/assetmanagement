@@ -1,8 +1,11 @@
 import crypto from "node:crypto";
 import nodemailer from "nodemailer";
 import admin from "firebase-admin";
-import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {getFirestore} from "firebase-admin/firestore";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { getFirestore } from "firebase-admin/firestore";
+import Stripe from "stripe";
+
+const stripe = new Stripe("sk_test_51RVRsRFxx6GHySDfgfAcVEYutYfL1TvNljJ9FWpArunY9RRgUccCgD6sfoT8xl0DtQiqz2GbIjjeWF5I2senOvqc005iiaGl3A");
 
 admin.initializeApp();
 
@@ -56,13 +59,13 @@ function transporter() {
       host,
       port,
       secure: port === 465,
-      auth: {user, pass},
+      auth: { user, pass },
     }),
   };
 }
 
 async function sendOtpEmail(email, otp, purpose = "reset") {
-  const {from, client} = transporter();
+  const { from, client } = transporter();
   const subjectMap = {
     reset: "FFP Vault Password Reset OTP",
     twoFactorEnable: "FFP Vault Two-Factor Setup OTP",
@@ -98,18 +101,18 @@ async function sendOtpEmail(email, otp, purpose = "reset") {
 async function getOtpState(email) {
   const ref = db.collection(OTP_COLLECTION).doc(docIdForEmail(email));
   const snap = await ref.get();
-  if (!snap.exists) return {ref, data: null};
-  return {ref, data: snap.data()};
+  if (!snap.exists) return { ref, data: null };
+  return { ref, data: snap.data() };
 }
 
 async function getTwoFactorState(uid, purpose) {
   const ref = db.collection(TWO_FACTOR_COLLECTION).doc(`${uid}_${purpose}`);
   const snap = await ref.get();
-  if (!snap.exists) return {ref, data: null};
-  return {ref, data: snap.data()};
+  if (!snap.exists) return { ref, data: null };
+  return { ref, data: snap.data() };
 }
 
-async function issueTwoFactorOtp({uid, email, purpose}) {
+async function issueTwoFactorOtp({ uid, email, purpose }) {
   const otp = generateOtp();
   const salt = crypto.randomBytes(16).toString("hex");
   const otpHash = hashOtp(email, otp, salt);
@@ -128,7 +131,7 @@ async function issueTwoFactorOtp({uid, email, purpose}) {
     expiresAt,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, {merge: true});
+  }, { merge: true });
 
   await sendOtpEmail(email, otp, purpose);
 }
@@ -148,7 +151,7 @@ export const requestPasswordResetOtp = onCall(async (request) => {
   }
 
   if (!userRecord) {
-    return {success: true, message: "OTP sent if account exists."};
+    return { success: true, message: "OTP sent if account exists." };
   }
 
   const otp = generateOtp();
@@ -170,11 +173,11 @@ export const requestPasswordResetOtp = onCall(async (request) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     },
-    {merge: true},
+    { merge: true },
   );
 
   await sendOtpEmail(email, otp);
-  return {success: true, message: "OTP sent successfully."};
+  return { success: true, message: "OTP sent successfully." };
 });
 
 export const requestTwoFactorEnable = onCall(async (request) => {
@@ -190,7 +193,7 @@ export const requestTwoFactorEnable = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Valid email is required.");
   }
 
-  await issueTwoFactorOtp({uid, email, purpose: "twoFactorEnable"});
+  await issueTwoFactorOtp({ uid, email, purpose: "twoFactorEnable" });
   return {
     success: true,
     message: "Verification code sent.",
@@ -209,7 +212,7 @@ export const verifyTwoFactorEnable = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "6-digit OTP is required.");
   }
 
-  const {ref, data} = await getTwoFactorState(uid, "twoFactorEnable");
+  const { ref, data } = await getTwoFactorState(uid, "twoFactorEnable");
   if (!data) {
     throw new HttpsError("not-found", "OTP not found. Request a new code.");
   }
@@ -236,7 +239,7 @@ export const verifyTwoFactorEnable = onCall(async (request) => {
     twoFactorEnabled: true,
     twoFactorEmail: data.email,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, {merge: true});
+  }, { merge: true });
   await ref.delete();
 
   return {
@@ -256,7 +259,7 @@ export const requestTwoFactorLogin = onCall(async (request) => {
   const userData = userSnap.data() || {};
   const enabled = userData.twoFactorEnabled === true;
   if (!enabled) {
-    return {success: true, twoFactorRequired: false};
+    return { success: true, twoFactorRequired: false };
   }
 
   const email = normalizeEmail(
@@ -266,7 +269,7 @@ export const requestTwoFactorLogin = onCall(async (request) => {
     throw new HttpsError("failed-precondition", "No 2FA email configured.");
   }
 
-  await issueTwoFactorOtp({uid, email, purpose: "twoFactorLogin"});
+  await issueTwoFactorOtp({ uid, email, purpose: "twoFactorLogin" });
   return {
     success: true,
     twoFactorRequired: true,
@@ -286,7 +289,7 @@ export const verifyTwoFactorLogin = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "6-digit OTP is required.");
   }
 
-  const {ref, data} = await getTwoFactorState(uid, "twoFactorLogin");
+  const { ref, data } = await getTwoFactorState(uid, "twoFactorLogin");
   if (!data) {
     throw new HttpsError("not-found", "OTP not found. Please log in again.");
   }
@@ -310,7 +313,7 @@ export const verifyTwoFactorLogin = onCall(async (request) => {
   }
 
   await ref.delete();
-  return {success: true, message: "Login verification successful."};
+  return { success: true, message: "Login verification successful." };
 });
 
 export const verifyPasswordResetOtp = onCall(async (request) => {
@@ -321,7 +324,7 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Email and 6-digit OTP required.");
   }
 
-  const {ref, data} = await getOtpState(email);
+  const { ref, data } = await getOtpState(email);
   if (!data) {
     throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
   }
@@ -350,7 +353,7 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  return {success: true, message: "OTP verified."};
+  return { success: true, message: "OTP verified." };
 });
 
 export const resetPasswordWithOtp = onCall(async (request) => {
@@ -365,7 +368,7 @@ export const resetPasswordWithOtp = onCall(async (request) => {
     );
   }
 
-  const {ref, data} = await getOtpState(email);
+  const { ref, data } = await getOtpState(email);
   if (!data) {
     throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
   }
@@ -385,8 +388,38 @@ export const resetPasswordWithOtp = onCall(async (request) => {
     uid = user.uid;
   }
 
-  await admin.auth().updateUser(uid, {password: newPassword});
+  await admin.auth().updateUser(uid, { password: newPassword });
   await ref.delete();
 
-  return {success: true, message: "Password reset successful."};
+  return { success: true, message: "Password reset successful." };
 });
+
+export const createStripePaymentIntent = onCall(async (request) => {
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Login required to make payments.");
+  }
+
+  const amount = request.data?.amount;
+  const currency = request.data?.currency || 'usd';
+
+  if (!amount) {
+    throw new HttpsError("invalid-argument", "Amount in cents is required.");
+  }
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount, // amount in cents
+      currency: currency,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+    };
+  } catch (error) {
+    throw new HttpsError("internal", error.message);
+  }
+});
+

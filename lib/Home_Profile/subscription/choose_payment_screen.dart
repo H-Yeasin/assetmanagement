@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 class ChoosePaymentScreen extends StatefulWidget {
   const ChoosePaymentScreen({super.key});
@@ -11,6 +13,7 @@ class ChoosePaymentScreen extends StatefulWidget {
 
 class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
   int _selectedMethod = 0; // 0 = Debit/Credit Card, 1 = Stripe
+  bool _isLoading = false;
 
   final TextEditingController _cardNumberController = TextEditingController();
   final TextEditingController _expiryController = TextEditingController();
@@ -22,6 +25,57 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
     _expiryController.dispose();
     _cvvController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initiatePayment() async {
+    if (_selectedMethod == 0) {
+      // Mock Debit/Credit logic for now
+      context.push('/payment-success');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      // 1. Create Payment Intent on our backend
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'createStripePaymentIntent',
+      );
+      final result = await callable.call({
+        'amount': 699, // \$6.99 in cents
+        'currency': 'usd',
+      });
+
+      final clientSecret = result.data['clientSecret'] as String;
+
+      // 2. Initialize the Payment Sheet
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: 'Anick Giroux',
+          style: ThemeMode.light,
+        ),
+      );
+
+      // 3. Present the Payment Sheet
+      await Stripe.instance.presentPaymentSheet();
+
+      // 4. On success
+      if (mounted) {
+        context.push('/payment-success');
+      }
+    } catch (e) {
+      final msg = e is StripeException
+          ? e.error.localizedMessage
+          : e.toString();
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Payment Error: \$msg')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -229,9 +283,7 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                     width: double.infinity,
                     height: 54,
                     child: ElevatedButton(
-                      onPressed: () {
-                        context.push('/payment-success');
-                      },
+                      onPressed: _isLoading ? null : _initiatePayment,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFC61C36),
                         foregroundColor: Colors.white,
@@ -240,20 +292,26 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Pay \$6.99',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                      child: _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Pay \$6.99',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward, size: 18),
+                              ],
                             ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward, size: 18),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
