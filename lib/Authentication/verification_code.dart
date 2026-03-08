@@ -246,26 +246,29 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List.generate(6, (index) {
-                      return Container(
-                        width: 48,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: _controllers[index].text.isNotEmpty
-                                ? brandRed
-                                : const Color(0xFFC61C36),
-                            width: 1.0,
+                      return Flexible(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          height: 56,
+                          constraints: const BoxConstraints(maxWidth: 48),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: _controllers[index].text.isNotEmpty
+                                  ? brandRed
+                                  : const Color(0xFFC61C36),
+                              width: 1.0,
+                            ),
                           ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          _controllers[index].text,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF111111),
+                          alignment: Alignment.center,
+                          child: Text(
+                            _controllers[index].text,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF111111),
+                            ),
                           ),
                         ),
                       );

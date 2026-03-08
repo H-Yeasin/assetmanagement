@@ -400,21 +400,27 @@ class _VaultCategoryCard extends StatelessWidget {
               ),
               child: Image.asset(iconPath, width: 22, height: 22),
             ),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111111),
+            const SizedBox(height: 6),
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+            Flexible(
+              child: Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+              ),
             ),
           ],
         ),
@@ -424,6 +430,7 @@ class _VaultCategoryCard extends StatelessWidget {
 }
 
 // ── Dashed Border Painter ────────────────────────────────────────────────────
+
 class _DashedBorderPainter extends CustomPainter {
   final Color color;
   final double borderRadius;

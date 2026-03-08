@@ -252,9 +252,12 @@ class _SignInState extends State<SignIn> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Already have an account? ',
-                      style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E)),
+                    const Flexible(
+                      child: Text(
+                        'Already have an account? ',
+                        style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.push(

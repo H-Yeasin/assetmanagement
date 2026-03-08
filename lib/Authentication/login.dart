@@ -230,32 +230,38 @@ class _LoginState extends State<Login> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: Checkbox(
-                          value: _rememberMe,
-                          onChanged: (v) =>
-                              setState(() => _rememberMe = v ?? false),
-                          activeColor: brandRed,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (v) =>
+                                setState(() => _rememberMe = v ?? false),
+                            activeColor: brandRed,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            side: const BorderSide(color: Color(0xFFCCCCCC)),
                           ),
-                          side: const BorderSide(color: Color(0xFFCCCCCC)),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Remember me',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          color: Color(0xFF555555),
+                        const SizedBox(width: 8),
+                        const Flexible(
+                          child: Text(
+                            'Remember me',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: Color(0xFF555555),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => Navigator.push(
                       context,

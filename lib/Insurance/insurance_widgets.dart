@@ -307,6 +307,7 @@ class InsurancePaymentModal extends StatefulWidget {
 }
 
 class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
+  late bool _isAutoPayment;
   bool _isProcessing = false;
   String _selectedMonth = 'January';
   final TextEditingController _amountController = TextEditingController();
@@ -329,6 +330,7 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
   @override
   void initState() {
     super.initState();
+    _isAutoPayment = widget.policy.isAutoPay ?? false;
     _amountController.text = NumberFormat(
       '#,##0.00',
     ).format(widget.policy.premium);
@@ -367,7 +369,7 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
         totalPayments: widget.policy.totalPayments,
         startDate: widget.policy.startDate,
         endDate: widget.policy.endDate,
-        isAutoPay: widget.policy.isAutoPay,
+        isAutoPay: _isAutoPayment,
         paymentDay: widget.policy.paymentDay,
         personalInsuranceType: widget.policy.personalInsuranceType,
         documents: widget.policy.documents,
@@ -534,6 +536,55 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
                 onChanged: (val) => setState(() => _selectedMonth = val!),
               ),
             ),
+          ),
+          const SizedBox(height: 10),
+
+          // Auto-payment
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDE7E9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.repeat,
+                  color: Color(0xFFC61C36),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Auto-payment',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
+                      ),
+                    ),
+                    Text(
+                      'Pay automatic every month',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isAutoPayment,
+                onChanged: (v) => setState(() => _isAutoPayment = v),
+                activeThumbColor: Colors.white,
+                activeTrackColor: const Color(0xFFC61C36),
+                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 

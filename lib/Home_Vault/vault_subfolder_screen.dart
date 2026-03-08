@@ -336,67 +336,67 @@ class _UploadedFileRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           child: Row(
             children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: fileType == 'pdf'
-                    ? const Color(0xFFFFF0F2)
-                    : const Color(0xFFE3F2FD),
-                borderRadius: BorderRadius.circular(10),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: fileType == 'pdf'
+                      ? const Color(0xFFFFF0F2)
+                      : const Color(0xFFE3F2FD),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: fileType == 'pdf'
+                    ? Image.asset(
+                        'assets/images/pdficon.png',
+                        width: 22,
+                        height: 22,
+                      )
+                    : const Icon(
+                        Icons.image_rounded,
+                        color: Color(0xFF2196F3),
+                        size: 22,
+                      ),
               ),
-              child: fileType == 'pdf'
-                  ? Image.asset(
-                      'assets/images/pdficon.png',
-                      width: 22,
-                      height: 22,
-                    )
-                  : const Icon(
-                      Icons.image_rounded,
-                      color: Color(0xFF2196F3),
-                      size: 22,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fileName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF111111),
+                      ),
                     ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    fileName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111111),
+                    const SizedBox(height: 2),
+                    Text(
+                      fileInfo,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF888888),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    fileInfo,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF888888),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            GestureDetector(
-              onTap: onMenuTap,
-              child: const Icon(
-                Icons.more_vert,
-                color: Color(0xFF888888),
-                size: 22,
+              GestureDetector(
+                onTap: onMenuTap,
+                child: const Icon(
+                  Icons.more_vert,
+                  color: Color(0xFF888888),
+                  size: 22,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 // ── Menu Option (reusable) ───────────────────────────────────────────────────

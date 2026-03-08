@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/insurance_service.dart';
+import '../services/notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'models/insurance_model.dart';
 import 'insurance_widgets.dart';
 
@@ -20,7 +23,8 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
   final InsuranceService _apiService = InsuranceService();
   late InsurancePolicy _policy;
   bool _reminderEnabled = true;
-  final String _reminderTiming = 'Same day';
+  String _selectedReminder = 'Same day';
+  DateTime? _baseReminderDate;
   final List<String> _reminderTimings = [
     'Same day',
     '1 day before',
@@ -33,6 +37,61 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
     super.initState();
     _policy = widget.policy;
     _refreshPolicy();
+    _fetchReminder();
+  }
+
+  Future<void> _fetchReminder() async {
+    try {
+      final snapshot = await FirebaseFirestore.instanceFor(
+        app: Firebase.app(),
+        databaseId: 'ffpvault',
+      ).collection('reminders')
+          .where('itemId', isEqualTo: _policy.id)
+          .where('itemType', isEqualTo: 'insurance')
+          .get();
+      
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        setState(() {
+          _baseReminderDate = (data['remindAt'] as Timestamp).toDate();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching reminder: $e');
+    }
+  }
+
+  void _rescheduleNotification() {
+    if (_baseReminderDate == null || !_reminderEnabled) {
+      if (_policy.id != null) {
+        NotificationService.cancelReminder(_policy.id.hashCode);
+      }
+      return;
+    }
+
+    DateTime scheduledDate = _baseReminderDate!;
+    switch (_selectedReminder) {
+      case '1 day before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 1));
+        break;
+      case '3 days before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 3));
+        break;
+      case '1 week before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 7));
+        break;
+      default:
+        break;
+    }
+
+    if (_policy.id != null) {
+      NotificationService.scheduleReminder(
+        id: _policy.id.hashCode,
+        title: 'Insurance Renewal Reminder',
+        body: 'Reminder for ${_policy.name} insurance.',
+        scheduledDate: scheduledDate,
+      );
+    }
   }
 
   Future<void> _refreshPolicy() async {
@@ -97,7 +156,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
           ),
         ],
       ),
-    );
+    ).then((_) => _fetchReminder());
   }
 
   @override
@@ -381,7 +440,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -405,11 +464,11 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Payment Reminders',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
@@ -418,8 +477,10 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                           ),
                         ),
                         Text(
-                          '4 days before date',
-                          style: TextStyle(
+                          _selectedReminder == 'Same day'
+                              ? 'On the due date'
+                              : '$_selectedReminder date',
+                          style: const TextStyle(
                             color: Color(0xFF888888),
                             fontSize: 12,
                           ),
@@ -427,38 +488,61 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFF0F0F0)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Text(
-                          'Same day',
-                          style: TextStyle(
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFF0F0F0)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedReminder,
+                          isDense: true,
+                          isExpanded: true,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            size: 16,
                             color: Color(0xFF888888),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
                           ),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF555555),
+                          ),
+                          items: _reminderTimings
+                              .map(
+                                (t) => DropdownMenuItem(
+                                  value: t,
+                                  child: Text(
+                                    t,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (val) {
+                            setState(() => _selectedReminder = val!);
+                            _rescheduleNotification();
+                          },
                         ),
-                        Icon(
-                          Icons.keyboard_arrow_down,
-                          size: 16,
-                          color: Color(0xFF888888),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Switch(
                     value: _reminderEnabled,
-                    onChanged: (v) => setState(() => _reminderEnabled = v),
-                    activeThumbColor: brandRed,
+                    onChanged: (v) {
+                      setState(() => _reminderEnabled = v);
+                      _rescheduleNotification();
+                    },
+                    activeThumbColor: Colors.white,
+                    activeTrackColor: brandRed,
+                    trackOutlineColor: WidgetStateProperty.all(
+                      Colors.transparent,
+                    ),
                   ),
                 ],
               ),

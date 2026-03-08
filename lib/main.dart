@@ -7,6 +7,7 @@ import 'package:anick_giroux/Loan_Screen/models/loan_model.dart';
 import 'package:anick_giroux/Loan_Screen/models/document_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:anick_giroux/firebase_options.dart';
+import 'package:anick_giroux/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,8 @@ void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(LoanAdapter());
   Hive.registerAdapter(DocumentFileAdapter());
+  
+  await NotificationService.init();
 
   runApp(const ProviderScope(child: MyApp()));
 }

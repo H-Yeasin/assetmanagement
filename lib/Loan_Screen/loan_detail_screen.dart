@@ -9,6 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'models/document_model.dart';
+import '../services/notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class LoanDetailScreen extends StatefulWidget {
   final Loan loan;
@@ -30,6 +33,63 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
     super.initState();
     _currentLoan = widget.loan;
     _refreshLoan();
+    _fetchReminder();
+  }
+
+  Future<void> _fetchReminder() async {
+    try {
+      final snapshot = await FirebaseFirestore.instanceFor(
+        app: Firebase.app(),
+        databaseId: 'ffpvault',
+      ).collection('reminders')
+          .where('itemId', isEqualTo: _currentLoan.id)
+          .where('itemType', isEqualTo: 'loan')
+          .get();
+      
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        setState(() {
+          _baseReminderDate = (data['remindAt'] as Timestamp).toDate();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching reminder: $e');
+    }
+  }
+
+  DateTime? _baseReminderDate;
+
+  void _rescheduleNotification() {
+    if (_baseReminderDate == null || !_isReminderEnabled) {
+      if (_currentLoan.id != null) {
+        NotificationService.cancelReminder(_currentLoan.id.hashCode);
+      }
+      return;
+    }
+
+    DateTime scheduledDate = _baseReminderDate!;
+    switch (_selectedReminder) {
+      case '1 day before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 1));
+        break;
+      case '3 days before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 3));
+        break;
+      case '1 week before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 7));
+        break;
+      default:
+        break;
+    }
+
+    if (_currentLoan.id != null) {
+      NotificationService.scheduleReminder(
+        id: _currentLoan.id.hashCode,
+        title: 'Loan Payment Reminder',
+        body: 'Reminder for ${_currentLoan.name} payment.',
+        scheduledDate: scheduledDate,
+      );
+    }
   }
 
   Future<void> _refreshLoan() async {
@@ -149,49 +209,56 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Monthly Payment',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF888888),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Monthly Payment',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF888888),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    NumberFormat.simpleCurrency(
-                                      decimalDigits: 0,
-                                    ).format(_currentLoan.monthlyPayment),
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF111111),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      NumberFormat.simpleCurrency(
+                                        decimalDigits: 0,
+                                      ).format(_currentLoan.monthlyPayment),
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF111111),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    'Time Left',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF888888),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    const Text(
+                                      'Time Left',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF888888),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _getTimeLeft(),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF111111),
-                                    ), // Black instead of red based on the image
-                                  ),
-                                ],
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _getTimeLeft(),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF111111),
+                                      ), // Black instead of red based on the image
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -350,7 +417,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                     ),
                                   ],
                                 ),
-                              );
+                              ).then((_) => _fetchReminder());
                             },
                           ),
                         ),
@@ -599,47 +666,54 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Container(
-                            height: 28,
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFFEEEEEE),
+                          Flexible(
+                            child: Container(
+                              height: 28,
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xFFEEEEEE),
+                                ),
+                                borderRadius: BorderRadius.circular(6),
                               ),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _selectedReminder,
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  size: 14,
-                                  color: Color(0xFF555555),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedReminder,
+                                  isExpanded: true,
+                                  icon: const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    size: 14,
+                                    color: Color(0xFF555555),
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xFF555555),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  items:
+                                      [
+                                        'Same day',
+                                        '1 day before',
+                                        '3 days before',
+                                        '1 week before',
+                                      ].map((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(
+                                            value,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        );
+                                      }).toList(),
+                                  onChanged: (newValue) {
+                                    if (newValue != null) {
+                                      setState(() {
+                                        _selectedReminder = newValue;
+                                      });
+                                      _rescheduleNotification();
+                                    }
+                                  },
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Color(0xFF555555),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                items:
-                                    [
-                                      'Same day',
-                                      '1 day before',
-                                      '3 days before',
-                                      '1 week before',
-                                    ].map((String value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
-                                onChanged: (newValue) {
-                                  if (newValue != null) {
-                                    setState(() {
-                                      _selectedReminder = newValue;
-                                    });
-                                  }
-                                },
                               ),
                             ),
                           ),
@@ -655,6 +729,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                   setState(() {
                                     _isReminderEnabled = val;
                                   });
+                                  _rescheduleNotification();
                                 },
                                 activeThumbColor: Colors.white,
                                 activeTrackColor: const Color(0xFFC61C36),

@@ -1,8 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'models/housing_cost_model.dart';
 import '../services/housing_service.dart';
+import '../services/notification_service.dart';
 import 'housing_widgets.dart';
 import 'housing_additional_details_screen.dart';
 import 'edit_housing_cost_screen.dart';
@@ -26,6 +29,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
 
   bool _reminderEnabled = true;
   String _reminderTiming = 'Same day';
+  DateTime? _baseReminderDate;
 
   final List<String> _reminderTimings = [
     'Same day',
@@ -39,6 +43,61 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
     super.initState();
     _cost = widget.cost;
     _refreshCost();
+    _fetchReminder();
+  }
+
+  Future<void> _fetchReminder() async {
+    try {
+      final snapshot = await FirebaseFirestore.instanceFor(
+        app: Firebase.app(),
+        databaseId: 'ffpvault',
+      ).collection('reminders')
+          .where('itemId', isEqualTo: _cost.id)
+          .where('itemType', isEqualTo: 'housing')
+          .get();
+      
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        setState(() {
+          _baseReminderDate = (data['remindAt'] as Timestamp).toDate();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching reminder: $e');
+    }
+  }
+
+  void _rescheduleNotification() {
+    if (_baseReminderDate == null || !_reminderEnabled) {
+      if (_cost.id != null) {
+        NotificationService.cancelReminder(_cost.id.hashCode);
+      }
+      return;
+    }
+
+    DateTime scheduledDate = _baseReminderDate!;
+    switch (_reminderTiming) {
+      case '1 day before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 1));
+        break;
+      case '3 days before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 3));
+        break;
+      case '1 week before':
+        scheduledDate = scheduledDate.subtract(const Duration(days: 7));
+        break;
+      default:
+        break;
+    }
+
+    if (_cost.id != null) {
+      NotificationService.scheduleReminder(
+        id: _cost.id.hashCode,
+        title: 'Housing Payment Reminder',
+        body: 'Reminder for ${_cost.name} payment.',
+        scheduledDate: scheduledDate,
+      );
+    }
   }
 
   Future<void> _refreshCost() async {
@@ -95,12 +154,12 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
           Center(
             child: Material(
               color: Colors.transparent,
-              child: SizedBox(width: 343, child: ReminderModal()),
+              child: SizedBox(width: 343, child: HousingReminderModal(cost: _cost)),
             ),
           ),
         ],
       ),
-    );
+    ).then((_) => _fetchReminder());
   }
 
   Future<void> _toggleAutoPay(bool value) async {
@@ -542,7 +601,9 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '4 days before date',
+                                  _reminderTiming == 'Same day'
+                                      ? 'On the due date'
+                                      : '$_reminderTiming date',
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey.shade500,
@@ -551,48 +612,58 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFFEEEEEE),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 6,
                               ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _reminderTiming,
-                                isDense: true,
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  size: 16,
-                                  color: Color(0xFF888888),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xFFEEEEEE),
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF555555),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _reminderTiming,
+                                  isDense: true,
+                                  isExpanded: true,
+                                  icon: const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    size: 16,
+                                    color: Color(0xFF888888),
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF555555),
+                                  ),
+                                  items: _reminderTimings
+                                      .map(
+                                        (t) => DropdownMenuItem(
+                                          value: t,
+                                          child: Text(
+                                            t,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (val) {
+                                    setState(() => _reminderTiming = val!);
+                                    _rescheduleNotification();
+                                  },
                                 ),
-                                items: _reminderTimings
-                                    .map(
-                                      (t) => DropdownMenuItem(
-                                        value: t,
-                                        child: Text(t),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (val) =>
-                                    setState(() => _reminderTiming = val!),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Switch(
                             value: _reminderEnabled,
-                            onChanged: (v) =>
-                                setState(() => _reminderEnabled = v),
+                            onChanged: (v) {
+                              setState(() => _reminderEnabled = v);
+                              _rescheduleNotification();
+                            },
                             activeThumbColor: Colors.white,
                             activeTrackColor: const Color(0xFFC61C36),
                             trackOutlineColor: WidgetStateProperty.all(

@@ -224,6 +224,7 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
       await _loanService.updateLoan(widget.loan.id!, {
         'completedPayments': completedP,
         'remainingBalance': remaining > 0 ? remaining : 0,
+        'autoPay': _isAutoPayment,
       });
 
       if (mounted) {
@@ -252,237 +253,241 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
         color: Color(0xFFFFFFFF), // Colors: #FFFFFF
         borderRadius: BorderRadius.all(Radius.circular(16)), // Radius: 16px
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Payment Details',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF111111),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Icon(
-                  Icons.close,
-                  size: 24,
-                  color: Color(0xFF111111),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10), // Gap: 10px
-          // ── Payment Amount Card ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFDE7E9), // Light pink background
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Payment Amount',
+                  'Payment Details',
                   style: TextStyle(
                     fontSize: 18,
-                    color: Color(0xFFC61C36),
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  NumberFormat.simpleCurrency().format(
-                    widget.loan.monthlyPayment,
-                  ),
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(
+                    Icons.close,
+                    size: 24,
                     color: Color(0xFF111111),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 10), // Gap: 10px
-          // ── Amount Input ──
-          const Text(
-            'Amount',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF111111),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFEEEEEE)),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: TextField(
-              controller: _amountController,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                prefixText: '\$ ',
-                prefixStyle: TextStyle(color: Color(0xFF888888), fontSize: 15),
+            const SizedBox(height: 10), // Gap: 10px
+            // ── Payment Amount Card ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDE7E9), // Light pink background
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              style: const TextStyle(fontSize: 15, color: Color(0xFF555555)),
-              keyboardType: TextInputType.number,
-            ),
-          ),
-          const SizedBox(height: 10), // Gap: 10px
-          // ── Month Dropdown ──
-          const Text(
-            'Month',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF111111),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFEEEEEE)),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedMonth,
-                isExpanded: true,
-                icon: const Icon(
-                  Icons.arrow_drop_down,
-                  color: Color(0xFF111111),
-                ),
-                style: const TextStyle(fontSize: 15, color: Color(0xFF888888)),
-                items: _months.map((String month) {
-                  return DropdownMenuItem<String>(
-                    value: month,
-                    child: Text(month),
-                  );
-                }).toList(),
-                onChanged: (val) => setState(() => _selectedMonth = val!),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10), // Gap: 10px
-          // ── Auto-payment ──
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDE7E9),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.repeat,
-                  color: Color(0xFFC61C36),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Auto-payment',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF111111),
-                      ),
-                    ),
-                    Text(
-                      'Pay automatic every month',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: _isAutoPayment,
-                onChanged: (v) => setState(() => _isAutoPayment = v),
-                activeThumbColor: Colors.white,
-                activeTrackColor: const Color(0xFFC61C36),
-                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 16,
-          ), // A bit more space before buttons is usually better, but let's stick closer to Figma or reasonable spacing
-          // ── Action Buttons ──
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Cancel',
+              child: Column(
+                children: [
+                  const Text(
+                    'Payment Amount',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 18,
+                      color: Color(0xFFC61C36),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    NumberFormat.simpleCurrency().format(
+                      widget.loan.monthlyPayment,
+                    ),
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
                       color: Color(0xFF111111),
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Amount Input
+            const Text(
+              'Amount',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF111111),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFEEEEEE)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: TextField(
+                controller: _amountController,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  prefixText: '\$ ',
+                  prefixStyle: TextStyle(color: Color(0xFF888888), fontSize: 15),
+                ),
+                style: const TextStyle(fontSize: 15, color: Color(0xFF555555)),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Month Dropdown
+            const Text(
+              'Month',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF111111),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFEEEEEE)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedMonth,
+                  isExpanded: true,
+                  icon: const Icon(
+                    Icons.arrow_drop_down,
+                    color: Color(0xFF111111),
+                  ),
+                  style: const TextStyle(fontSize: 15, color: Color(0xFF888888)),
+                  items: _months.map((String month) {
+                    return DropdownMenuItem<String>(
+                      value: month,
+                      child: Text(month),
+                    );
+                  }).toList(),
+                  onChanged: (val) => setState(() => _selectedMonth = val!),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isProcessing ? null : _recordPayment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFDE7E9),
-                    foregroundColor: const Color(0xFFC61C36),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            const SizedBox(height: 10),
+
+            // Auto-payment
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDE7E9),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: _isProcessing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFFC61C36),
-                          ),
-                        )
-                      : const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
+                  child: const Icon(
+                    Icons.repeat,
+                    color: Color(0xFFC61C36),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Auto-payment',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111111),
                         ),
+                      ),
+                      Text(
+                        'Pay automatic every month',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Switch(
+                  value: _isAutoPayment,
+                  onChanged: (v) => setState(() => _isAutoPayment = v),
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: const Color(0xFFC61C36),
+                  trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF111111),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isProcessing ? null : _recordPayment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFDE7E9),
+                      foregroundColor: const Color(0xFFC61C36),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _isProcessing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFC61C36),
+                            ),
+                          )
+                        : const Text(
+                            'Continue',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -636,127 +641,129 @@ class _ReminderModalState extends State<ReminderModal> {
         color: Color(0xFFFFFFFF),
         borderRadius: BorderRadius.all(Radius.circular(16)), // Radius: 16px
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Pick Date & Time',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF111111),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Icon(
-                  Icons.close,
-                  size: 24,
-                  color: Color(0xFF111111),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // ── Date Selection (Click triggers calendar) ──
-          GestureDetector(
-            onTap: _openCalendar,
-            behavior: HitTestBehavior.opaque,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      formattedDate,
-                      style: const TextStyle(
+                const Text(
+                  'Pick Date & Time',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(
+                    Icons.close,
+                    size: 24,
+                    color: Color(0xFF111111),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+    
+            // ── Date Selection (Click triggers calendar) ──
+            GestureDetector(
+              onTap: _openCalendar,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        formattedDate,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF111111),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(height: 1, color: const Color(0xFFEEEEEE)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 15),
+    
+            // ── Time Selection (Click triggers time picker) ──
+            GestureDetector(
+              onTap: _openTimePicker,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${_selectedTime.hourOfPeriod.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${_selectedTime.period == DayPeriod.am ? 'AM' : 'PM'}',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF111111),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(height: 1, color: const Color(0xFFEEEEEE)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+    
+            // ── Action Buttons ──
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
                         fontSize: 15,
                         color: Color(0xFF111111),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Container(height: 1, color: const Color(0xFFEEEEEE)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 15),
-
-          // ── Time Selection (Click triggers time picker) ──
-          GestureDetector(
-            onTap: _openTimePicker,
-            behavior: HitTestBehavior.opaque,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${_selectedTime.hourOfPeriod.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${_selectedTime.period == DayPeriod.am ? 'AM' : 'PM'}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFF111111),
-                        fontWeight: FontWeight.w500,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFDE7E9),
+                      foregroundColor: const Color(0xFFC61C36),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
                       ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
-                  ],
+                    child: const Text(
+                      'Set Reminder',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Container(height: 1, color: const Color(0xFFEEEEEE)),
               ],
             ),
-          ),
-          const SizedBox(height: 32),
-
-          // ── Action Buttons ──
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF111111),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFDE7E9),
-                    foregroundColor: const Color(0xFFC61C36),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
