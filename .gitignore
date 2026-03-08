@@ -44,5 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 anick_giroux_backend/
+functions/node_modules/
 functions/.env
 functions/.env*
