@@ -12,6 +12,8 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Stripe.publishableKey =
+      'pk_test_51RVRsRFxx6GHySDfLZIuLy002ZBfusrV5YuBtoxr2PbWi0AqYMPRn03xtQAf6u31U3PbUqC8zwkO6XYCypIa0VJt00iLx7IDJ7';
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

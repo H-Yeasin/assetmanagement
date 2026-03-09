@@ -6,8 +6,15 @@ import 'dart:io';
 
 class UserService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
-  static final FirebaseFirestore _db = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'ffpvault');
-  static final FirebaseStorage _storage = FirebaseStorage.instance;
+  static final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'ffpvault',
+  );
+  // Use gs:// prefix and explicit app so Auth token is properly attached
+  static final FirebaseStorage _storage = FirebaseStorage.instanceFor(
+    app: Firebase.app(),
+    bucket: 'gs://ffp-vault-app.firebasestorage.app',
+  );
 
   // ── Update Profile (Name & Avatar) ─────────────────────────────────────────
   static Future<Map<String, dynamic>> updateProfile({
@@ -25,14 +32,38 @@ class UserService {
       // Upload image if provided
       if (imageFile != null) {
         try {
+          // Force-refresh the ID token so Storage rules see a valid auth context
+          final idTokenResult = await user.getIdTokenResult(true);
+          final idToken = idTokenResult.token ?? '';
+
+          print('--- AUTH DEBUG ---');
+          print('User UID: ${user.uid}');
+          print('Token extracted: ${idToken.isNotEmpty}');
+
           final ref = _storage.ref().child('avatars/${user.uid}.jpg');
-          await ref.putFile(imageFile);
+
+          // Explicitly pass the token in customMetadata so rules can access it if native auth is dropped
+          final metadata = SettableMetadata(
+            contentType: 'image/jpeg',
+            customMetadata: {'auth_token': idToken},
+          );
+
+          // Use putData (bytes) instead of putFile — more reliable auth token propagation
+          final bytes = await imageFile.readAsBytes();
+          await ref.putData(bytes, metadata);
           photoUrl = await ref.getDownloadURL();
         } on FirebaseException catch (e) {
-          uploadWarning =
-              e.code == 'unauthorized'
-                  ? 'Profile name updated, but image upload is not allowed by Firebase Storage rules.'
-                  : 'Profile name updated, but image upload failed.';
+          // Debug: print full error details
+          print('=== STORAGE ERROR ===');
+          print('Code: ${e.code}');
+          print('Message: ${e.message}');
+          print('Plugin: ${e.plugin}');
+          print('UID: ${_auth.currentUser?.uid}');
+          print('Path: avatars/${_auth.currentUser?.uid}.jpg');
+          print('=====================');
+          uploadWarning = e.code == 'unauthorized'
+              ? 'Profile name updated, but image upload is not allowed by Firebase Storage rules.'
+              : 'Profile name updated, but image upload failed: ${e.code} ${e.message}';
         }
       }
 

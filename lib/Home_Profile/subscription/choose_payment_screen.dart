@@ -28,12 +28,6 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
   }
 
   Future<void> _initiatePayment() async {
-    if (_selectedMethod == 0) {
-      // Mock Debit/Credit logic for now
-      context.push('/payment-success');
-      return;
-    }
-
     setState(() => _isLoading = true);
     try {
       // 1. Create Payment Intent on our backend
@@ -47,17 +41,52 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
 
       final clientSecret = result.data['clientSecret'] as String;
 
-      // 2. Initialize the Payment Sheet
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'Anick Giroux',
-          style: ThemeMode.light,
-        ),
-      );
+      if (_selectedMethod == 0) {
+        // Debit/Credit Card (Custom UI with manual Card tokenization)
+        if (_cardNumberController.text.isEmpty ||
+            _expiryController.text.isEmpty ||
+            _cvvController.text.isEmpty) {
+          throw Exception('Please completely fill out your card details.');
+        }
 
-      // 3. Present the Payment Sheet
-      await Stripe.instance.presentPaymentSheet();
+        // Parse expiry from MM/YY
+        final expiryParts = _expiryController.text.split('/');
+        if (expiryParts.length != 2) {
+          throw Exception('Invalid Expiry Date format MM/YY');
+        }
+        final expMonth = int.tryParse(expiryParts[0]) ?? 0;
+        final expYear = int.tryParse('20${expiryParts[1]}') ?? 0;
+
+        // Sync details to Stripe internally
+        await Stripe.instance.dangerouslyUpdateCardDetails(
+          CardDetails(
+            number: _cardNumberController.text.replaceAll(' ', ''),
+            expirationMonth: expMonth,
+            expirationYear: expYear,
+            cvc: _cvvController.text,
+          ),
+        );
+
+        // Confirm the payment directly using the filled custom CardData
+        await Stripe.instance.confirmPayment(
+          paymentIntentClientSecret: clientSecret,
+          data: const PaymentMethodParams.card(
+            paymentMethodData: PaymentMethodData(
+              billingDetails: BillingDetails(name: 'Anick Giroux User'),
+            ),
+          ),
+        );
+      } else {
+        // Stripe Payment Sheet Flow
+        await Stripe.instance.initPaymentSheet(
+          paymentSheetParameters: SetupPaymentSheetParameters(
+            paymentIntentClientSecret: clientSecret,
+            merchantDisplayName: 'Anick Giroux',
+            style: ThemeMode.light,
+          ),
+        );
+        await Stripe.instance.presentPaymentSheet();
+      }
 
       // 4. On success
       if (mounted) {
@@ -71,7 +100,7 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Payment Error: \$msg')));
+        ).showSnackBar(SnackBar(content: Text('Payment Error: $msg')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -141,104 +170,109 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                       onTap: () => setState(() => _selectedMethod = 1),
                     ),
                     const SizedBox(height: 28),
-                    // Card Details section
-                    const Text(
-                      'Card Details',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFC61C36),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Card Number
-                    const Text(
-                      'Card Number',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _CardInputField(
-                      controller: _cardNumberController,
-                      hintText: '0000 0000 0000 0000',
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        _CardNumberFormatter(),
-                      ],
-                      maxLength: 19,
-                      suffixIcon: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Image.asset(
-                          'assets/images/creditcard.png',
-                          width: 24,
-                          height: 24,
-                          color: const Color(0xFF999999),
+
+                    // Conditionally show custom Card Details UI
+                    if (_selectedMethod == 0) ...[
+                      // Card Details section
+                      const Text(
+                        'Card Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFC61C36),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Expiry + CVV row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Expiry Date',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _CardInputField(
-                                controller: _expiryController,
-                                hintText: 'MM/YY',
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  _ExpiryDateFormatter(),
-                                ],
-                                maxLength: 5,
-                              ),
-                            ],
+                      const SizedBox(height: 16),
+                      // Card Number
+                      const Text(
+                        'Card Number',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _CardInputField(
+                        controller: _cardNumberController,
+                        hintText: '0000 0000 0000 0000',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          _CardNumberFormatter(),
+                        ],
+                        maxLength: 19,
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Image.asset(
+                            'assets/images/creditcard.png',
+                            width: 24,
+                            height: 24,
+                            color: const Color(0xFF999999),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'CW',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                      ),
+                      const SizedBox(height: 16),
+                      // Expiry + CVV row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Expiry Date',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              _CardInputField(
-                                controller: _cvvController,
-                                hintText: '123',
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                maxLength: 3,
-                                obscureText: true,
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                _CardInputField(
+                                  controller: _expiryController,
+                                  hintText: 'MM/YY',
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    _ExpiryDateFormatter(),
+                                  ],
+                                  maxLength: 5,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'CVV',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                _CardInputField(
+                                  controller: _cvvController,
+                                  hintText: '123',
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  maxLength: 3,
+                                  obscureText: true,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
                     const SizedBox(height: 40),
                   ],
                 ),

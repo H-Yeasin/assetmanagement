@@ -39,8 +39,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() {
         _nameController.text = name;
         _emailController.text = email;
-        _existingAvatarUrl =
-            (avatar != null && avatar.trim().isNotEmpty) ? avatar : null;
+        _existingAvatarUrl = (avatar != null && avatar.trim().isNotEmpty)
+            ? avatar
+            : null;
         _twoFactor = is2fa;
       });
     }
@@ -48,7 +49,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512, // Profile picture doesn't need to be wider than 512px
+      maxHeight: 512,
+      imageQuality: 80, // 80% JPEG quality — sharp enough, but tiny file size
+    );
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -83,7 +89,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (res['success'] == true) {
         // Update local storage name & avatar
         final userAvatar = res['data']?['avatarUrl'] as String?;
-        final message = res['message'] as String? ?? 'Profile saved successfully!';
+        final message =
+            res['message'] as String? ?? 'Profile saved successfully!';
         final imageUploadFailed =
             (res['data']?['imageUploadFailed'] as bool?) ?? false;
         await StorageService.saveSession(
@@ -345,8 +352,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                             ? Image.network(
                                                 _existingAvatarUrl!,
                                                 fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (_, __, ___) => const Icon(
+                                                errorBuilder: (_, __, ___) =>
+                                                    const Icon(
                                                       Icons.person,
                                                       size: 56,
                                                       color: Color(0xFF999999),
@@ -356,7 +363,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                 Icons.person,
                                                 size: 56,
                                                 color: Color(0xFF999999),
-                                              ))
+                                              )),
                                 ),
                               ),
                               Positioned(
