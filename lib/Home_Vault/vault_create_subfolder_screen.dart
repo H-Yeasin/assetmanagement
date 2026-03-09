@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/loan_service.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class VaultCreateSubfolderScreen extends StatefulWidget {
   final String categoryName;
@@ -15,11 +19,127 @@ class VaultCreateSubfolderScreen extends StatefulWidget {
 class _VaultCreateSubfolderScreenState
     extends State<VaultCreateSubfolderScreen> {
   final TextEditingController _nameController = TextEditingController();
+  bool _isLoading = false;
+  final List<File> _pendingFiles = [];
 
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _createFolder() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      String module = 'loans';
+      if (widget.categoryName.contains('Housing')) module = 'housing';
+      if (widget.categoryName.contains('Insurance')) module = 'insurance';
+      if (widget.categoryName.contains('Document')) module = 'documents';
+
+      final folder = await LoanService().createFolder(name, module);
+
+      // Upload pending files to the newly created folder
+      for (final file in _pendingFiles) {
+        await LoanService().uploadDocument(
+          file,
+          module: module,
+          folderId: folder.id,
+        );
+      }
+
+      if (mounted) {
+        context.pop(); // Go back to category screen
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to create folder: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _showImageSourcePicker() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+
+      if (pickedFile != null) {
+        setState(() {
+          _pendingFiles.add(File(pickedFile.path));
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      }
+    }
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+        allowMultiple: true,
+      );
+
+      if (result != null) {
+        setState(() {
+          for (var path in result.paths) {
+            if (path != null) {
+              _pendingFiles.add(File(path));
+            }
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking file: $e')));
+      }
+    }
   }
 
   @override
@@ -130,9 +250,7 @@ class _VaultCreateSubfolderScreenState
                           child: _ActionCard(
                             icon: 'assets/images/upload.png',
                             label: 'Upload',
-                            onTap: () {
-                              // Placeholder — file picker later
-                            },
+                            onTap: _isLoading ? () {} : _pickFile,
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -140,13 +258,47 @@ class _VaultCreateSubfolderScreenState
                           child: _ActionCard(
                             icon: Icons.camera_alt_outlined,
                             label: 'Take photo',
-                            onTap: () {
-                              // Placeholder — camera later
-                            },
+                            onTap: _isLoading ? () {} : _showImageSourcePicker,
                           ),
                         ),
                       ],
                     ),
+
+                    if (_pendingFiles.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Selected Files',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF111111),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ..._pendingFiles.map((file) {
+                        final fileName = file.path.split('/').last;
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(
+                            Icons.insert_drive_file,
+                            color: brandRed,
+                          ),
+                          title: Text(
+                            fileName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.grey),
+                            onPressed: () {
+                              setState(() {
+                                _pendingFiles.remove(file);
+                              });
+                            },
+                          ),
+                        );
+                      }),
+                    ],
 
                     const SizedBox(height: 40),
                   ],
@@ -169,14 +321,23 @@ class _VaultCreateSubfolderScreenState
                     ),
                     elevation: 0,
                   ),
-                  onPressed: () {
-                    // Placeholder — create logic later
-                    context.pop();
-                  },
-                  child: const Text(
-                    'Create Subfolder',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
+                  onPressed: _isLoading ? null : _createFolder,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Create Subfolder',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ),

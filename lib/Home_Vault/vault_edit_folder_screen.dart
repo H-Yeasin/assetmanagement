@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../services/loan_service.dart';
+import '../Loan_Screen/models/document_model.dart';
 
 class VaultEditFolderScreen extends StatefulWidget {
   final String folderName;
+  final String folderId;
 
-  const VaultEditFolderScreen({super.key, required this.folderName});
+  const VaultEditFolderScreen({
+    super.key,
+    required this.folderName,
+    required this.folderId,
+  });
 
   @override
   State<VaultEditFolderScreen> createState() => _VaultEditFolderScreenState();
@@ -13,12 +20,7 @@ class VaultEditFolderScreen extends StatefulWidget {
 
 class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
   late TextEditingController _nameController;
-
-  // Dummy file list
-  final List<Map<String, String>> _files = [
-    {'name': 'Property_Deed.pdf', 'info': '2.4 MB', 'type': 'pdf'},
-    {'name': 'ID_Front.jpg', 'info': 'Jan 08 2024 • 2.4 MB', 'type': 'image'},
-  ];
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -45,7 +47,9 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => context.pop(),
+                    onTap: () {
+                      if (!_isSaving) context.pop();
+                    },
                     child: const Icon(
                       Icons.arrow_back,
                       size: 20,
@@ -123,19 +127,54 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
                     const SizedBox(height: 24),
 
                     // ── File List with Delete ──
-                    ...List.generate(_files.length, (index) {
-                      final file = _files[index];
-                      return _EditFileRow(
-                        fileName: file['name']!,
-                        fileInfo: file['info']!,
-                        fileType: file['type']!,
-                        onDelete: () {
-                          setState(() {
-                            _files.removeAt(index);
-                          });
-                        },
-                      );
-                    }),
+                    FutureBuilder<List<DocumentFile>>(
+                      future: _fetchFolderDocuments(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(color: brandRed),
+                          );
+                        }
+                        final allDocs = snapshot.data ?? [];
+                        final docs = allDocs
+                            .where((d) => d.folderId == widget.folderId)
+                            .toList();
+
+                        if (docs.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Text(
+                                'No documents found in this folder.',
+                                style: TextStyle(color: Color(0xFF888888)),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final doc = docs[index];
+                            final isPdf =
+                                doc.mimeType == 'application/pdf' ||
+                                doc.displayName.endsWith('.pdf');
+                            return _EditFileRow(
+                              fileName: doc.displayName,
+                              fileInfo:
+                                  '${doc.size != null ? (doc.size / 1024).toStringAsFixed(1) : "0"} KB',
+                              fileType: isPdf ? 'pdf' : 'image',
+                              onDelete: () => _deleteDocument(doc.id),
+                              onEdit: () =>
+                                  _editDocumentName(doc.id, doc.displayName),
+                            );
+                          },
+                        );
+                      },
+                    ),
 
                     const SizedBox(height: 32),
                   ],
@@ -158,14 +197,23 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: () {
-                    // Placeholder — save logic later
-                    context.pop();
-                  },
-                  child: const Text(
-                    'Save & Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
+                  onPressed: _isSaving ? null : _saveChanges,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Save & Continue',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -174,20 +222,157 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
       ),
     );
   }
+
+  Future<List<DocumentFile>> _fetchFolderDocuments() async {
+    return LoanService().fetchDocumentsByModule('loans');
+  }
+
+  Future<void> _deleteDocument(String id) async {
+    // Show confirmation dialog before deleting
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete File'),
+        content: const Text(
+          'Are you sure you want to delete this file? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.grey),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isSaving = true);
+      try {
+        await LoanService().deleteDocument(id);
+        if (mounted) {
+          // Trigger a re-build so FutureBuilder fetches again
+          setState(() => _isSaving = false);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to delete file: $e')));
+        }
+      }
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) return;
+
+    if (newName == widget.folderName) {
+      context.pop(); // No change needed
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      await LoanService().renameDocument(widget.folderId, newName);
+      if (mounted) {
+        // We pop and ideally we would notify the caller about the new name.
+        // For simplicity we just return to previous screen. Wait, we should pop twice?
+        // Or pop back to vault main screen.
+        context.pop();
+        context.pop();
+        // We pop twice because subfolder screen has the old name in its state/arguments.
+        // It's easiest to go back to VaultCategoryScreen.
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to rename folder: $e')));
+      }
+    }
+  }
+
+  Future<void> _editDocumentName(String id, String currentName) async {
+    final TextEditingController editController = TextEditingController(
+      text: currentName,
+    );
+
+    final bool? save = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit File Name'),
+        content: TextField(
+          controller: editController,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: brandRed, width: 1.5),
+            ),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.grey),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Save', style: TextStyle(color: brandRed)),
+          ),
+        ],
+      ),
+    );
+
+    if (save == true) {
+      final newName = editController.text.trim();
+      if (newName.isNotEmpty && newName != currentName) {
+        setState(() => _isSaving = true);
+        try {
+          await LoanService().renameDocument(id, newName);
+          if (mounted) {
+            setState(() => _isSaving = false);
+          }
+        } catch (e) {
+          if (mounted) {
+            setState(() => _isSaving = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to rename file: $e')),
+            );
+          }
+        }
+      }
+    }
+  }
 }
 
-// ── Edit File Row (with delete icon) ─────────────────────────────────────────
+// ── Edit File Row (with edit and delete icons) ───────────────────────────────
 class _EditFileRow extends StatelessWidget {
   final String fileName;
   final String fileInfo;
   final String fileType;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   const _EditFileRow({
     required this.fileName,
     required this.fileInfo,
     required this.fileType,
     required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -246,6 +431,17 @@ class _EditFileRow extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+            GestureDetector(
+              onTap: onEdit,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                child: const Icon(
+                  Icons.edit,
+                  color: Color(0xFF888888),
+                  size: 20,
+                ),
               ),
             ),
             GestureDetector(

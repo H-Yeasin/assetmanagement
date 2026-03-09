@@ -10,11 +10,8 @@ class UserService {
     app: Firebase.app(),
     databaseId: 'ffpvault',
   );
-  // Use gs:// prefix and explicit app so Auth token is properly attached
-  static final FirebaseStorage _storage = FirebaseStorage.instanceFor(
-    app: Firebase.app(),
-    bucket: 'gs://ffp-vault-app.firebasestorage.app',
-  );
+  // Use default storage instance to inherit default rules correctly
+  static final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // ── Update Profile (Name & Avatar) ─────────────────────────────────────────
   static Future<Map<String, dynamic>> updateProfile({
@@ -43,14 +40,10 @@ class UserService {
           final ref = _storage.ref().child('avatars/${user.uid}.jpg');
 
           // Explicitly pass the token in customMetadata so rules can access it if native auth is dropped
-          final metadata = SettableMetadata(
-            contentType: 'image/jpeg',
-            customMetadata: {'auth_token': idToken},
-          );
+          final metadata = SettableMetadata(contentType: 'image/jpeg');
 
-          // Use putData (bytes) instead of putFile — more reliable auth token propagation
-          final bytes = await imageFile.readAsBytes();
-          await ref.putData(bytes, metadata);
+          // Use putFile instead of putData matching document upload success
+          await ref.putFile(imageFile, metadata);
           photoUrl = await ref.getDownloadURL();
         } on FirebaseException catch (e) {
           // Debug: print full error details

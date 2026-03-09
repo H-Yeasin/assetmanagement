@@ -4,8 +4,6 @@ import '../Home_Dashboard/widgets.dart';
 import '../services/security_service.dart';
 import '../services/biometric_service.dart';
 import '../services/loan_service.dart';
-import '../services/housing_service.dart';
-import '../services/insurance_service.dart';
 
 class VaultScreen extends StatefulWidget {
   final String? initialCategory;
@@ -18,6 +16,7 @@ class VaultScreen extends StatefulWidget {
 class _VaultScreenState extends State<VaultScreen> {
   bool _unlocked = false;
   bool _isChecking = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -105,25 +104,20 @@ class _VaultScreenState extends State<VaultScreen> {
   Future<Map<String, String>> _fetchVaultStats() async {
     try {
       final results = await Future.wait([
-        LoanService().fetchLoans(),
-        HousingService().fetchHousingCosts(),
-        InsuranceService().fetchInsurances(),
-        LoanService().fetchDocumentsByModule('loans'), // Just an example
+        LoanService().fetchDocumentsByModule('loans'),
+        LoanService().fetchDocumentsByModule('housing'),
+        LoanService().fetchDocumentsByModule('insurance'),
+        LoanService().fetchDocumentsByModule('documents'),
       ]);
 
       return {
         'loans': results[0].length.toString(),
         'housing': results[1].length.toString(),
         'insurance': results[2].length.toString(),
-        'documents': results[3].length.toString(), // Simplified
+        'documents': results[3].length.toString(),
       };
     } catch (e) {
-      return {
-        'loans': '0',
-        'housing': '0',
-        'insurance': '0',
-        'documents': '0',
-      };
+      return {'loans': '0', 'housing': '0', 'insurance': '0', 'documents': '0'};
     }
   }
 
@@ -220,12 +214,14 @@ class _VaultScreenState extends State<VaultScreen> {
                     FutureBuilder<Map<String, String>>(
                       future: _fetchVaultStats(),
                       builder: (context, snapshot) {
-                        final stats = snapshot.data ?? {
-                          'loans': '...',
-                          'housing': '...',
-                          'insurance': '...',
-                          'documents': '...',
-                        };
+                        final stats =
+                            snapshot.data ??
+                            {
+                              'loans': '...',
+                              'housing': '...',
+                              'insurance': '...',
+                              'documents': '...',
+                            };
                         return GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -239,8 +235,10 @@ class _VaultScreenState extends State<VaultScreen> {
                               title: 'Loans',
                               subtitle: '${stats['loans']} records',
                               iconColor: brandRed,
-                              onTap: () =>
-                                  context.push('/vault-category', extra: 'Loans'),
+                              onTap: () => context.push(
+                                '/vault-category',
+                                extra: 'Loans',
+                              ),
                             ),
                             _VaultCategoryCard(
                               iconPath: 'assets/images/icon/housing.png',
@@ -274,7 +272,7 @@ class _VaultScreenState extends State<VaultScreen> {
                             ),
                           ],
                         );
-                      }
+                      },
                     ),
 
                     const SizedBox(height: 32),
@@ -337,13 +335,116 @@ class _VaultScreenState extends State<VaultScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: () {
-                    // Placeholder — no backend action
-                  },
-                  child: const Text(
-                    'Save Documents',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
+                  onPressed: _isSaving
+                      ? null
+                      : () async {
+                          setState(() => _isSaving = true);
+                          try {
+                            final stats = await _fetchVaultStats();
+                            int totalDocs = 0;
+                            for (var val in stats.values) {
+                              totalDocs += int.tryParse(val) ?? 0;
+                            }
+
+                            if (!mounted) return;
+
+                            if (totalDocs > 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'Documents are saved successfully',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(
+                                    0xFF4CAF50,
+                                  ), // Green
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  margin: EdgeInsets.only(
+                                    bottom:
+                                        MediaQuery.of(context).size.height -
+                                        220,
+                                    left: 20,
+                                    right: 20,
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'No documents found to save.',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(
+                                    0xFFFFA000,
+                                  ), // Amber
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  margin: EdgeInsets.only(
+                                    bottom:
+                                        MediaQuery.of(context).size.height -
+                                        220,
+                                    left: 20,
+                                    right: 20,
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _isSaving = false);
+                          }
+                        },
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Save Documents',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ),

@@ -30,6 +30,8 @@ class DocumentFile extends HiveObject {
   final DateTime? createdAt;
   @HiveField(12)
   final DateTime? updatedAt;
+  @HiveField(13)
+  final String? folderId;
 
   DocumentFile({
     required this.id,
@@ -45,6 +47,7 @@ class DocumentFile extends HiveObject {
     this.relatedId,
     this.createdAt,
     this.updatedAt,
+    this.folderId,
   });
 
   factory DocumentFile.fromJson(Map<String, dynamic> json) {
@@ -72,6 +75,7 @@ class DocumentFile extends HiveObject {
       relatedId: json['relatedId'],
       createdAt: parseDate(json['createdAt']),
       updatedAt: parseDate(json['updatedAt']),
+      folderId: json['folderId'],
     );
   }
 
@@ -88,6 +92,7 @@ class DocumentFile extends HiveObject {
       'path': path,
       'relatedType': relatedType,
       'relatedId': relatedId,
+      'folderId': folderId,
     };
   }
 }

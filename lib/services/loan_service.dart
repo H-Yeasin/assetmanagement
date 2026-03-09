@@ -7,7 +7,10 @@ import '../Loan_Screen/models/loan_model.dart';
 import '../Loan_Screen/models/document_model.dart';
 
 class LoanService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'ffpvault');
+  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'ffpvault',
+  );
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
@@ -28,7 +31,12 @@ class LoanService {
 
     final snapshot = await query.get();
     return snapshot.docs
-        .map((doc) => Loan.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id}))
+        .map(
+          (doc) => Loan.fromJson({
+            ...doc.data() as Map<String, dynamic>,
+            'id': doc.id,
+          }),
+        )
         .toList();
   }
 
@@ -43,9 +51,16 @@ class LoanService {
       query = query.where('status', isEqualTo: status);
     }
 
-    return query.snapshots().map((snapshot) => snapshot.docs
-        .map((doc) => Loan.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id}))
-        .toList());
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs
+          .map(
+            (doc) => Loan.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }),
+          )
+          .toList(),
+    );
   }
 
   Future<Loan> getLoan(String id) async {
@@ -56,7 +71,7 @@ class LoanService {
 
   Future<Loan> createLoan(Loan loan) async {
     if (_uid == null) throw Exception('User not logged in');
-    
+
     final data = loan.toJson();
     data['userId'] = _uid;
     data['createdAt'] = FieldValue.serverTimestamp();
@@ -96,9 +111,10 @@ class LoanService {
   }) async {
     if (_uid == null) throw Exception('User not logged in');
 
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
     final ref = _storage.ref().child('$module/$_uid/$fileName');
-    
+
     final uploadTask = await ref.putFile(
       file,
       SettableMetadata(contentType: _getMimeType(file.path)),
@@ -120,20 +136,23 @@ class LoanService {
 
     if (relatedType != null) docData['relatedType'] = relatedType;
     if (relatedId != null) docData['relatedId'] = relatedId;
+    if (folderId != null) docData['folderId'] = folderId;
 
     // Use a temporary variable to help with type inference if needed
     final docRef = await _firestore.collection('documents').add(docData);
-    
+
     // Update relationship if needed
     if (relatedType == 'loans' && relatedId != null) {
       final Map<String, dynamic> updateData = <String, dynamic>{
-        'documents': FieldValue.arrayUnion(<String>[docRef.id])
+        'documents': FieldValue.arrayUnion(<String>[docRef.id]),
       };
       await _firestore.collection('loans').doc(relatedId).update(updateData);
     }
 
     final docSnapshot = await docRef.get();
-    final Map<String, dynamic> finalData = Map<String, dynamic>.from(docSnapshot.data()!);
+    final Map<String, dynamic> finalData = Map<String, dynamic>.from(
+      docSnapshot.data()!,
+    );
     finalData['id'] = docRef.id;
     return DocumentFile.fromJson(finalData);
   }
@@ -146,7 +165,39 @@ class LoanService {
         .where('module', isEqualTo: module)
         .orderBy('createdAt', descending: true)
         .get();
-    return snapshot.docs.map((doc) => DocumentFile.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
+    return snapshot.docs
+        .map(
+          (doc) => DocumentFile.fromJson({
+            ...doc.data() as Map<String, dynamic>,
+            'id': doc.id,
+          }),
+        )
+        .toList();
+  }
+
+  Future<DocumentFile> createFolder(String name, String module) async {
+    if (_uid == null) throw Exception('User not logged in');
+
+    final Map<String, dynamic> folderData = <String, dynamic>{
+      'userId': _uid,
+      'module': module,
+      'originalName': name,
+      'displayName': name,
+      'filename': 'folder_$name',
+      'mimeType': 'application/vnd.anick-giroux.folder',
+      'size': 0,
+      'path': '', // No physical file path
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    final docRef = await _firestore.collection('documents').add(folderData);
+    final docSnapshot = await docRef.get();
+    final Map<String, dynamic> finalData = Map<String, dynamic>.from(
+      docSnapshot.data()!,
+    );
+    finalData['id'] = docRef.id;
+    return DocumentFile.fromJson(finalData);
   }
 
   Future<void> deleteDocument(String id) async {
@@ -176,26 +227,35 @@ class LoanService {
     DateTime? to,
   }) async {
     if (_uid == null) return [];
-    
+
     // Simplistic implementation: get active loans and return them
     // Real implementation would calculate occurrences between from/to
     final loans = await fetchLoans(status: 'active');
-    return loans.map((l) => {
-      'date': l.paymentDate?.toIso8601String() ?? DateTime.now().toIso8601String(),
-      'items': [l.toJson()]
-    }).toList();
+    return loans
+        .map(
+          (l) => {
+            'date':
+                l.paymentDate?.toIso8601String() ??
+                DateTime.now().toIso8601String(),
+            'items': [l.toJson()],
+          },
+        )
+        .toList();
   }
 
-  Stream<List<dynamic>> streamUpcomingPayments({
-    DateTime? from,
-    DateTime? to,
-  }) {
+  Stream<List<dynamic>> streamUpcomingPayments({DateTime? from, DateTime? to}) {
     if (_uid == null) return Stream.value([]);
     return streamLoans(status: 'active').map((loans) {
-      return loans.map((l) => {
-        'date': l.paymentDate?.toIso8601String() ?? DateTime.now().toIso8601String(),
-        'items': [l.toJson()]
-      }).toList();
+      return loans
+          .map(
+            (l) => {
+              'date':
+                  l.paymentDate?.toIso8601String() ??
+                  DateTime.now().toIso8601String(),
+              'items': [l.toJson()],
+            },
+          )
+          .toList();
     });
   }
 
@@ -204,25 +264,34 @@ class LoanService {
     DateTime? to,
   }) async {
     if (_uid == null) return [];
-    
+
     final loans = await fetchLoans(status: 'completed');
-    return loans.map((l) => {
-      'date': l.completedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
-      'items': [l.toJson()]
-    }).toList();
+    return loans
+        .map(
+          (l) => {
+            'date':
+                l.completedAt?.toIso8601String() ??
+                DateTime.now().toIso8601String(),
+            'items': [l.toJson()],
+          },
+        )
+        .toList();
   }
 
-  Stream<List<dynamic>> streamPastActivities({
-    DateTime? from,
-    DateTime? to,
-  }) {
+  Stream<List<dynamic>> streamPastActivities({DateTime? from, DateTime? to}) {
     if (_uid == null) return Stream.value([]);
 
     return streamLoans(status: 'completed').map((loans) {
-      return loans.map((l) => {
-        'date': l.completedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
-        'items': [l.toJson()]
-      }).toList();
+      return loans
+          .map(
+            (l) => {
+              'date':
+                  l.completedAt?.toIso8601String() ??
+                  DateTime.now().toIso8601String(),
+              'items': [l.toJson()],
+            },
+          )
+          .toList();
     });
   }
 
@@ -265,7 +334,9 @@ class LoanService {
         .where('isDone', isEqualTo: false);
 
     final snapshot = await query.get();
-    return snapshot.docs.map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id}).toList();
+    return snapshot.docs
+        .map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id})
+        .toList();
   }
 
   Stream<List<dynamic>> streamUpcomingReminders({
@@ -279,7 +350,11 @@ class LoanService {
         .where('userId', isEqualTo: _uid)
         .where('isDone', isEqualTo: false);
 
-    return query.snapshots().map((snapshot) => snapshot.docs.map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id}).toList());
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs
+          .map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id})
+          .toList(),
+    );
   }
 
   Stream<int> streamDocumentsCount() {
@@ -298,11 +373,15 @@ class LoanService {
   String _getMimeType(String path) {
     final extension = path.split('.').last.toLowerCase();
     switch (extension) {
-      case 'pdf': return 'application/pdf';
-      case 'png': return 'image/png';
+      case 'pdf':
+        return 'application/pdf';
+      case 'png':
+        return 'image/png';
       case 'jpg':
-      case 'jpeg': return 'image/jpeg';
-      default: return 'application/octet-stream';
+      case 'jpeg':
+        return 'image/jpeg';
+      default:
+        return 'application/octet-stream';
     }
   }
 }

@@ -147,15 +147,22 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/vault-subfolder',
           builder: (context, state) {
-            final folderName = state.extra as String;
-            return VaultSubfolderScreen(folderName: folderName);
+            final args = state.extra as Map<String, dynamic>? ?? {};
+            return VaultSubfolderScreen(
+              folderName: args['folderName'] as String? ?? 'Folder',
+              folderId: args['folderId'] as String? ?? '',
+              categoryName: args['categoryName'] as String? ?? 'Loans',
+            );
           },
         ),
         GoRoute(
           path: '/vault-edit-folder',
           builder: (context, state) {
-            final folderName = state.extra as String;
-            return VaultEditFolderScreen(folderName: folderName);
+            final args = state.extra as Map<String, dynamic>? ?? {};
+            return VaultEditFolderScreen(
+              folderName: args['folderName'] as String? ?? 'Folder',
+              folderId: args['folderId'] as String? ?? '',
+            );
           },
         ),
         GoRoute(
@@ -267,8 +274,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path:
           '/main', // Fallback for direct MainShell navigation if used previously
-      builder: (context, state) =>
-          MainShell(child: HomeDashboardScreen()),
+      builder: (context, state) => MainShell(child: HomeDashboardScreen()),
     ),
     GoRoute(
       path: '/edit-insurance',

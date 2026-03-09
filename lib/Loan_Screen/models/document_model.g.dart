@@ -30,13 +30,14 @@ class DocumentFileAdapter extends TypeAdapter<DocumentFile> {
       relatedId: fields[10] as String?,
       createdAt: fields[11] as DateTime?,
       updatedAt: fields[12] as DateTime?,
+      folderId: fields[13] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DocumentFile obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -62,7 +63,9 @@ class DocumentFileAdapter extends TypeAdapter<DocumentFile> {
       ..writeByte(11)
       ..write(obj.createdAt)
       ..writeByte(12)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(13)
+      ..write(obj.folderId);
   }
 
   @override

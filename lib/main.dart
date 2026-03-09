@@ -10,6 +10,8 @@ import 'package:anick_giroux/firebase_options.dart';
 import 'package:anick_giroux/services/notification_service.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
+import 'package:firebase_app_check/firebase_app_check.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Stripe.publishableKey =
@@ -17,6 +19,11 @@ void main() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
+    );
+    // Initialize App Check to unblock Storage uploads on simulator/emulator
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+      appleProvider: AppleProvider.debug,
     );
   } catch (e) {
     debugPrint("Firebase initialization failed: $e");

@@ -5,10 +5,28 @@ import '../services/loan_service.dart';
 import '../Loan_Screen/models/document_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class VaultSubfolderScreen extends StatelessWidget {
-  final String folderName;
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-  const VaultSubfolderScreen({super.key, required this.folderName});
+class VaultSubfolderScreen extends StatefulWidget {
+  final String folderName;
+  final String folderId;
+  final String categoryName;
+
+  const VaultSubfolderScreen({
+    super.key,
+    required this.folderName,
+    required this.folderId,
+    required this.categoryName,
+  });
+
+  @override
+  State<VaultSubfolderScreen> createState() => _VaultSubfolderScreenState();
+}
+
+class _VaultSubfolderScreenState extends State<VaultSubfolderScreen> {
+  bool _isUploading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +51,7 @@ class VaultSubfolderScreen extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: Text(
-                        folderName,
+                        widget.folderName,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -43,8 +61,13 @@ class VaultSubfolderScreen extends StatelessWidget {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () =>
-                        context.push('/vault-edit-folder', extra: folderName),
+                    onTap: () => context.push(
+                      '/vault-edit-folder',
+                      extra: {
+                        'folderName': widget.folderName,
+                        'folderId': widget.folderId,
+                      },
+                    ),
                     child: Image.asset(
                       'assets/images/create.png',
                       width: 22,
@@ -80,9 +103,7 @@ class VaultSubfolderScreen extends StatelessWidget {
                           child: _ActionCard(
                             icon: 'assets/images/upload.png',
                             label: 'Upload',
-                            onTap: () {
-                              // Placeholder — file picker later
-                            },
+                            onTap: _isUploading ? () {} : _uploadFile,
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -90,15 +111,32 @@ class VaultSubfolderScreen extends StatelessWidget {
                           child: _ActionCard(
                             icon: Icons.camera_alt_outlined,
                             label: 'Take photo',
-                            onTap: () {
-                              // Placeholder — camera later
-                            },
+                            onTap: _isUploading
+                                ? () {}
+                                : _showImageSourcePicker,
                           ),
                         ),
                       ],
                     ),
 
                     const SizedBox(height: 32),
+
+                    if (_isUploading)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 24),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              CircularProgressIndicator(color: brandRed),
+                              SizedBox(height: 12),
+                              Text(
+                                'Uploading...',
+                                style: TextStyle(color: Color(0xFF888888)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
 
                     // ── Uploaded Documents Section ──
                     const Text(
@@ -114,10 +152,18 @@ class VaultSubfolderScreen extends StatelessWidget {
                     FutureBuilder<List<DocumentFile>>(
                       future: _fetchFolderDocuments(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator(color: brandRed));
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(color: brandRed),
+                          );
                         }
-                        final docs = snapshot.data ?? [];
+                        final allDocs = snapshot.data ?? [];
+                        // Filter documents to only show those belonging to this subfolder
+                        final docs = allDocs
+                            .where((d) => d.folderId == widget.folderId)
+                            .toList();
+
                         if (docs.isEmpty) {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 20),
@@ -135,17 +181,21 @@ class VaultSubfolderScreen extends StatelessWidget {
                           itemCount: docs.length,
                           itemBuilder: (context, index) {
                             final doc = docs[index];
-                            final isPdf = doc.mimeType == 'application/pdf' || doc.displayName.endsWith('.pdf');
+                            final isPdf =
+                                doc.mimeType == 'application/pdf' ||
+                                doc.displayName.endsWith('.pdf');
                             return _UploadedFileRow(
                               fileName: doc.displayName,
-                              fileInfo: '${doc.size != null ? (doc.size! / 1024).toStringAsFixed(1) : "0"} KB',
+                              fileInfo:
+                                  '${doc.size != null ? (doc.size! / 1024).toStringAsFixed(1) : "0"} KB',
                               fileType: isPdf ? 'pdf' : 'image',
                               onTap: () => _previewDocument(context, doc),
-                              onMenuTap: () => _showFileMenu(context, doc.displayName),
+                              onMenuTap: () =>
+                                  _showFileMenu(context, doc.displayName),
                             );
                           },
                         );
-                      }
+                      },
                     ),
 
                     const SizedBox(height: 32),
@@ -202,14 +252,122 @@ class VaultSubfolderScreen extends StatelessWidget {
       ),
     );
   }
+
+  String get _currentModule {
+    String mod = 'loans';
+    if (widget.categoryName.contains('Housing')) mod = 'housing';
+    if (widget.categoryName.contains('Insurance')) mod = 'insurance';
+    if (widget.categoryName.contains('Document')) mod = 'documents';
+    return mod;
+  }
+
   Future<List<DocumentFile>> _fetchFolderDocuments() async {
-    // For now, mapping folders to modules or just showing all 'loans' for demo
-    // In a full implementation, we'd filter by folderId
-    return LoanService().fetchDocumentsByModule('loans');
+    // We fetch all module documents and filter locally above
+    // A more optimal way would be a specific query, but this works for parity
+    return LoanService().fetchDocumentsByModule(_currentModule);
+  }
+
+  Future<void> _uploadFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() => _isUploading = true);
+        final file = File(result.files.single.path!);
+
+        // Using module derived from categoryName logically
+        // Here, subfolders are primarily in category context
+        await LoanService().uploadDocument(
+          file,
+          module: _currentModule,
+          folderId: widget.folderId,
+        );
+        if (mounted) {
+          setState(() {
+            _isUploading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error uploading file: $e')));
+      }
+    }
+  }
+
+  Future<void> _showImageSourcePicker() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+
+      if (pickedFile != null) {
+        setState(() => _isUploading = true);
+
+        final file = File(pickedFile.path);
+
+        await LoanService().uploadDocument(
+          file,
+          module: _currentModule,
+          folderId: widget.folderId,
+        );
+
+        if (mounted) {
+          setState(() => _isUploading = false);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
+      }
+    }
   }
 
   void _previewDocument(BuildContext context, DocumentFile doc) {
-    final isPdf = doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
+    final isPdf =
+        doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
     if (isPdf) {
       _launchURL(doc.path);
     } else {

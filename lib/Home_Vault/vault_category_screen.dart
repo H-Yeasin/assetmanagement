@@ -45,9 +45,10 @@ class VaultCategoryScreen extends StatelessWidget {
                   ),
                   // ── FAB "+" ──
                   GestureDetector(
-                    onTap: () {
-                      // Placeholder — open file picker later
-                    },
+                    onTap: () => context.push(
+                      '/vault-create-subfolder',
+                      extra: categoryName,
+                    ),
                     child: Container(
                       width: 40,
                       height: 40,
@@ -113,88 +114,132 @@ class VaultCategoryScreen extends StatelessWidget {
 
                     const SizedBox(height: 28),
 
-                    // ── Sub Folders Section ──
-                    const Text(
-                      'Sub Folders',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF111111),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Dummy subfolders
-                    _SubfolderRow(
-                      name: 'Notary',
-                      itemCount: '4 items',
-                      onTap: () =>
-                          context.push('/vault-subfolder', extra: 'Notary'),
-                      onMenuTap: () => _showFolderMenu(context, 'Notary'),
-                    ),
-                    _SubfolderRow(
-                      name: 'Bank',
-                      itemCount: '10 items',
-                      onTap: () =>
-                          context.push('/vault-subfolder', extra: 'Bank'),
-                      onMenuTap: () => _showFolderMenu(context, 'Bank'),
-                    ),
-                    _SubfolderRow(
-                      name: 'Taxes',
-                      itemCount: '8 items',
-                      onTap: () =>
-                          context.push('/vault-subfolder', extra: 'Taxes'),
-                      onMenuTap: () => _showFolderMenu(context, 'Taxes'),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // ── Recent Files Section ──
-                    const Text(
-                      'Recent Files',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF111111),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
                     FutureBuilder<List<DocumentFile>>(
                       future: _fetchCategoryDocuments(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator(color: brandRed));
-                        }
-                        final docs = snapshot.data ?? [];
-                        if (docs.isEmpty) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Center(
-                              child: Text(
-                                'No documents found in this category.',
-                                style: TextStyle(color: Color(0xFF888888)),
-                              ),
-                            ),
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(color: brandRed),
                           );
                         }
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: docs.length,
-                          itemBuilder: (context, index) {
-                            final doc = docs[index];
-                            final isPdf = doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
-                            return _RecentFileRow(
-                              fileName: doc.displayName,
-                              fileInfo: '${doc.size != null ? (doc.size! / 1024).toStringAsFixed(1) : "0"} KB',
-                              fileType: isPdf ? 'pdf' : 'image',
-                              onTap: () => _previewDocument(context, doc),
-                              onMenuTap: () => _showFileMenu(context, doc.displayName),
-                            );
-                          },
+
+                        final allDocs = snapshot.data ?? [];
+                        final folders = allDocs
+                            .where(
+                              (d) =>
+                                  d.mimeType ==
+                                  'application/vnd.anick-giroux.folder',
+                            )
+                            .toList();
+                        final recentFiles = allDocs
+                            .where(
+                              (d) =>
+                                  d.mimeType !=
+                                      'application/vnd.anick-giroux.folder' &&
+                                  (d.folderId == null || d.folderId!.isEmpty),
+                            )
+                            .toList();
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // ── Sub Folders Section ──
+                            const Text(
+                              'Sub Folders',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111111),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            if (folders.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 20),
+                                child: Text(
+                                  'No subfolders created yet.',
+                                  style: TextStyle(color: Color(0xFF888888)),
+                                ),
+                              )
+                            else
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: folders.length,
+                                itemBuilder: (context, index) {
+                                  final folder = folders[index];
+                                  // Find items in this folder
+                                  final itemCount = allDocs
+                                      .where((d) => d.folderId == folder.id)
+                                      .length;
+                                  return _SubfolderRow(
+                                    name: folder.displayName,
+                                    itemCount: '$itemCount items',
+                                    onTap: () {
+                                      // We pass the folderId so the subfolder screen knows what to fetch
+                                      context.push(
+                                        '/vault-subfolder',
+                                        extra: {
+                                          'folderName': folder.displayName,
+                                          'folderId': folder.id,
+                                          'categoryName': categoryName,
+                                        },
+                                      );
+                                    },
+                                    onMenuTap: () => _showFolderMenu(
+                                      context,
+                                      folder.displayName,
+                                    ),
+                                  );
+                                },
+                              ),
+                            const SizedBox(height: 32),
+
+                            // ── Recent Files Section ──
+                            const Text(
+                              'Recent Files',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111111),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            if (recentFiles.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: Text(
+                                    'No files found in this category.',
+                                    style: TextStyle(color: Color(0xFF888888)),
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: recentFiles.length,
+                                itemBuilder: (context, index) {
+                                  final doc = recentFiles[index];
+                                  final isPdf =
+                                      doc.mimeType == 'application/pdf' ||
+                                      doc.filename.endsWith('.pdf');
+                                  return _RecentFileRow(
+                                    fileName: doc.displayName,
+                                    fileInfo:
+                                        '${doc.size != null ? (doc.size / 1024).toStringAsFixed(1) : "0"} KB',
+                                    fileType: isPdf ? 'pdf' : 'image',
+                                    onTap: () => _previewDocument(context, doc),
+                                    onMenuTap: () =>
+                                        _showFileMenu(context, doc.displayName),
+                                  );
+                                },
+                              ),
+                          ],
                         );
-                      }
+                      },
                     ),
 
                     const SizedBox(height: 32),
@@ -291,17 +336,19 @@ class VaultCategoryScreen extends StatelessWidget {
       ),
     );
   }
+
   Future<List<DocumentFile>> _fetchCategoryDocuments() async {
     String module = 'loans';
     if (categoryName.contains('Housing')) module = 'housing';
     if (categoryName.contains('Insurance')) module = 'insurance';
-    if (categoryName.contains('Documents')) module = 'loans'; // default or shared
+    if (categoryName.contains('Document')) module = 'documents';
 
     return LoanService().fetchDocumentsByModule(module);
   }
 
   void _previewDocument(BuildContext context, DocumentFile doc) {
-    final isPdf = doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
+    final isPdf =
+        doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
     if (isPdf) {
       _launchURL(doc.path);
     } else {
