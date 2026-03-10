@@ -739,7 +739,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             spreadRadius: 1,
           ),
@@ -961,7 +961,10 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Loan added successfully'), duration: Duration(seconds: 2)),
+          const SnackBar(
+            content: Text('Loan added successfully'),
+            duration: Duration(seconds: 2),
+          ),
         );
         Navigator.pop(context);
       }
@@ -1025,7 +1028,6 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
     int maxLines = 1,
     bool isDate = false,
   }) {
-    final bool isMortgage = _selectedCategory == 'mortgage';
     return GestureDetector(
       onTap: isDate ? () => _selectDate(context, controller) : null,
       child: Container(

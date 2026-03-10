@@ -326,7 +326,10 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   prefixText: '\$ ',
-                  prefixStyle: TextStyle(color: Color(0xFF888888), fontSize: 15),
+                  prefixStyle: TextStyle(
+                    color: Color(0xFF888888),
+                    fontSize: 15,
+                  ),
                 ),
                 style: const TextStyle(fontSize: 15, color: Color(0xFF555555)),
                 keyboardType: TextInputType.number,
@@ -358,7 +361,10 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
                     Icons.arrow_drop_down,
                     color: Color(0xFF111111),
                   ),
-                  style: const TextStyle(fontSize: 15, color: Color(0xFF888888)),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF888888),
+                  ),
                   items: _months.map((String month) {
                     return DropdownMenuItem<String>(
                       value: month,
@@ -414,7 +420,9 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
                   onChanged: (v) => setState(() => _isAutoPayment = v),
                   activeThumbColor: Colors.white,
                   activeTrackColor: const Color(0xFFC61C36),
-                  trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                  trackOutlineColor: WidgetStateProperty.all(
+                    Colors.transparent,
+                  ),
                 ),
               ],
             ),
@@ -496,7 +504,7 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
     final DateTime? result = await showDialog<DateTime>(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
@@ -569,7 +577,11 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
         );
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -593,28 +605,57 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Set Reminder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111111))),
+                const Text(
+                  'Set Reminder',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
+                ),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close, size: 24, color: Color(0xFF111111)),
+                  child: const Icon(
+                    Icons.close,
+                    size: 24,
+                    color: Color(0xFF111111),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-    
+
             GestureDetector(
               onTap: _openCalendar,
               behavior: HitTestBehavior.opaque,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Pick Date', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Pick Date',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF888888),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(formattedDate, style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
-                      const Icon(Icons.calendar_today, color: Color(0xFFC61C36), size: 18),
+                      Text(
+                        formattedDate,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF111111),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.calendar_today,
+                        color: Color(0xFFC61C36),
+                        size: 18,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -623,23 +664,38 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
               ),
             ),
             const SizedBox(height: 20),
-    
+
             GestureDetector(
               onTap: _openTimePicker,
               behavior: HitTestBehavior.opaque,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Pick Time', style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Pick Time',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF888888),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         '${_selectedTime.hourOfPeriod.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${_selectedTime.period == DayPeriod.am ? 'AM' : 'PM'}',
-                        style: const TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF111111),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      const Icon(Icons.access_time, color: Color(0xFFC61C36), size: 18),
+                      const Icon(
+                        Icons.access_time,
+                        color: Color(0xFFC61C36),
+                        size: 18,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -648,13 +704,20 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
               ),
             ),
             const SizedBox(height: 32),
-    
+
             Row(
               children: [
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel', style: TextStyle(fontSize: 15, color: Color(0xFF111111), fontWeight: FontWeight.w500)),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF111111),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -665,12 +728,27 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
                       backgroundColor: const Color(0xFFFDE7E9),
                       foregroundColor: const Color(0xFFC61C36),
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: _isSaving 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC61C36)))
-                      : const Text('Set Reminder', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFC61C36),
+                            ),
+                          )
+                        : const Text(
+                            'Set Reminder',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
               ],

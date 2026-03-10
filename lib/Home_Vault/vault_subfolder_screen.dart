@@ -187,7 +187,7 @@ class _VaultSubfolderScreenState extends State<VaultSubfolderScreen> {
                             return _UploadedFileRow(
                               fileName: doc.displayName,
                               fileInfo:
-                                  '${doc.size != null ? (doc.size! / 1024).toStringAsFixed(1) : "0"} KB',
+                                  '${(doc.size / 1024).toStringAsFixed(1)} KB',
                               fileType: isPdf ? 'pdf' : 'image',
                               onTap: () => _previewDocument(context, doc),
                               onMenuTap: () =>
@@ -561,19 +561,17 @@ class _UploadedFileRow extends StatelessWidget {
 class _MenuOption extends StatelessWidget {
   final dynamic icon;
   final String label;
-  final Color? color;
   final VoidCallback onTap;
 
   const _MenuOption({
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? const Color(0xFF111111);
+    const c = Color(0xFF111111);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -587,7 +585,7 @@ class _MenuOption extends StatelessWidget {
                     icon as String,
                     width: 22,
                     height: 22,
-                    color: color == brandRed ? brandRed : null,
+                    color: null,
                   ),
             const SizedBox(width: 14),
             Text(

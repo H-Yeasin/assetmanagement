@@ -79,43 +79,6 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final DateTime? result = await showDialog<DateTime>(
-      context: context,
-      useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
-      builder: (context) => Stack(
-        children: [
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-              child: Container(color: Colors.transparent),
-            ),
-          ),
-          Center(
-            child: Material(
-              color: Colors.transparent,
-              child: SizedBox(
-                width: 343,
-                child: CustomCalendarModal(
-                  initialDate: _dateController.text.isNotEmpty
-                      ? DateFormat('MM/dd/yyyy').parse(_dateController.text)
-                      : DateTime.now(),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        _dateController.text = DateFormat('MM/dd/yyyy').format(result);
-      });
-    }
-  }
-
   Future<void> _savePolicy() async {
     // Validate based on category requirements from Figma
     if ((_selectedCategory == 'Pet' &&
@@ -217,10 +180,11 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
       await _apiService.createInsurance(policy);
       if (mounted) context.pop(true);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -632,7 +596,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                     boxShadow: _coverageType == 'Comprehensive'
                         ? [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha: 0.04),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -666,7 +630,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                     boxShadow: _coverageType == 'Third-party'
                         ? [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha: 0.04),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -1113,7 +1077,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
           final DateTime? result = await showDialog<DateTime>(
             context: context,
             useRootNavigator: true,
-            barrierColor: Colors.black.withOpacity(0.3),
+            barrierColor: Colors.black.withValues(alpha: 0.3),
             builder: (context) => Stack(
               children: [
                 Positioned.fill(

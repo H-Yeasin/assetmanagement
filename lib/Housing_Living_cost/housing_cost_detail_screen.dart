@@ -9,8 +9,7 @@ import '../services/notification_service.dart';
 import 'housing_widgets.dart';
 import 'housing_additional_details_screen.dart';
 import 'edit_housing_cost_screen.dart';
-import '../Loan_Screen/loan_widgets.dart';
-import '../Loan_Screen/models/document_model.dart';
+
 import 'housing_add_documents_screen.dart';
 
 class HousingCostDetailScreen extends StatefulWidget {
@@ -48,14 +47,16 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
 
   Future<void> _fetchReminder() async {
     try {
-      final snapshot = await FirebaseFirestore.instanceFor(
-        app: Firebase.app(),
-        databaseId: 'ffpvault',
-      ).collection('reminders')
-          .where('itemId', isEqualTo: _cost.id)
-          .where('itemType', isEqualTo: 'housing')
-          .get();
-      
+      final snapshot =
+          await FirebaseFirestore.instanceFor(
+                app: Firebase.app(),
+                databaseId: 'ffpvault',
+              )
+              .collection('reminders')
+              .where('itemId', isEqualTo: _cost.id)
+              .where('itemType', isEqualTo: 'housing')
+              .get();
+
       if (snapshot.docs.isNotEmpty) {
         final data = snapshot.docs.first.data();
         setState(() {
@@ -112,7 +113,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
     showDialog(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
@@ -142,7 +143,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
     showDialog(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
@@ -154,7 +155,10 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
           Center(
             child: Material(
               color: Colors.transparent,
-              child: SizedBox(width: 343, child: HousingReminderModal(cost: _cost)),
+              child: SizedBox(
+                width: 343,
+                child: HousingReminderModal(cost: _cost),
+              ),
             ),
           ),
         ],
@@ -167,7 +171,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
       final updated = await _apiService.updateHousingCost(_cost.id!, {
         'autoPay': value,
       });
-      setState(() => _cost = updated);
+      if (mounted) setState(() => _cost = updated);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -386,7 +390,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                                 });
                                 await _refreshCost();
                               } catch (e) {
-                                if (mounted) {
+                                if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(

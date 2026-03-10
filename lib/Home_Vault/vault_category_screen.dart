@@ -4,7 +4,6 @@ import '../Home_Dashboard/widgets.dart';
 import '../services/loan_service.dart';
 import '../Loan_Screen/models/document_model.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:io';
 
 class VaultCategoryScreen extends StatelessWidget {
   final String categoryName;
@@ -229,7 +228,7 @@ class VaultCategoryScreen extends StatelessWidget {
                                   return _RecentFileRow(
                                     fileName: doc.displayName,
                                     fileInfo:
-                                        '${doc.size != null ? (doc.size / 1024).toStringAsFixed(1) : "0"} KB',
+                                        '${(doc.size / 1024).toStringAsFixed(1)} KB',
                                     fileType: isPdf ? 'pdf' : 'image',
                                     onTap: () => _previewDocument(context, doc),
                                     onMenuTap: () =>

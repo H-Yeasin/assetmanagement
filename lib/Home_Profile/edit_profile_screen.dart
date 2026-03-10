@@ -102,6 +102,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           avatar: userAvatar,
         );
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -111,6 +112,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         );
         Navigator.pop(context);
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res['message'] ?? 'Failed to update profile'),
@@ -211,7 +213,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           setDialogState(() => isDisabling = true);
                           final token = await StorageService.getAccessToken();
                           if (token == null) {
-                            if (mounted) Navigator.pop(ctx, false);
+                            if (ctx.mounted) Navigator.pop(ctx, false);
                             return;
                           }
 
@@ -221,9 +223,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               token: token,
                             );
                             if (res['success'] == true) {
-                              if (mounted) Navigator.pop(ctx, true);
+                              if (ctx.mounted) Navigator.pop(ctx, true);
                             } else {
-                              if (mounted) {
+                              if (ctx.mounted) {
                                 ScaffoldMessenger.of(ctx).showSnackBar(
                                   SnackBar(
                                     content: Text(
@@ -268,8 +270,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (result == true) {
       await SecurityService.set2faEnabled(false);
-      setState(() => _twoFactor = false);
       if (mounted) {
+        setState(() => _twoFactor = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Two-factor authentication disabled.'),
@@ -352,7 +354,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                             ? Image.network(
                                                 _existingAvatarUrl!,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) =>
+                                                errorBuilder: (_, _, _) =>
                                                     const Icon(
                                                       Icons.person,
                                                       size: 56,

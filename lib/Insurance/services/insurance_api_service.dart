@@ -167,10 +167,11 @@ class InsuranceApiService {
     String mimeType = 'application/octet-stream';
     if (extension == 'pdf') {
       mimeType = 'application/pdf';
-    } else if (extension == 'png')
+    } else if (extension == 'png') {
       mimeType = 'image/png';
-    else if (extension == 'jpg' || extension == 'jpeg')
+    } else if (extension == 'jpg' || extension == 'jpeg') {
       mimeType = 'image/jpeg';
+    }
 
     request.files.add(
       await http.MultipartFile.fromPath(

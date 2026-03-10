@@ -42,14 +42,16 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
 
   Future<void> _fetchReminder() async {
     try {
-      final snapshot = await FirebaseFirestore.instanceFor(
-        app: Firebase.app(),
-        databaseId: 'ffpvault',
-      ).collection('reminders')
-          .where('itemId', isEqualTo: _policy.id)
-          .where('itemType', isEqualTo: 'insurance')
-          .get();
-      
+      final snapshot =
+          await FirebaseFirestore.instanceFor(
+                app: Firebase.app(),
+                databaseId: 'ffpvault',
+              )
+              .collection('reminders')
+              .where('itemId', isEqualTo: _policy.id)
+              .where('itemType', isEqualTo: 'insurance')
+              .get();
+
       if (snapshot.docs.isNotEmpty) {
         final data = snapshot.docs.first.data();
         setState(() {
@@ -106,7 +108,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
     showDialog(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
@@ -136,7 +138,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
     showDialog(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
@@ -228,7 +230,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                 border: Border.all(color: const Color(0xFFF0F0F0)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withValues(alpha: 0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -606,7 +608,7 @@ class _ActionBox extends StatelessWidget {
           border: Border.all(color: const Color(0xFFF0F0F0)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

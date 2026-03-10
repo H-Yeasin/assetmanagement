@@ -60,18 +60,23 @@ class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
         stream: _loanService.streamUpcomingPayments(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: brandRed));
+            return const Center(
+              child: CircularProgressIndicator(color: brandRed),
+            );
           }
           if (snapshot.hasError) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Error: ${snapshot.error}', textAlign: TextAlign.center),
+                child: Text(
+                  'Error: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
-          
-          final _upcomingGroups = snapshot.data ?? [];
+
+          final upcomingGroups = snapshot.data ?? [];
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -100,7 +105,7 @@ class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                if (_upcomingGroups.isEmpty)
+                if (upcomingGroups.isEmpty)
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.only(top: 40),
@@ -111,7 +116,7 @@ class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
                     ),
                   )
                 else
-                  ..._upcomingGroups.map((group) {
+                  ...upcomingGroups.map((group) {
                     final date = DateTime.parse(group['date']);
                     final items = group['items'] as List;
                     return Column(
@@ -134,7 +139,7 @@ class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
               ],
             ),
           );
-        }
+        },
       ),
     );
   }

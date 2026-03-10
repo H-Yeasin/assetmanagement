@@ -24,9 +24,11 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
     try {
       await _loanService.markReminderDone(id);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to mark reminder as done: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to mark reminder as done: $e')),
+        );
+      }
     }
   }
 
@@ -71,23 +73,32 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
               stream: _loanService.streamUpcomingReminders(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: brandRed));
+                  return const Center(
+                    child: CircularProgressIndicator(color: brandRed),
+                  );
                 }
                 if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}', style: const TextStyle(color: brandRed));
+                  return Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(color: brandRed),
+                  );
                 }
-                
+
                 final reminders = snapshot.data ?? [];
                 if (reminders.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text('No upcoming reminders.', style: TextStyle(color: Colors.grey)),
+                    child: Text(
+                      'No upcoming reminders.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                   );
                 }
 
                 return Column(
                   children: reminders.map<Widget>((r) {
-                    final remindAt = (r['remindAt'] as dynamic).toDate() as DateTime;
+                    final remindAt =
+                        (r['remindAt'] as dynamic).toDate() as DateTime;
                     final note = r['note'] ?? r['title'] ?? 'Reminder';
                     final title = r['title'] ?? 'Task';
                     return ReminderCard(

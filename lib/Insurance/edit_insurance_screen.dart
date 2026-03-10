@@ -220,10 +220,11 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
 
       if (mounted) context.pop(true);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -418,7 +419,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: brandRed.withOpacity(0.08),
+                    color: brandRed.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Center(
@@ -748,7 +749,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: brandRed.withOpacity(0.08),
+                      color: brandRed.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Center(

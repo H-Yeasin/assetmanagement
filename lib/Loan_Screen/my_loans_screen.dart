@@ -57,10 +57,12 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
 
   List<Loan> get _filteredLoans {
     if (_selectedTab == 0) return _allLoans;
-    if (_selectedTab == 1)
+    if (_selectedTab == 1) {
       return _allLoans.where((l) => l.status == 'active').toList();
-    if (_selectedTab == 2)
+    }
+    if (_selectedTab == 2) {
       return _allLoans.where((l) => l.status == 'completed').toList();
+    }
     return _allLoans;
   }
 
@@ -94,12 +96,15 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
             children: [
               Text('Error: $_error', style: const TextStyle(color: brandRed)),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: () {
-                setState(() {
-                  _isLoading = true;
-                  _error = null;
-                });
-              }, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                    _error = null;
+                  });
+                },
+                child: const Text('Retry'),
+              ),
             ],
           ),
         ),

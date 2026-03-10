@@ -3,11 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 import '../Housing_Living_cost/models/housing_cost_model.dart';
 import '../Loan_Screen/models/document_model.dart';
 
 class HousingService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'ffpvault');
+  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'ffpvault',
+  );
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
@@ -28,7 +32,12 @@ class HousingService {
 
     final snapshot = await query.get();
     return snapshot.docs
-        .map((doc) => HousingCost.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id}))
+        .map(
+          (doc) => HousingCost.fromJson({
+            ...doc.data() as Map<String, dynamic>,
+            'id': doc.id,
+          }),
+        )
         .toList();
   }
 
@@ -43,9 +52,16 @@ class HousingService {
       query = query.where('category', isEqualTo: category);
     }
 
-    return query.snapshots().map((snapshot) => snapshot.docs
-        .map((doc) => HousingCost.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id}))
-        .toList());
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs
+          .map(
+            (doc) => HousingCost.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }),
+          )
+          .toList(),
+    );
   }
 
   Future<HousingCost> getHousingCost(String id) async {
@@ -67,7 +83,10 @@ class HousingService {
     return HousingCost.fromJson({...doc.data()!, 'id': doc.id});
   }
 
-  Future<HousingCost> updateHousingCost(String id, Map<String, dynamic> updates) async {
+  Future<HousingCost> updateHousingCost(
+    String id,
+    Map<String, dynamic> updates,
+  ) async {
     updates['updatedAt'] = FieldValue.serverTimestamp();
     await _firestore.collection('housingCosts').doc(id).update(updates);
     return getHousingCost(id);
@@ -96,7 +115,12 @@ class HousingService {
 
     final snapshot = await query.get();
     return snapshot.docs
-        .map((doc) => HousingCost.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id}))
+        .map(
+          (doc) => HousingCost.fromJson({
+            ...doc.data() as Map<String, dynamic>,
+            'id': doc.id,
+          }),
+        )
         .toList();
   }
 
@@ -112,7 +136,8 @@ class HousingService {
   }) async {
     if (_uid == null) throw Exception('User not logged in');
 
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
     final ref = _storage.ref().child('$module/$_uid/$fileName');
 
     final uploadTask = await ref.putFile(
@@ -142,13 +167,18 @@ class HousingService {
     // Update relationship if needed
     if (relatedType == 'housing' && relatedId != null) {
       final Map<String, dynamic> updateData = <String, dynamic>{
-        'documents': FieldValue.arrayUnion(<String>[docRef.id])
+        'documents': FieldValue.arrayUnion(<String>[docRef.id]),
       };
-      await _firestore.collection('housingCosts').doc(relatedId).update(updateData);
+      await _firestore
+          .collection('housingCosts')
+          .doc(relatedId)
+          .update(updateData);
     }
 
     final docSnapshot = await docRef.get();
-    final Map<String, dynamic> finalData = Map<String, dynamic>.from(docSnapshot.data()!);
+    final Map<String, dynamic> finalData = Map<String, dynamic>.from(
+      docSnapshot.data()!,
+    );
     finalData['id'] = docRef.id;
     return DocumentFile.fromJson(finalData);
   }
@@ -161,7 +191,9 @@ class HousingService {
         .where('module', isEqualTo: module)
         .orderBy('createdAt', descending: true)
         .get();
-    return snapshot.docs.map((doc) => DocumentFile.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id})).toList();
+    return snapshot.docs
+        .map((doc) => DocumentFile.fromJson({...doc.data(), 'id': doc.id}))
+        .toList();
   }
 
   Future<void> deleteDocument(String id) async {
@@ -170,7 +202,7 @@ class HousingService {
       try {
         await _firestore.collection('documents').doc(id).delete();
       } catch (e) {
-        print('Error deleting document: $e');
+        debugPrint('Error deleting document: $e');
       }
     }
   }
@@ -214,12 +246,15 @@ class HousingService {
   String _getMimeType(String path) {
     final extension = path.split('.').last.toLowerCase();
     switch (extension) {
-      case 'pdf': return 'application/pdf';
-      case 'png': return 'image/png';
+      case 'pdf':
+        return 'application/pdf';
+      case 'png':
+        return 'image/png';
       case 'jpg':
-      case 'jpeg': return 'image/jpeg';
-      default: return 'application/octet-stream';
+      case 'jpeg':
+        return 'image/jpeg';
+      default:
+        return 'application/octet-stream';
     }
   }
-
 }

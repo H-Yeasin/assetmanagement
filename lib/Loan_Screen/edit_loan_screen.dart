@@ -806,7 +806,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             spreadRadius: 1,
           ),
@@ -1036,7 +1036,10 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Loan updated successfully'), duration: Duration(seconds: 2)),
+          const SnackBar(
+            content: Text('Loan updated successfully'),
+            duration: Duration(seconds: 2),
+          ),
         );
         Navigator.pop(context, true);
       }

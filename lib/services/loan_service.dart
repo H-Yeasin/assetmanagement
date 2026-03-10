@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 import '../Loan_Screen/models/loan_model.dart';
 import '../Loan_Screen/models/document_model.dart';
 
@@ -166,12 +167,7 @@ class LoanService {
         .orderBy('createdAt', descending: true)
         .get();
     return snapshot.docs
-        .map(
-          (doc) => DocumentFile.fromJson({
-            ...doc.data() as Map<String, dynamic>,
-            'id': doc.id,
-          }),
-        )
+        .map((doc) => DocumentFile.fromJson({...doc.data(), 'id': doc.id}))
         .toList();
   }
 
@@ -208,7 +204,7 @@ class LoanService {
         // For simplicity, we'll delete the metadata doc first
         await _firestore.collection('documents').doc(id).delete();
       } catch (e) {
-        print('Error deleting document from storage: $e');
+        debugPrint('Error deleting document from storage: $e');
       }
     }
   }

@@ -165,7 +165,7 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
                             return _EditFileRow(
                               fileName: doc.displayName,
                               fileInfo:
-                                  '${doc.size != null ? (doc.size / 1024).toStringAsFixed(1) : "0"} KB',
+                                  '${(doc.size / 1024).toStringAsFixed(1)} KB',
                               fileType: isPdf ? 'pdf' : 'image',
                               onDelete: () => _deleteDocument(doc.id),
                               onEdit: () =>

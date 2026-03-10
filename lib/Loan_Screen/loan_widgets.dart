@@ -290,7 +290,7 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -499,22 +499,6 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
       ),
     );
   }
-
-  Widget _buildRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-      ],
-    );
-  }
 }
 
 // ── Reminder Modal ──────────────────────────────────────────────────────────
@@ -536,7 +520,7 @@ class _ReminderModalState extends State<ReminderModal> {
     final DateTime? result = await showDialog<DateTime>(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
@@ -591,13 +575,15 @@ class _ReminderModalState extends State<ReminderModal> {
                 0xFFEBEBEB,
               ), // Box background (#EBEBEB)
               hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
-                if (states.contains(WidgetState.selected))
+                if (states.contains(WidgetState.selected)) {
                   return const Color(0xFFC61C36);
+                }
                 return const Color(0xFF212121);
               }),
               dayPeriodColor: WidgetStateColor.resolveWith((states) {
-                if (states.contains(WidgetState.selected))
+                if (states.contains(WidgetState.selected)) {
                   return const Color(0xFFFDE7E9); // AM pink
+                }
                 return const Color(0xFFEDE9F2); // PM light purple
               }),
               dayPeriodTextColor: const Color(0xFF111111),
@@ -1004,7 +990,7 @@ class _CustomCalendarModalState extends State<CustomCalendarModal> {
                 borderRadius: BorderRadius.circular(8),
               ),
               todayDecoration: BoxDecoration(
-                color: const Color(0xFFC61C36).withOpacity(0.1),
+                color: const Color(0xFFC61C36).withValues(alpha: 0.1),
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(8),
               ),

@@ -16,7 +16,8 @@ class HomeDashboardScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.transparent, // We handle blur & darkening in the builder
+      barrierColor:
+          Colors.transparent, // We handle blur & darkening in the builder
       builder: (ctx) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
         child: GestureDetector(
@@ -41,17 +42,6 @@ class HomeDashboardScreen extends StatelessWidget {
 
   void _navigateToPayments(BuildContext context) {
     context.push('/upcoming-payments');
-  }
-
-  void _showFeedback(BuildContext context, String category) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening $category...'),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: brandRed,
-      ),
-    );
   }
 
   @override
@@ -131,8 +121,13 @@ class HomeDashboardScreen extends StatelessWidget {
                   StreamBuilder<List<Loan>>(
                     stream: _loanService.streamLoans(status: 'active'),
                     builder: (context, snapshot) {
-                      final count = snapshot.hasData ? snapshot.data!.length : 0;
-                      final loadingText = snapshot.connectionState == ConnectionState.waiting ? '...' : '$count active';
+                      final count = snapshot.hasData
+                          ? snapshot.data!.length
+                          : 0;
+                      final loadingText =
+                          snapshot.connectionState == ConnectionState.waiting
+                          ? '...'
+                          : '$count active';
                       return CategoryCard(
                         iconPath: 'assets/images/icon/loan.png',
                         title: 'Loans',
@@ -142,7 +137,7 @@ class HomeDashboardScreen extends StatelessWidget {
                           context.go('/my-loans');
                         },
                       );
-                    }
+                    },
                   ),
                   CategoryCard(
                     iconPath: 'assets/images/icon/housing.png',
@@ -164,7 +159,10 @@ class HomeDashboardScreen extends StatelessWidget {
                     stream: _loanService.streamDocumentsCount(),
                     builder: (context, snapshot) {
                       final count = snapshot.data ?? 0;
-                      final loadingText = snapshot.connectionState == ConnectionState.waiting ? '...' : '$count stored';
+                      final loadingText =
+                          snapshot.connectionState == ConnectionState.waiting
+                          ? '...'
+                          : '$count stored';
                       return CategoryCard(
                         iconPath: 'assets/images/icon/doccument.png',
                         title: 'Documents',
@@ -172,7 +170,7 @@ class HomeDashboardScreen extends StatelessWidget {
                         iconColor: Colors.orange,
                         onTap: () => context.push('/vault'),
                       );
-                    }
+                    },
                   ),
                 ],
               ),
@@ -210,21 +208,27 @@ class HomeDashboardScreen extends StatelessWidget {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(child: CircularProgressIndicator(color: brandRed)),
+                      child: Center(
+                        child: CircularProgressIndicator(color: brandRed),
+                      ),
                     );
                   }
-                  
+
                   final reminders = snapshot.data ?? [];
                   if (reminders.isEmpty) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Text('No upcoming reminders', style: TextStyle(color: Colors.grey)),
+                      child: Text(
+                        'No upcoming reminders',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     );
                   }
-                  
+
                   return Column(
                     children: reminders.take(2).map((r) {
-                      final remindAt = (r['remindAt'] as dynamic).toDate() as DateTime;
+                      final remindAt =
+                          (r['remindAt'] as dynamic).toDate() as DateTime;
                       final note = r['note'] ?? r['title'] ?? 'Reminder';
                       final title = r['title'] ?? 'Task';
                       return Padding(

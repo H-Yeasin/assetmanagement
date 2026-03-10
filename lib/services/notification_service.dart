@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -103,7 +104,7 @@ class NotificationService {
           'fcmToken': token,
         }, SetOptions(merge: true));
       } catch (e) {
-        print('Error saving FCM token directly: $e');
+        debugPrint('Error saving FCM token directly: $e');
       }
     }
   }

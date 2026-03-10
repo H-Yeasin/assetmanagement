@@ -673,7 +673,7 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
     final DateTime? result = await showDialog<DateTime>(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
@@ -747,10 +747,11 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

@@ -8,7 +8,7 @@ import '../services/loan_service.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
-import 'models/document_model.dart';
+
 import '../services/notification_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -24,7 +24,7 @@ class LoanDetailScreen extends StatefulWidget {
 
 class _LoanDetailScreenState extends State<LoanDetailScreen> {
   late Loan _currentLoan;
-  bool _isLoading = false;
+
   bool _didChange = false;
   final LoanService _loanService = LoanService();
 
@@ -97,11 +97,13 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   Future<void> _refreshLoan() async {
     try {
       final updatedLoan = await _loanService.getLoan(_currentLoan.id!);
-      setState(() {
-        _currentLoan = updatedLoan;
-        _isLoading = false;
-        _didChange = true;
-      });
+      if (mounted) {
+        setState(() {
+          _currentLoan = updatedLoan;
+
+          _didChange = true;
+        });
+      }
     } catch (e) {
       debugPrint('Error refreshing loan: $e');
     }
@@ -350,8 +352,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                 showDialog(
                                   context: context,
                                   useRootNavigator: true,
-                                  barrierColor: Colors.black.withOpacity(
-                                    0.3,
+                                  barrierColor: Colors.black.withValues(
+                                    alpha: 0.3,
                                   ), // #000000 30%
                                   builder: (context) => Stack(
                                     children: [
@@ -394,8 +396,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                 showDialog(
                                   context: context,
                                   useRootNavigator: true,
-                                  barrierColor: Colors.black.withOpacity(
-                                    0.3,
+                                  barrierColor: Colors.black.withValues(
+                                    alpha: 0.3,
                                   ), // #000000 30%
                                   builder: (context) => Stack(
                                     children: [
@@ -511,7 +513,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                     {'documents': docIds},
                                   );
                                   await _refreshLoan();
-                                  if (mounted) {
+                                  if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
@@ -521,7 +523,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                     );
                                   }
                                 } catch (e) {
-                                  if (mounted) {
+                                  if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text('Error updating: $e'),
@@ -565,7 +567,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: brandRed.withOpacity(0.1),
+                                color: brandRed.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Image.asset(
@@ -634,7 +636,9 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFC61C36).withOpacity(0.1),
+                                color: const Color(
+                                  0xFFC61C36,
+                                ).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Image.asset(

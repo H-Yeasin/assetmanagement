@@ -55,7 +55,7 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
     final DateTime? picked = await showDialog<DateTime>(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
@@ -113,8 +113,10 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
         category: _selectedCategory,
         amount: amount,
         dueDate: dueDate,
-        autoPay: _reminderEnabled, // Using reminder toggle as autoPay hint if no specific toggle
-        notes: _nameController.text, // Using name as notes for now or check if notes controller exists
+        autoPay:
+            _reminderEnabled, // Using reminder toggle as autoPay hint if no specific toggle
+        notes: _nameController
+            .text, // Using name as notes for now or check if notes controller exists
         documents: _uploadedDocuments.map((d) => d['id']).toList(),
       );
 
@@ -357,11 +359,11 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
                         ],
                       ),
                     ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // ── Documents Section ──
-                  _buildAddDocumentsButton(),
-                  const SizedBox(height: 12),
+                    // ── Documents Section ──
+                    _buildAddDocumentsButton(),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
@@ -557,7 +559,10 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments, module: 'housing'),
+            builder: (_) => AddDocumentsScreen(
+              initialDocuments: _uploadedDocuments,
+              module: 'housing',
+            ),
           ),
         );
         if (result != null && result is List<Map<String, dynamic>>) {
@@ -572,16 +577,24 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _uploadedDocuments.isEmpty ? brandRed : Colors.green),
+          border: Border.all(
+            color: _uploadedDocuments.isEmpty ? brandRed : Colors.green,
+          ),
         ),
         alignment: Alignment.center,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, color: _uploadedDocuments.isEmpty ? brandRed : Colors.green, size: 20),
+            Icon(
+              Icons.add,
+              color: _uploadedDocuments.isEmpty ? brandRed : Colors.green,
+              size: 20,
+            ),
             const SizedBox(width: 4),
             Text(
-              _uploadedDocuments.isEmpty ? 'Add Documents' : '${_uploadedDocuments.length} Documents Added',
+              _uploadedDocuments.isEmpty
+                  ? 'Add Documents'
+                  : '${_uploadedDocuments.length} Documents Added',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

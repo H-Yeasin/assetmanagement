@@ -30,12 +30,7 @@ class UserService {
       if (imageFile != null) {
         try {
           // Force-refresh the ID token so Storage rules see a valid auth context
-          final idTokenResult = await user.getIdTokenResult(true);
-          final idToken = idTokenResult.token ?? '';
-
-          print('--- AUTH DEBUG ---');
-          print('User UID: ${user.uid}');
-          print('Token extracted: ${idToken.isNotEmpty}');
+          await user.getIdTokenResult(true);
 
           final ref = _storage.ref().child('avatars/${user.uid}/profile.jpg');
 
@@ -46,14 +41,6 @@ class UserService {
           await ref.putFile(imageFile, metadata);
           photoUrl = await ref.getDownloadURL();
         } on FirebaseException catch (e) {
-          // Debug: print full error details
-          print('=== STORAGE ERROR ===');
-          print('Code: ${e.code}');
-          print('Message: ${e.message}');
-          print('Plugin: ${e.plugin}');
-          print('UID: ${_auth.currentUser?.uid}');
-          print('Path: avatars/${_auth.currentUser?.uid}/profile.jpg');
-          print('=====================');
           uploadWarning = e.code == 'unauthorized'
               ? 'Profile name updated, but image upload is not allowed by Firebase Storage rules.'
               : 'Profile name updated, but image upload failed: ${e.code} ${e.message}';
@@ -69,7 +56,7 @@ class UserService {
       // Update Firestore
       await _db.collection('users').doc(user.uid).set({
         'fullName': fullName,
-        if (photoUrl != null) 'avatarUrl': photoUrl,
+        'avatarUrl': ?photoUrl,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

@@ -106,7 +106,7 @@ class _CompletedLoansScreenState extends State<CompletedLoansScreen> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
+                        color: Colors.black.withValues(alpha: 0.02),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -174,7 +174,9 @@ class _CompletedLoansScreenState extends State<CompletedLoansScreen> {
                                     color: const Color(0xFFE8F5E9),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: Colors.green.withOpacity(0.1),
+                                      color: Colors.green.withValues(
+                                        alpha: 0.1,
+                                      ),
                                     ),
                                   ),
                                   child: const Text(

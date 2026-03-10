@@ -349,6 +349,7 @@ class _VaultScreenState extends State<VaultScreen> {
                             if (!mounted) return;
 
                             if (totalDocs > 0) {
+                              if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: const Row(
@@ -378,7 +379,9 @@ class _VaultScreenState extends State<VaultScreen> {
                                   ),
                                   margin: EdgeInsets.only(
                                     bottom:
-                                        MediaQuery.of(context).size.height -
+                                        (context.mounted
+                                            ? MediaQuery.of(context).size.height
+                                            : 800) -
                                         220,
                                     left: 20,
                                     right: 20,
@@ -387,6 +390,7 @@ class _VaultScreenState extends State<VaultScreen> {
                                 ),
                               );
                             } else {
+                              if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: const Row(
@@ -416,7 +420,9 @@ class _VaultScreenState extends State<VaultScreen> {
                                   ),
                                   margin: EdgeInsets.only(
                                     bottom:
-                                        MediaQuery.of(context).size.height -
+                                        (context.mounted
+                                            ? MediaQuery.of(context).size.height
+                                            : 800) -
                                         220,
                                     left: 20,
                                     right: 20,

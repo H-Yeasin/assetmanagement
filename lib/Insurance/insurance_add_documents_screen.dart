@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import '../services/insurance_service.dart';
 import 'models/insurance_model.dart';
 
@@ -34,7 +34,8 @@ class _InsuranceAddDocumentsScreenState
   @override
   void initState() {
     super.initState();
-    if (widget.initialDocuments != null && widget.initialDocuments!.isNotEmpty) {
+    if (widget.initialDocuments != null &&
+        widget.initialDocuments!.isNotEmpty) {
       _documents = List.from(widget.initialDocuments!);
     } else {
       _fetchExistingDocuments();
@@ -46,13 +47,17 @@ class _InsuranceAddDocumentsScreenState
     try {
       final existing = await _apiService.fetchDocumentsByModule('insurance');
       setState(() {
-        _documents = existing.map((doc) => {
-          'id': doc.id,
-          'name': doc.displayName,
-          'type': doc.mimeType.contains('pdf') ? 'pdf' : 'image',
-          'date': doc.createdAt ?? DateTime.now(),
-          'path': doc.path,
-        }).toList();
+        _documents = existing
+            .map(
+              (doc) => {
+                'id': doc.id,
+                'name': doc.displayName,
+                'type': doc.mimeType.contains('pdf') ? 'pdf' : 'image',
+                'date': doc.createdAt ?? DateTime.now(),
+                'path': doc.path,
+              },
+            )
+            .toList();
       });
     } catch (e) {
       debugPrint('Error fetching existing: $e');
@@ -382,9 +387,9 @@ class _InsuranceAddDocumentsScreenState
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _documents.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
+                            itemBuilder: (_, index) {
                               final doc = _documents[index];
                               return _buildDocumentCard(
                                 icon: _getIconForType(doc['type']),
@@ -444,7 +449,7 @@ class _InsuranceAddDocumentsScreenState
                   ),
                   if (_isUploading)
                     Container(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       child: const Center(
                         child: CircularProgressIndicator(color: brandRed),
                       ),
@@ -532,7 +537,7 @@ class _InsuranceAddDocumentsScreenState
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
+            color: iconColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: iconColor, size: 24),

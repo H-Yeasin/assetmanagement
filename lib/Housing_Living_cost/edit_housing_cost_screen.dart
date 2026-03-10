@@ -76,7 +76,7 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
     final DateTime? picked = await showDialog<DateTime>(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) => Stack(
         children: [
           Positioned.fill(
