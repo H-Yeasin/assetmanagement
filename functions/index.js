@@ -6,20 +6,25 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { getFirestore } from "firebase-admin/firestore";
 import Stripe from "stripe";
 
-const stripe = new Stripe("sk_test_51RVRsRFxx6GHySDfgfAcVEYutYfL1TvNljJ9FWpArunY9RRgUccCgD6sfoT8xl0DtQiqz2GbIjjeWF5I2senOvqc005iiaGl3A");
+const stripe = new Stripe(
+  "sk_test_51RVRsRFxx6GHySDfgfAcVEYutYfL1TvNljJ9FWpArunY9RRgUccCgD6sfoT8xl0DtQiqz2GbIjjeWF5I2senOvqc005iiaGl3A",
+);
 
 admin.initializeApp();
 
 const firestoreDbId = (process.env.FIRESTORE_DB_ID || "").trim();
-const db = firestoreDbId.length > 0 ?
-  getFirestore(admin.app(), firestoreDbId) :
-  getFirestore(admin.app());
+const db =
+  firestoreDbId.length > 0 ?
+    getFirestore(admin.app(), firestoreDbId) :
+    getFirestore(admin.app());
 const OTP_COLLECTION = "passwordResetOtps";
 const TWO_FACTOR_COLLECTION = "twoFactorOtps";
 const OTP_EXPIRE_MINUTES = 10;
 
 function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
+  return String(email || "")
+    .trim()
+    .toLowerCase();
 }
 
 function validateEmail(email) {
@@ -79,7 +84,8 @@ async function sendOtpEmail(email, otp, purpose = "reset") {
   };
   const descMap = {
     reset: "Use this 6-digit OTP to reset your FFP Vault password:",
-    twoFactorEnable: "Use this 6-digit OTP to enable two-factor authentication:",
+    twoFactorEnable:
+      "Use this 6-digit OTP to enable two-factor authentication:",
     twoFactorLogin: "Use this 6-digit OTP to complete your login:",
   };
 
@@ -122,17 +128,20 @@ async function issueTwoFactorOtp({ uid, email, purpose }) {
   );
 
   const ref = db.collection(TWO_FACTOR_COLLECTION).doc(`${uid}_${purpose}`);
-  await ref.set({
-    uid,
-    email,
-    purpose,
-    otpHash,
-    salt,
-    attempts: 0,
-    expiresAt,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, { merge: true });
+  await ref.set(
+    {
+      uid,
+      email,
+      purpose,
+      otpHash,
+      salt,
+      attempts: 0,
+      expiresAt,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
 
   await sendOtpEmail(email, otp, purpose);
 }
@@ -219,7 +228,10 @@ export const verifyTwoFactorEnable = onCall(async (request) => {
   }
   if (data.expiresAt?.toMillis?.() < Date.now()) {
     await ref.delete();
-    throw new HttpsError("deadline-exceeded", "OTP expired. Request a new code.");
+    throw new HttpsError(
+      "deadline-exceeded",
+      "OTP expired. Request a new code.",
+    );
   }
 
   const valid = hashOtp(data.email, otp, data.salt) === data.otpHash;
@@ -236,11 +248,14 @@ export const verifyTwoFactorEnable = onCall(async (request) => {
     throw new HttpsError("permission-denied", "Invalid OTP.");
   }
 
-  await db.collection("users").doc(uid).set({
-    twoFactorEnabled: true,
-    twoFactorEmail: data.email,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, { merge: true });
+  await db.collection("users").doc(uid).set(
+    {
+      twoFactorEnabled: true,
+      twoFactorEmail: data.email,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
   await ref.delete();
 
   return {
@@ -264,7 +279,10 @@ export const requestTwoFactorLogin = onCall(async (request) => {
   }
 
   const email = normalizeEmail(
-    userData.twoFactorEmail || request.auth.token?.email || request.data?.email || "",
+    userData.twoFactorEmail ||
+      request.auth.token?.email ||
+      request.data?.email ||
+      "",
   );
   if (!validateEmail(email)) {
     throw new HttpsError("failed-precondition", "No 2FA email configured.");
@@ -296,7 +314,10 @@ export const verifyTwoFactorLogin = onCall(async (request) => {
   }
   if (data.expiresAt?.toMillis?.() < Date.now()) {
     await ref.delete();
-    throw new HttpsError("deadline-exceeded", "OTP expired. Please log in again.");
+    throw new HttpsError(
+      "deadline-exceeded",
+      "OTP expired. Please log in again.",
+    );
   }
 
   const valid = hashOtp(data.email, otp, data.salt) === data.otpHash;
@@ -331,7 +352,10 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
   }
   if (data.expiresAt?.toMillis?.() < Date.now()) {
     await ref.delete();
-    throw new HttpsError("deadline-exceeded", "OTP expired. Request a new OTP.");
+    throw new HttpsError(
+      "deadline-exceeded",
+      "OTP expired. Request a new OTP.",
+    );
   }
 
   const valid = hashOtp(email, otp, data.salt) === data.otpHash;
@@ -339,7 +363,10 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
     const attempts = Number(data.attempts || 0) + 1;
     if (attempts >= 5) {
       await ref.delete();
-      throw new HttpsError("permission-denied", "Too many attempts. Request OTP again.");
+      throw new HttpsError(
+        "permission-denied",
+        "Too many attempts. Request OTP again.",
+      );
     }
     await ref.update({
       attempts,
@@ -375,7 +402,10 @@ export const resetPasswordWithOtp = onCall(async (request) => {
   }
   if (data.expiresAt?.toMillis?.() < Date.now()) {
     await ref.delete();
-    throw new HttpsError("deadline-exceeded", "OTP expired. Request a new OTP.");
+    throw new HttpsError(
+      "deadline-exceeded",
+      "OTP expired. Request a new OTP.",
+    );
   }
 
   const valid = hashOtp(email, otp, data.salt) === data.otpHash;
@@ -401,7 +431,7 @@ export const createStripePaymentIntent = onCall(async (request) => {
   }
 
   const amount = request.data?.amount;
-  const currency = request.data?.currency || 'usd';
+  const currency = request.data?.currency || "usd";
 
   if (!amount) {
     throw new HttpsError("invalid-argument", "Amount in cents is required.");
@@ -425,99 +455,111 @@ export const createStripePaymentIntent = onCall(async (request) => {
 });
 
 // ── Check Reminders Cron Job ────────────────────────────────────────────────
-export const checkRemindersAndNotify = onSchedule("every 15 minutes", async (event) => {
-  const now = admin.firestore.Timestamp.now();
+export const checkRemindersAndNotify = onSchedule(
+  "every 15 minutes",
+  async (event) => {
+    const now = admin.firestore.Timestamp.now();
 
-  try {
-    // Look for reminders that are due or past due and haven't been sent yet
-    const snapshot = await db.collection("reminders")
-      .where("isSent", "==", false)
-      .where("remindAt", "<=", now)
-      .get();
+    try {
+      // Look for reminders that are due or past due and haven't been sent yet
+      const snapshot = await db
+        .collection("reminders")
+        .where("isSent", "==", false)
+        .where("remindAt", "<=", now)
+        .get();
 
-    if (snapshot.empty) {
-      console.log("No pending reminders to send.");
-      return;
-    }
-
-    const batch = db.batch();
-    const notifications = [];
-
-    for (const doc of snapshot.docs) {
-      const reminder = doc.data();
-      const userId = reminder.userId || reminder.uid; // Account for either convention
-
-      if (!userId) {
-        console.warn(`Reminder ${doc.id} missing userId. Skipping.`);
-        continue;
+      if (snapshot.empty) {
+        console.log("No pending reminders to send.");
+        return;
       }
 
-      // Fetch user to get FCM token
-      const userDoc = await db.collection("users").doc(userId).get();
-      if (!userDoc.exists) {
-        console.warn(`User ${userId} not found for reminder ${doc.id}.`);
-        continue;
-      }
+      const batch = db.batch();
+      const notifications = [];
 
-      const userData = userDoc.data();
-      const fcmToken = userData.fcmToken;
+      for (const doc of snapshot.docs) {
+        const reminder = doc.data();
+        const userId = reminder.userId || reminder.uid; // Account for either convention
 
-      if (!fcmToken) {
-        console.warn(`User ${userId} has no FCM token. Skipping notification.`);
-        // Note: You may want to mark as sent anyway to avoid infinite retries
+        if (!userId) {
+          console.warn(`Reminder ${doc.id} missing userId. Skipping.`);
+          continue;
+        }
+
+        // Fetch user to get FCM token
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (!userDoc.exists) {
+          console.warn(`User ${userId} not found for reminder ${doc.id}.`);
+          continue;
+        }
+
+        const userData = userDoc.data();
+        const fcmToken = userData.fcmToken;
+
+        if (!fcmToken) {
+          console.warn(
+            `User ${userId} has no FCM token. Skipping notification.`,
+          );
+          // Note: You may want to mark as sent anyway to avoid infinite retries
+          batch.update(doc.ref, {
+            isSent: true,
+            failedReason: "No FCM token",
+          });
+          continue;
+        }
+
+        const title = reminder.title || "FFP Vault Reminder";
+        const body =
+          reminder.note || `Reminder for your ${reminder.itemType || "item"}.`;
+
+        notifications.push({
+          token: fcmToken,
+          notification: {
+            title,
+            body,
+          },
+          data: {
+            reminderId: doc.id,
+            itemId: reminder.itemId || "",
+            itemType: reminder.itemType || "",
+          },
+        });
+
+        // Mark the reminder as sent
         batch.update(doc.ref, {
           isSent: true,
-          failedReason: 'No FCM token'
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        continue;
       }
 
-      const title = reminder.title || "FFP Vault Reminder";
-      const body = reminder.note || `Reminder for your ${reminder.itemType || 'item'}.`;
+      if (notifications.length > 0) {
+        // Send notifications via FCM
+        const response = await admin.messaging().sendEach(
+          notifications.map((n) => ({
+            token: n.token,
+            notification: n.notification,
+            data: n.data,
+          })),
+        );
 
-      notifications.push({
-        token: fcmToken,
-        notification: {
-          title,
-          body,
-        },
-        data: {
-          reminderId: doc.id,
-          itemId: reminder.itemId || "",
-          itemType: reminder.itemType || "",
-        },
-      });
+        console.log(
+          `Successfully sent ${response.successCount} messages; failed ${response.failureCount} messages.`,
+        );
 
-      // Mark the reminder as sent
-      batch.update(doc.ref, {
-        isSent: true,
-        sentAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+        response.responses.forEach((res, idx) => {
+          if (!res.success) {
+            console.error(
+              `Failed to send to ${notifications[idx].token}:`,
+              res.error,
+            );
+          }
+        });
+      }
+
+      // Commit the batch to mark reminders as sent
+      await batch.commit();
+      console.log("Reminders checked and updated successfully.");
+    } catch (error) {
+      console.error("Error processing reminders:", error);
     }
-
-    if (notifications.length > 0) {
-      // Send notifications via FCM
-      const response = await admin.messaging().sendEach(notifications.map(n => ({
-        token: n.token,
-        notification: n.notification,
-        data: n.data,
-      })));
-
-      console.log(`Successfully sent ${response.successCount} messages; failed ${response.failureCount} messages.`);
-
-      response.responses.forEach((res, idx) => {
-        if (!res.success) {
-          console.error(`Failed to send to ${notifications[idx].token}:`, res.error);
-        }
-      });
-    }
-
-    // Commit the batch to mark reminders as sent
-    await batch.commit();
-    console.log("Reminders checked and updated successfully.");
-
-  } catch (error) {
-    console.error("Error processing reminders:", error);
-  }
-});
-
+  },
+);
