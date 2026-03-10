@@ -37,7 +37,7 @@ class UserService {
           print('User UID: ${user.uid}');
           print('Token extracted: ${idToken.isNotEmpty}');
 
-          final ref = _storage.ref().child('avatars/${user.uid}.jpg');
+          final ref = _storage.ref().child('avatars/${user.uid}/profile.jpg');
 
           // Explicitly pass the token in customMetadata so rules can access it if native auth is dropped
           final metadata = SettableMetadata(contentType: 'image/jpeg');
@@ -52,7 +52,7 @@ class UserService {
           print('Message: ${e.message}');
           print('Plugin: ${e.plugin}');
           print('UID: ${_auth.currentUser?.uid}');
-          print('Path: avatars/${_auth.currentUser?.uid}.jpg');
+          print('Path: avatars/${_auth.currentUser?.uid}/profile.jpg');
           print('=====================');
           uploadWarning = e.code == 'unauthorized'
               ? 'Profile name updated, but image upload is not allowed by Firebase Storage rules.'
@@ -171,7 +171,7 @@ class UserService {
         await _db.collection('users').doc(uid).delete();
       } catch (_) {}
       try {
-        await _storage.ref().child('avatars/$uid.jpg').delete();
+        await _storage.ref().child('avatars/$uid/profile.jpg').delete();
       } catch (_) {}
 
       await user.delete();

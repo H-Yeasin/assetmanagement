@@ -343,7 +343,10 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   prefixText: '\$ ',
-                  prefixStyle: TextStyle(color: Color(0xFF888888), fontSize: 15),
+                  prefixStyle: TextStyle(
+                    color: Color(0xFF888888),
+                    fontSize: 15,
+                  ),
                 ),
                 style: const TextStyle(fontSize: 15, color: Color(0xFF555555)),
                 keyboardType: TextInputType.number,
@@ -375,7 +378,10 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
                     Icons.arrow_drop_down,
                     color: Color(0xFF111111),
                   ),
-                  style: const TextStyle(fontSize: 15, color: Color(0xFF888888)),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF888888),
+                  ),
                   items: _months.map((String month) {
                     return DropdownMenuItem<String>(
                       value: month,
@@ -431,7 +437,9 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
                   onChanged: (v) => setState(() => _isAutoPayment = v),
                   activeThumbColor: Colors.white,
                   activeTrackColor: const Color(0xFFC61C36),
-                  trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                  trackOutlineColor: WidgetStateProperty.all(
+                    Colors.transparent,
+                  ),
                 ),
               ],
             ),
@@ -512,15 +520,18 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
 // ── Reminder Modal ──────────────────────────────────────────────────────────
 
 class ReminderModal extends StatefulWidget {
-  const ReminderModal({super.key});
+  final Loan loan;
+  const ReminderModal({super.key, required this.loan});
 
   @override
   State<ReminderModal> createState() => _ReminderModalState();
 }
 
 class _ReminderModalState extends State<ReminderModal> {
-  DateTime _selectedDate = DateTime(2025, 1, 8);
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 14, minute: 0); // 2:00 PM
+  bool _isSaving = false;
+  final LoanService _apiService = LoanService();
   void _openCalendar() async {
     final DateTime? result = await showDialog<DateTime>(
       context: context,
@@ -631,6 +642,42 @@ class _ReminderModalState extends State<ReminderModal> {
     }
   }
 
+  Future<void> _onSave() async {
+    setState(() => _isSaving = true);
+    try {
+      final DateTime scheduledDate = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime.hour,
+        _selectedTime.minute,
+      );
+
+      await _apiService.createReminder(
+        itemType: 'loan',
+        itemId: widget.loan.id!,
+        remindAt: scheduledDate,
+        title: 'Loan Payment Reminder: ${widget.loan.name}',
+        note: 'Reminder for your loan upcoming payment.',
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reminder set successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     String formattedDate = DateFormat('MMMM dd').format(_selectedDate);
@@ -668,7 +715,7 @@ class _ReminderModalState extends State<ReminderModal> {
               ],
             ),
             const SizedBox(height: 20),
-    
+
             // ── Date Selection (Click triggers calendar) ──
             GestureDetector(
               onTap: _openCalendar,
@@ -687,7 +734,10 @@ class _ReminderModalState extends State<ReminderModal> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
+                      const Icon(
+                        Icons.arrow_drop_down,
+                        color: Color(0xFF111111),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -696,7 +746,7 @@ class _ReminderModalState extends State<ReminderModal> {
               ),
             ),
             const SizedBox(height: 15),
-    
+
             // ── Time Selection (Click triggers time picker) ──
             GestureDetector(
               onTap: _openTimePicker,
@@ -715,7 +765,10 @@ class _ReminderModalState extends State<ReminderModal> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const Icon(Icons.arrow_drop_down, color: Color(0xFF111111)),
+                      const Icon(
+                        Icons.arrow_drop_down,
+                        color: Color(0xFF111111),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -724,7 +777,7 @@ class _ReminderModalState extends State<ReminderModal> {
               ),
             ),
             const SizedBox(height: 32),
-    
+
             // ── Action Buttons ──
             Row(
               children: [
@@ -744,7 +797,7 @@ class _ReminderModalState extends State<ReminderModal> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _isSaving ? null : _onSave,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFDE7E9),
                       foregroundColor: const Color(0xFFC61C36),
@@ -754,10 +807,22 @@ class _ReminderModalState extends State<ReminderModal> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text(
-                      'Set Reminder',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFC61C36),
+                            ),
+                          )
+                        : const Text(
+                            'Set Reminder',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
               ],

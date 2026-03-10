@@ -33,6 +33,7 @@ void main() async {
   Hive.registerAdapter(DocumentFileAdapter());
 
   await NotificationService.init();
+  await NotificationService.initFCM();
 
   runApp(const ProviderScope(child: MyApp()));
 }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:anick_giroux/services/notification_service.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -74,7 +75,8 @@ class AuthService {
             'statusCode': 403,
             'success': false,
             'message':
-                twoFactorResult['message'] ?? 'Two-factor authentication required',
+                twoFactorResult['message'] ??
+                'Two-factor authentication required',
             'data': {
               'twoFactorRequired': true,
               'email': twoFactorResult['data']?['email'] ?? email,
@@ -186,10 +188,7 @@ class AuthService {
         'message': 'OTP sent to your email',
       };
     } on FirebaseFunctionsException catch (e) {
-      return _formatError(
-        (e.message ?? 'Error sending OTP'),
-        400,
-      );
+      return _formatError((e.message ?? 'Error sending OTP'), 400);
     } on FirebaseAuthException catch (e) {
       return _formatError(e.message ?? "Error sending OTP");
     } catch (e) {
@@ -267,10 +266,7 @@ class AuthService {
         'statusCode': 200,
         'success': true,
         'message': data['message'] ?? 'Two-factor authentication enabled',
-        'data': {
-          'enabled': true,
-          'email': data['email'] ?? user.email ?? '',
-        },
+        'data': {'enabled': true, 'email': data['email'] ?? user.email ?? ''},
       };
     } on FirebaseFunctionsException catch (e) {
       return _formatError(e.message ?? 'Invalid verification code');
@@ -419,15 +415,8 @@ class AuthService {
   }) async {
     try {
       final callable = _functions.httpsCallable('verifyPasswordResetOtp');
-      await callable.call({
-        'email': email.trim(),
-        'otp': otp.trim(),
-      });
-      return {
-        'statusCode': 200,
-        'success': true,
-        'message': 'OTP verified',
-      };
+      await callable.call({'email': email.trim(), 'otp': otp.trim()});
+      return {'statusCode': 200, 'success': true, 'message': 'OTP verified'};
     } on FirebaseFunctionsException catch (e) {
       return _formatError(e.message ?? 'Invalid OTP');
     } catch (e) {
@@ -483,6 +472,11 @@ class AuthService {
     required String message,
     required String userName,
   }) async {
+    // Try to init/update FCM token now that user has logged in
+    try {
+      await NotificationService.initFCM();
+    } catch (_) {}
+
     final idToken = await user.getIdToken();
     return {
       'statusCode': 200,

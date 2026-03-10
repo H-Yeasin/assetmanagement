@@ -142,10 +142,10 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
 
       await _apiService.updateHousingCost(widget.cost.id!, updates);
 
-      if (_autoPay) {
-        // Using "Every 15th of the month" logic consistent with other screens if not specified otherwise
-        final now = DateTime.now();
-        final pDate = DateTime(now.year, now.month, 15);
+      if (_autoPay && dueDate != null) {
+        // Use the due date for the auto-pay reminder
+        // Currently setting reminder for the due date itself
+        final pDate = dueDate;
 
         await _apiService.createReminder(
           itemId: widget.cost.id!,
@@ -510,7 +510,10 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AddDocumentsScreen(initialDocuments: _uploadedDocuments, module: 'housing'),
+            builder: (_) => AddDocumentsScreen(
+              initialDocuments: _uploadedDocuments,
+              module: 'housing',
+            ),
           ),
         );
         if (result != null && result is List<Map<String, dynamic>>) {
@@ -525,16 +528,24 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _uploadedDocuments.isEmpty ? brandRed : Colors.green),
+          border: Border.all(
+            color: _uploadedDocuments.isEmpty ? brandRed : Colors.green,
+          ),
         ),
         alignment: Alignment.center,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, color: _uploadedDocuments.isEmpty ? brandRed : Colors.green, size: 20),
+            Icon(
+              Icons.add,
+              color: _uploadedDocuments.isEmpty ? brandRed : Colors.green,
+              size: 20,
+            ),
             const SizedBox(width: 4),
             Text(
-              _uploadedDocuments.isEmpty ? 'Add Documents' : '${_uploadedDocuments.length} Documents Added',
+              _uploadedDocuments.isEmpty
+                  ? 'Add Documents'
+                  : '${_uploadedDocuments.length} Documents Added',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

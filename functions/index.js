@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import nodemailer from "nodemailer";
 import admin from "firebase-admin";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import { getFirestore } from "firebase-admin/firestore";
 import Stripe from "stripe";
 
@@ -420,6 +421,103 @@ export const createStripePaymentIntent = onCall(async (request) => {
     };
   } catch (error) {
     throw new HttpsError("internal", error.message);
+  }
+});
+
+// ── Check Reminders Cron Job ────────────────────────────────────────────────
+export const checkRemindersAndNotify = onSchedule("every 15 minutes", async (event) => {
+  const now = admin.firestore.Timestamp.now();
+
+  try {
+    // Look for reminders that are due or past due and haven't been sent yet
+    const snapshot = await db.collection("reminders")
+      .where("isSent", "==", false)
+      .where("remindAt", "<=", now)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("No pending reminders to send.");
+      return;
+    }
+
+    const batch = db.batch();
+    const notifications = [];
+
+    for (const doc of snapshot.docs) {
+      const reminder = doc.data();
+      const userId = reminder.userId || reminder.uid; // Account for either convention
+
+      if (!userId) {
+        console.warn(`Reminder ${doc.id} missing userId. Skipping.`);
+        continue;
+      }
+
+      // Fetch user to get FCM token
+      const userDoc = await db.collection("users").doc(userId).get();
+      if (!userDoc.exists) {
+        console.warn(`User ${userId} not found for reminder ${doc.id}.`);
+        continue;
+      }
+
+      const userData = userDoc.data();
+      const fcmToken = userData.fcmToken;
+
+      if (!fcmToken) {
+        console.warn(`User ${userId} has no FCM token. Skipping notification.`);
+        // Note: You may want to mark as sent anyway to avoid infinite retries
+        batch.update(doc.ref, {
+          isSent: true,
+          failedReason: 'No FCM token'
+        });
+        continue;
+      }
+
+      const title = reminder.title || "FFP Vault Reminder";
+      const body = reminder.note || `Reminder for your ${reminder.itemType || 'item'}.`;
+
+      notifications.push({
+        token: fcmToken,
+        notification: {
+          title,
+          body,
+        },
+        data: {
+          reminderId: doc.id,
+          itemId: reminder.itemId || "",
+          itemType: reminder.itemType || "",
+        },
+      });
+
+      // Mark the reminder as sent
+      batch.update(doc.ref, {
+        isSent: true,
+        sentAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    if (notifications.length > 0) {
+      // Send notifications via FCM
+      const response = await admin.messaging().sendEach(notifications.map(n => ({
+        token: n.token,
+        notification: n.notification,
+        data: n.data,
+      })));
+
+      console.log(`Successfully sent ${response.successCount} messages; failed ${response.failureCount} messages.`);
+
+      response.responses.forEach((res, idx) => {
+        if (!res.success) {
+          console.error(`Failed to send to ${notifications[idx].token}:`, res.error);
+        }
+      });
+    }
+
+    // Commit the batch to mark reminders as sent
+    await batch.commit();
+    console.log("Reminders checked and updated successfully.");
+
+  } catch (error) {
+    console.error("Error processing reminders:", error);
   }
 });
 

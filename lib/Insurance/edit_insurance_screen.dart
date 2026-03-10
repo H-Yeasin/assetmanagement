@@ -205,10 +205,9 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       final packedUpdates = tempPolicy.toJson();
       await _apiService.updateInsurance(widget.policy.id!, packedUpdates);
 
-      if (_isAutoPay) {
-        // Using "Every 15th of the month" logic as per UI placeholder
-        final now = DateTime.now();
-        final pDate = DateTime(now.year, now.month, 15);
+      if (_isAutoPay && renewalDate != null) {
+        // Use the renewal date for the auto-pay reminder
+        final pDate = renewalDate;
 
         await _apiService.createReminder(
           itemId: widget.policy.id!,
@@ -218,7 +217,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
           note: 'Automatic renewal reminder for your insurance policy.',
         );
       }
-      
+
       if (mounted) context.pop(true);
     } catch (e) {
       if (mounted)
@@ -955,7 +954,9 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
             context,
             MaterialPageRoute(
               builder: (_) => InsuranceAddDocumentsScreen(
-                initialDocuments: _uploadedDocuments.isEmpty ? null : _uploadedDocuments,
+                initialDocuments: _uploadedDocuments.isEmpty
+                    ? null
+                    : _uploadedDocuments,
                 policy: widget.policy,
               ),
             ),
