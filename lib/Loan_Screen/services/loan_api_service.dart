@@ -240,8 +240,10 @@ class LoanApiService {
       'itemType': itemType,
       'itemId': itemId,
       'remindAt': remindAt.toIso8601String(),
-      'title': ?title,
-      'note': ?note,
+      // ignore: use_null_aware_elements
+      if (title != null) 'title': title,
+      // ignore: use_null_aware_elements
+      if (note != null) 'note': note,
     };
 
     final response = await http.post(

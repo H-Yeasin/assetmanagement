@@ -20,6 +20,12 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _lottieController = AnimationController(vsync: this);
+
+    // Safety fallback: if lottie doesn't trigger onLoaded/complete,
+    // we still navigate after 5 seconds to avoid white screen lock.
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) _navigateAfterSplash();
+    });
   }
 
   @override

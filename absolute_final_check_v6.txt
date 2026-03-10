@@ -1,0 +1,6 @@
+Analyzing anick_giroux_frontend...                              
+
+warning • The map entry key can't be null, so the null-aware operator '?' is unnecessary • lib/Loan_Screen/services/loan_api_service.dart:243:7 • invalid_null_aware_operator
+warning • The map entry key can't be null, so the null-aware operator '?' is unnecessary • lib/Loan_Screen/services/loan_api_service.dart:244:7 • invalid_null_aware_operator
+warning • The map entry key can't be null, so the null-aware operator '?' is unnecessary • lib/services/user_service.dart:59:9 • invalid_null_aware_operator
+

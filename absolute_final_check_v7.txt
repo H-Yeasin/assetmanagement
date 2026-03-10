@@ -1,0 +1,6 @@
+Analyzing anick_giroux_frontend...                              
+
+   info • Use the null-aware marker '?' rather than a null check via an 'if' • lib/Loan_Screen/services/loan_api_service.dart:243:7 • use_null_aware_elements
+   info • Use the null-aware marker '?' rather than a null check via an 'if' • lib/Loan_Screen/services/loan_api_service.dart:244:7 • use_null_aware_elements
+   info • Use the null-aware marker '?' rather than a null check via an 'if' • lib/services/user_service.dart:59:9 • use_null_aware_elements
+

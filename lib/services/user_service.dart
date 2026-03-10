@@ -56,7 +56,8 @@ class UserService {
       // Update Firestore
       await _db.collection('users').doc(user.uid).set({
         'fullName': fullName,
-        'avatarUrl': ?photoUrl,
+        // ignore: use_null_aware_elements
+        if (photoUrl != null) 'avatarUrl': photoUrl,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

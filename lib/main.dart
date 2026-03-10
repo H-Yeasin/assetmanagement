@@ -21,7 +21,7 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     // Initialize App Check to unblock Storage uploads on simulator/emulator
-    await FirebaseAppCheck.instance.activate(
+    FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.debug,
       appleProvider: AppleProvider.debug,
     );
@@ -32,8 +32,10 @@ void main() async {
   Hive.registerAdapter(LoanAdapter());
   Hive.registerAdapter(DocumentFileAdapter());
 
-  await NotificationService.init();
-  await NotificationService.initFCM();
+  // Non-blocking initialization to avoid white screen hang
+  NotificationService.init().then((_) {
+    NotificationService.initFCM();
+  });
 
   runApp(const ProviderScope(child: MyApp()));
 }

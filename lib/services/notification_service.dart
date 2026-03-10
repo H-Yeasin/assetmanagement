@@ -71,25 +71,37 @@ class NotificationService {
   }
 
   static Future<void> initFCM() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    try {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-    NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      String? token = await messaging.getToken();
-      if (token != null) {
-        await saveTokenToDatabase(token);
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        // On iOS, getToken() can throw apns-token-not-set if called too early.
+        // We catch it and rely on onTokenRefresh or a subsequent manual refresh.
+        try {
+          String? token = await messaging.getToken();
+          if (token != null) {
+            await saveTokenToDatabase(token);
+          }
+        } catch (e) {
+          debugPrint(
+            'NotificationService: Initial FCM token retrieval skipped/failed: $e',
+          );
+        }
+
+        FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);
       }
-
-      FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);
+    } catch (e) {
+      debugPrint('NotificationService: FCM initialization error: $e');
     }
   }
 
