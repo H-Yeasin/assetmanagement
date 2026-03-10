@@ -5,6 +5,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'storage_service.dart';
 
 class NotificationService {
@@ -40,12 +41,20 @@ class NotificationService {
         ?.requestNotificationsPermission();
   }
 
+  /// Generates a unique integer ID from a Firestore document ID.
+  static int getNotificationId(String firestoreId) {
+    return firestoreId.hashCode % 0x7FFFFFFF;
+  }
+
   static Future<void> scheduleReminder({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
   }) async {
+    // Only schedule if the date is in the future
+    if (scheduledDate.isBefore(DateTime.now())) return;
+
     await _notificationsPlugin.zonedSchedule(
       id,
       title,
@@ -68,6 +77,44 @@ class NotificationService {
 
   static Future<void> cancelReminder(int id) async {
     await _notificationsPlugin.cancel(id);
+  }
+
+  /// Syncs all active reminders from Firestore and schedules them locally.
+  static Future<void> syncAllReminders() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final snapshot =
+          await FirebaseFirestore.instanceFor(
+                app: Firebase.app(),
+                databaseId: 'ffpvault',
+              )
+              .collection('reminders')
+              .where('userId', isEqualTo: user.uid)
+              .where('isDone', isEqualTo: false)
+              .get();
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['remindAt'] is Timestamp) {
+          final DateTime remindAt = (data['remindAt'] as Timestamp).toDate();
+          if (remindAt.isAfter(DateTime.now())) {
+            await scheduleReminder(
+              id: getNotificationId(doc.id),
+              title: data['title'] ?? 'Reminder',
+              body: data['note'] ?? 'You have a pending task.',
+              scheduledDate: remindAt,
+            );
+          }
+        }
+      }
+      debugPrint(
+        'NotificationService: Synced ${snapshot.docs.length} reminders.',
+      );
+    } catch (e) {
+      debugPrint('NotificationService: Error syncing reminders: $e');
+    }
   }
 
   static Future<void> initFCM() async {

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'models/insurance_model.dart';
 import '../services/insurance_service.dart';
+import '../services/notification_service.dart';
 import '../Loan_Screen/loan_widgets.dart';
 
 class InsuranceListItem extends StatelessWidget {
@@ -731,13 +732,21 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
         _selectedTime.minute,
       );
 
-      await InsuranceService().createReminder(
+      final result = await InsuranceService().createReminder(
         itemId: widget.policy.id!,
         itemType: 'insurance',
         title: 'Insurance Renewal: ${widget.policy.name}',
         remindAt: remindAt,
         note:
             'Reminder for ${widget.policy.provider} policy ${widget.policy.policyNumber ?? ""}',
+      );
+
+      // Schedule local notification
+      await NotificationService.scheduleReminder(
+        id: NotificationService.getNotificationId(result['id']),
+        title: result['title'] ?? 'Insurance Reminder',
+        body: result['note'] ?? 'Upcoming insurance renewal.',
+        scheduledDate: remindAt,
       );
 
       if (mounted) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:go_router/go_router.dart';
 import 'widgets.dart';
+import '../services/notification_service.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -13,6 +14,13 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  @override
+  void initState() {
+    super.initState();
+    // Sync all reminders from Firestore and schedule them locally
+    NotificationService.syncAllReminders();
+  }
+
   int _calculateSelectedIndex(BuildContext context) {
     // Determine the current index based on the route location
     final String location = GoRouterState.of(context).uri.toString();

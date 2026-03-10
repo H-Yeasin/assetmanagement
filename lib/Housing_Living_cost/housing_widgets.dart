@@ -5,6 +5,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'models/housing_cost_model.dart';
 import '../services/housing_service.dart';
+import '../services/notification_service.dart';
 
 // ── Housing Cost List Item ─────────────────────────────────────────────────
 
@@ -562,12 +563,20 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
         _selectedTime.minute,
       );
 
-      await _apiService.createReminder(
+      final result = await _apiService.createReminder(
         itemId: widget.cost.id!,
         itemType: 'housing',
         title: 'Payment Reminder: ${widget.cost.name}',
         remindAt: remindAt,
         note: 'Reminder for ${widget.cost.category} payment.',
+      );
+
+      // Schedule local notification
+      await NotificationService.scheduleReminder(
+        id: NotificationService.getNotificationId(result['id']),
+        title: result['title'] ?? 'Payment Reminder',
+        body: result['note'] ?? 'Upcoming housing/utility payment.',
+        scheduledDate: remindAt,
       );
 
       if (mounted) {

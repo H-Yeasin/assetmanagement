@@ -5,6 +5,7 @@ import 'dart:ui';
 import '../Home_Dashboard/widgets.dart';
 import 'models/loan_model.dart';
 import '../services/loan_service.dart';
+import '../services/notification_service.dart';
 
 // ── Loan Status Badge ───────────────────────────────────────────────────────
 
@@ -639,12 +640,20 @@ class _ReminderModalState extends State<ReminderModal> {
         _selectedTime.minute,
       );
 
-      await _apiService.createReminder(
+      final result = await _apiService.createReminder(
         itemType: 'loan',
         itemId: widget.loan.id!,
         remindAt: scheduledDate,
         title: 'Loan Payment Reminder: ${widget.loan.name}',
         note: 'Reminder for your loan upcoming payment.',
+      );
+
+      // Schedule local notification
+      await NotificationService.scheduleReminder(
+        id: NotificationService.getNotificationId(result['id']),
+        title: result['title'] ?? 'Loan Reminder',
+        body: result['note'] ?? 'Upcoming loan payment.',
+        scheduledDate: scheduledDate,
       );
 
       if (mounted) {
