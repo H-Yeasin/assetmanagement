@@ -18,6 +18,7 @@ import 'package:anick_giroux/Home_Vault/vault_category_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_subfolder_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_edit_folder_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_create_subfolder_screen.dart';
+import 'package:anick_giroux/Home_Vault/vault_access_gate.dart';
 import 'package:anick_giroux/Home_Profile/profile_screen.dart';
 import 'package:anick_giroux/Home_Profile/edit_profile_screen.dart';
 import 'package:anick_giroux/Home_Profile/data_security_screen.dart';
@@ -138,20 +139,32 @@ final GoRouter appRouter = GoRouter(
           },
         ),
         GoRoute(
+          path: '/upcoming-reminders',
+          builder: (context, state) => const UpcomingRemindersScreen(),
+        ),
+        GoRoute(
+          path: '/upcoming-payments',
+          builder: (context, state) => const UpcomingPaymentsScreen(),
+        ),
+        GoRoute(
           path: '/vault-category',
           builder: (context, state) {
             final categoryName = state.extra as String;
-            return VaultCategoryScreen(categoryName: categoryName);
+            return VaultAccessGate(
+              child: VaultCategoryScreen(categoryName: categoryName),
+            );
           },
         ),
         GoRoute(
           path: '/vault-subfolder',
           builder: (context, state) {
             final args = state.extra as Map<String, dynamic>? ?? {};
-            return VaultSubfolderScreen(
-              folderName: args['folderName'] as String? ?? 'Folder',
-              folderId: args['folderId'] as String? ?? '',
-              categoryName: args['categoryName'] as String? ?? 'Loans',
+            return VaultAccessGate(
+              child: VaultSubfolderScreen(
+                folderName: args['folderName'] as String? ?? 'Folder',
+                folderId: args['folderId'] as String? ?? '',
+                categoryName: args['categoryName'] as String? ?? 'Loans',
+              ),
             );
           },
         ),
@@ -159,9 +172,12 @@ final GoRouter appRouter = GoRouter(
           path: '/vault-edit-folder',
           builder: (context, state) {
             final args = state.extra as Map<String, dynamic>? ?? {};
-            return VaultEditFolderScreen(
-              folderName: args['folderName'] as String? ?? 'Folder',
-              folderId: args['folderId'] as String? ?? '',
+            return VaultAccessGate(
+              child: VaultEditFolderScreen(
+                folderName: args['folderName'] as String? ?? 'Folder',
+                folderId: args['folderId'] as String? ?? '',
+                categoryName: args['categoryName'] as String? ?? 'Loans',
+              ),
             );
           },
         ),
@@ -169,7 +185,9 @@ final GoRouter appRouter = GoRouter(
           path: '/vault-create-subfolder',
           builder: (context, state) {
             final categoryName = state.extra as String;
-            return VaultCreateSubfolderScreen(categoryName: categoryName);
+            return VaultAccessGate(
+              child: VaultCreateSubfolderScreen(categoryName: categoryName),
+            );
           },
         ),
       ],
@@ -188,11 +206,31 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/payment-success',
-      builder: (context, state) => const PaymentStatusScreen(isSuccess: true),
+      builder: (context, state) {
+        final args =
+            state.extra as PaymentStatusArgs? ??
+            const PaymentStatusArgs(
+              isSuccess: true,
+              title: 'Payment Successful',
+              message:
+                  'Welcome to the FFP Vault.\n\nYour subscription is now active and you can start organizing your finances with clarity and confidence.',
+              buttonLabel: 'Open the Vault',
+            );
+        return PaymentStatusScreen(args: args);
+      },
     ),
     GoRoute(
       path: '/payment-failed',
-      builder: (context, state) => const PaymentStatusScreen(isSuccess: false),
+      builder: (context, state) {
+        final args =
+            state.extra as PaymentStatusArgs? ??
+            const PaymentStatusArgs(
+              isSuccess: false,
+              title: 'Payment Failed',
+              message: 'We could not complete your payment. Please try again.',
+            );
+        return PaymentStatusScreen(args: args);
+      },
     ),
     GoRoute(
       path: '/change-password',
@@ -246,14 +284,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/upcoming-actions',
       builder: (context, state) => const UpcomingActionsScreen(),
-    ),
-    GoRoute(
-      path: '/upcoming-reminders',
-      builder: (context, state) => const UpcomingRemindersScreen(),
-    ),
-    GoRoute(
-      path: '/upcoming-payments',
-      builder: (context, state) => const UpcomingPaymentsScreen(),
     ),
     GoRoute(
       path: '/past-activities',

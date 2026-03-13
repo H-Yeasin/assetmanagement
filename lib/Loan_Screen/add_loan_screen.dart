@@ -3,6 +3,7 @@ import '../Home_Dashboard/widgets.dart';
 import 'add_documents_screen.dart';
 import 'models/loan_model.dart';
 import '../services/loan_service.dart';
+import '../services/notification_service.dart';
 import 'package:intl/intl.dart';
 
 class AddLoanScreen extends StatefulWidget {
@@ -79,6 +80,16 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
       'icon': 'assets/images/icon/custom_loan.png',
     },
   ];
+
+  DateTime? _parseDateText(String value) {
+    if (value.trim().isEmpty) return null;
+    for (final pattern in ['MM/dd/yy', 'MM/dd/yyyy']) {
+      try {
+        return DateFormat(pattern).parseStrict(value);
+      } catch (_) {}
+    }
+    return null;
+  }
 
   @override
   void dispose() {
@@ -927,9 +938,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
       );
       final remainingValue = double.tryParse(remainingStr) ?? 0.0;
 
-      final day = int.tryParse(_paymentDateController.text) ?? 15;
-      final now = DateTime.now();
-      final pDate = DateTime(now.year, now.month, day);
+      final pDate = _parseDateText(_paymentDateController.text) ?? DateTime.now();
 
       final loan = Loan(
         userId: '', // Let backend handle or provide via auth provider
@@ -940,8 +949,8 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         autoPay: _autoPayment,
         totalAmount: totalAmount,
         interestRate: double.tryParse(_interestRateController.text) ?? 0.0,
-        startDate: DateFormat('MM/dd/yy').tryParse(_startDateController.text),
-        endDate: DateFormat('MM/dd/yy').tryParse(_endDateController.text),
+        startDate: _parseDateText(_startDateController.text),
+        endDate: _parseDateText(_endDateController.text),
         remainingBalance: isMortgage ? 0.0 : remainingValue,
         notes: _notesController.text,
         documents: _uploadedDocuments.map((d) => d['id'] as String).toList(),
@@ -957,7 +966,24 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
             : (int.tryParse(_completedPaymentsController.text) ?? 0),
       );
 
-      await _loanService.createLoan(loan);
+      final createdLoan = await _loanService.createLoan(loan);
+
+      if (createdLoan.id != null) {
+        final reminder = await _loanService.createReminder(
+          itemType: 'loan',
+          itemId: createdLoan.id!,
+          remindAt: pDate,
+          title: 'Loan Payment Reminder: ${createdLoan.name}',
+          note: 'Reminder for your loan upcoming payment.',
+        );
+
+        await NotificationService.scheduleReminder(
+          id: NotificationService.getNotificationId(reminder['id']),
+          title: reminder['title'] ?? 'Loan Reminder',
+          body: reminder['note'] ?? 'Upcoming loan payment.',
+          scheduledDate: pDate,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

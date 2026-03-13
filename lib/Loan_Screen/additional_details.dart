@@ -8,6 +8,28 @@ class AdditionalDetailsScreen extends StatelessWidget {
 
   const AdditionalDetailsScreen({super.key, required this.loan});
 
+  double _estimatedRemainingBalance() {
+    if (loan.remainingBalance > 0) {
+      return loan.remainingBalance;
+    }
+
+    final remainingPayments = loan.totalPayments - loan.completedPayments;
+    if (remainingPayments > 0 && loan.monthlyPayment > 0) {
+      final projected = remainingPayments * loan.monthlyPayment;
+      if (loan.totalAmount > 0) {
+        return projected > loan.totalAmount ? loan.totalAmount : projected;
+      }
+      return projected;
+    }
+
+    return loan.totalAmount > 0 ? loan.totalAmount : 0.0;
+  }
+
+  String _interestText() {
+    if (loan.interestRate == 0) return 'N/A';
+    return '${NumberFormat('#,##0.##').format(loan.interestRate)}%';
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isMortgage = loan.category == 'mortgage';
@@ -101,7 +123,7 @@ class AdditionalDetailsScreen extends StatelessWidget {
               iconColor: const Color(0xFF4CAF50), // Green
               title: 'Remaining Loan',
               value: NumberFormat.simpleCurrency().format(
-                loan.remainingBalance,
+                _estimatedRemainingBalance(),
               ),
             ),
             _DetailCard(
@@ -114,7 +136,7 @@ class AdditionalDetailsScreen extends StatelessWidget {
               iconPath: 'assets/images/icon/intarest_rate.png',
               iconColor: const Color(0xFFE91E63), // Pink
               title: 'Interest Rate',
-              value: '${loan.interestRate}%',
+              value: _interestText(),
             ),
           ],
         ),
@@ -185,7 +207,7 @@ class AdditionalDetailsScreen extends StatelessWidget {
           iconPath: 'assets/images/icon/intarest_rate.png',
           iconColor: Colors.purple,
           title: 'Interest Rate',
-          value: '${loan.interestRate}%',
+          value: _interestText(),
         ),
         _DetailCard(
           iconPath: 'assets/images/icon/installment.png',
@@ -204,7 +226,7 @@ class AdditionalDetailsScreen extends StatelessWidget {
           iconColor: Colors.green,
           title: 'Balance Left',
           value: NumberFormat.simpleCurrency().format(
-            loan.totalAmount - (loan.completedPayments * loan.monthlyPayment),
+            _estimatedRemainingBalance(),
           ),
         ),
       ],

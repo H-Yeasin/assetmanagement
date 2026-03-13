@@ -200,8 +200,17 @@ class LoanService {
     final doc = await _firestore.collection('documents').doc(id).get();
     if (doc.exists) {
       try {
-        // Try to delete from storage if we have the filename/path logic sorted
-        // For simplicity, we'll delete the metadata doc first
+        final data = doc.data();
+        if (data != null &&
+            data['mimeType'] != 'application/vnd.anick-giroux.folder' &&
+            _uid != null &&
+            data['module'] != null &&
+            data['filename'] != null) {
+          await _storage
+              .ref()
+              .child('${data['module']}/$_uid/${data['filename']}')
+              .delete();
+        }
         await _firestore.collection('documents').doc(id).delete();
       } catch (e) {
         debugPrint('Error deleting document from storage: $e');
@@ -261,34 +270,58 @@ class LoanService {
   }) async {
     if (_uid == null) return [];
 
-    final loans = await fetchLoans(status: 'completed');
-    return loans
-        .map(
-          (l) => {
-            'date':
-                l.completedAt?.toIso8601String() ??
-                DateTime.now().toIso8601String(),
-            'items': [l.toJson()],
-          },
-        )
+    final snapshot = await _firestore
+        .collection('reminders')
+        .where('userId', isEqualTo: _uid)
+        .where('isDone', isEqualTo: true)
+        .get();
+
+    final activities = snapshot.docs
+        .map((doc) => {...doc.data(), 'id': doc.id})
         .toList();
+
+    activities.sort((a, b) {
+      final aDate =
+          (a['doneAt'] as Timestamp?)?.toDate() ??
+          (a['remindAt'] as Timestamp?)?.toDate() ??
+          DateTime.now();
+      final bDate =
+          (b['doneAt'] as Timestamp?)?.toDate() ??
+          (b['remindAt'] as Timestamp?)?.toDate() ??
+          DateTime.now();
+      return bDate.compareTo(aDate);
+    });
+
+    return activities;
   }
 
   Stream<List<dynamic>> streamPastActivities({DateTime? from, DateTime? to}) {
     if (_uid == null) return Stream.value([]);
 
-    return streamLoans(status: 'completed').map((loans) {
-      return loans
-          .map(
-            (l) => {
-              'date':
-                  l.completedAt?.toIso8601String() ??
-                  DateTime.now().toIso8601String(),
-              'items': [l.toJson()],
-            },
-          )
-          .toList();
-    });
+    return _firestore
+        .collection('reminders')
+        .where('userId', isEqualTo: _uid)
+        .where('isDone', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+          final activities = snapshot.docs
+              .map((doc) => {...doc.data(), 'id': doc.id})
+              .toList();
+
+          activities.sort((a, b) {
+            final aDate =
+                (a['doneAt'] as Timestamp?)?.toDate() ??
+                (a['remindAt'] as Timestamp?)?.toDate() ??
+                DateTime.now();
+            final bDate =
+                (b['doneAt'] as Timestamp?)?.toDate() ??
+                (b['remindAt'] as Timestamp?)?.toDate() ??
+                DateTime.now();
+            return bDate.compareTo(aDate);
+          });
+
+          return activities;
+        });
   }
 
   // ── Reminders ────────────────────────────────────────────────────────────
@@ -310,8 +343,25 @@ class LoanService {
       'title': title,
       'note': note,
       'isDone': false,
+      'notificationEnabled': true,
       'createdAt': FieldValue.serverTimestamp(),
     };
+
+    final existing = await _firestore
+        .collection('reminders')
+        .where('userId', isEqualTo: _uid)
+        .where('itemType', isEqualTo: itemType)
+        .where('itemId', isEqualTo: itemId)
+        .where('isDone', isEqualTo: false)
+        .limit(1)
+        .get();
+
+    if (existing.docs.isNotEmpty) {
+      final docRef = existing.docs.first.reference;
+      await docRef.update({...data, 'updatedAt': FieldValue.serverTimestamp()});
+      final doc = await docRef.get();
+      return {...doc.data()!, 'id': doc.id};
+    }
 
     final docRef = await _firestore.collection('reminders').add(data);
     final doc = await docRef.get();
@@ -330,9 +380,18 @@ class LoanService {
         .where('isDone', isEqualTo: false);
 
     final snapshot = await query.get();
-    return snapshot.docs
+    final reminders = snapshot.docs
         .map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id})
         .toList();
+    reminders.sort((a, b) {
+      final aDate = (a['remindAt'] as Timestamp?)?.toDate();
+      final bDate = (b['remindAt'] as Timestamp?)?.toDate();
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+      return aDate.compareTo(bDate);
+    });
+    return reminders;
   }
 
   Stream<List<dynamic>> streamUpcomingReminders({
@@ -346,11 +405,20 @@ class LoanService {
         .where('userId', isEqualTo: _uid)
         .where('isDone', isEqualTo: false);
 
-    return query.snapshots().map(
-      (snapshot) => snapshot.docs
+    return query.snapshots().map((snapshot) {
+      final reminders = snapshot.docs
           .map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id})
-          .toList(),
-    );
+          .toList();
+      reminders.sort((a, b) {
+        final aDate = (a['remindAt'] as Timestamp?)?.toDate();
+        final bDate = (b['remindAt'] as Timestamp?)?.toDate();
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return aDate.compareTo(bDate);
+      });
+      return reminders;
+    });
   }
 
   Stream<int> streamDocumentsCount() {
@@ -363,7 +431,21 @@ class LoanService {
   }
 
   Future<void> markReminderDone(String id) async {
-    await _firestore.collection('reminders').doc(id).update({'isDone': true});
+    await _firestore.collection('reminders').doc(id).update({
+      'isDone': true,
+      'notificationEnabled': false,
+      'doneAt': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
+  Future<void> updateReminderNotificationEnabled(
+    String id,
+    bool enabled,
+  ) async {
+    await _firestore.collection('reminders').doc(id).update({
+      'notificationEnabled': enabled,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   String _getMimeType(String path) {

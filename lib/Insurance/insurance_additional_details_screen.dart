@@ -8,6 +8,36 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
 
   const InsuranceAdditionalDetailsScreen({super.key, required this.policy});
 
+  double _monthlyEquivalent() {
+    final freq = policy.paymentFrequency?.toLowerCase() ?? '';
+    if (freq.contains('annually') || freq.contains('yearly')) {
+      return policy.premium / 12;
+    }
+    if (freq.contains('quarterly')) {
+      return policy.premium / 3;
+    }
+    return policy.premium;
+  }
+
+  double _annualEquivalent() {
+    final freq = policy.paymentFrequency?.toLowerCase() ?? '';
+    if (freq.contains('monthly')) {
+      return policy.premium * 12;
+    }
+    if (freq.contains('quarterly')) {
+      return policy.premium * 4;
+    }
+    return policy.premium;
+  }
+
+  String _frequencyLabel() {
+    final freq = policy.paymentFrequency?.toLowerCase() ?? '';
+    if (freq.contains('annually') || freq.contains('yearly')) return 'Yearly';
+    if (freq.contains('quarterly')) return 'Quarterly';
+    if (freq.contains('monthly')) return 'Monthly';
+    return policy.paymentFrequency ?? 'Monthly';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,7 +135,8 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
               iconPath: 'assets/images/insurance/premium.png',
               bgColor: const Color(0xFFFEF0F5),
               label: 'Premium',
-              value: '\$${NumberFormat('#,##0').format(policy.premium)}',
+              value:
+                  '\$${NumberFormat('#,##0.00').format(_monthlyEquivalent())} / mo',
             ),
           ),
           const SizedBox(width: 12),
@@ -138,7 +169,8 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
                   'assets/images/insurance/timeleft,totalpayment,paymentdone,policynumber.png',
               bgColor: const Color(0xFFF1F8F1),
               label: 'Total Payment',
-              value: policy.totalPayments?.toString() ?? 'N/A',
+              value: policy.totalPayments?.toString() ??
+                  '\$${NumberFormat('#,##0.00').format(_annualEquivalent())}',
             ),
           ),
         ],
@@ -222,7 +254,8 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
               iconPath: 'assets/images/insurance/premium.png',
               bgColor: const Color(0xFFFEF0F5),
               label: 'Premium',
-              value: '\$${NumberFormat('#,##0').format(policy.premium)}',
+              value:
+                  '\$${NumberFormat('#,##0.00').format(_monthlyEquivalent())} / mo',
             ),
           ),
           const SizedBox(width: 12),
@@ -304,7 +337,8 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
               iconPath: 'assets/images/insurance/premium.png',
               bgColor: const Color(0xFFFEF0F5),
               label: 'Payment',
-              value: '\$${NumberFormat('#,##0').format(policy.premium)}',
+              value:
+                  '\$${NumberFormat('#,##0.00').format(_monthlyEquivalent())} / mo',
             ),
           ),
           const SizedBox(width: 12),
@@ -337,7 +371,7 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
                   'assets/images/insurance/renewaldate,startdate,enddate.png',
               bgColor: const Color(0xFFF7F2FA),
               label: 'Type',
-              value: policy.paymentFrequency ?? 'Monthly',
+              value: _frequencyLabel(),
             ),
           ),
         ],
@@ -454,7 +488,8 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
               iconPath: 'assets/images/insurance/premium.png',
               bgColor: const Color(0xFFFEF0F5),
               label: 'Premium',
-              value: '\$${NumberFormat('#,##0').format(policy.premium)}',
+              value:
+                  '\$${NumberFormat('#,##0.00').format(_monthlyEquivalent())} / mo',
             ),
           ),
           const SizedBox(width: 12),

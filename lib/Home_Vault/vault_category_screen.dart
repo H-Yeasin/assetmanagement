@@ -1,14 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../Home_Dashboard/widgets.dart';
-import '../services/loan_service.dart';
-import '../Loan_Screen/models/document_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class VaultCategoryScreen extends StatelessWidget {
+import '../Home_Dashboard/widgets.dart';
+import '../Loan_Screen/models/document_model.dart';
+import '../services/loan_service.dart';
+import '../services/vault_file_service.dart';
+
+class VaultCategoryScreen extends StatefulWidget {
   final String categoryName;
 
   const VaultCategoryScreen({super.key, required this.categoryName});
+
+  @override
+  State<VaultCategoryScreen> createState() => _VaultCategoryScreenState();
+}
+
+class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
+  late Future<List<DocumentFile>> _documentsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _documentsFuture = _fetchCategoryDocuments();
+  }
+
+  Future<void> _reloadDocuments() async {
+    setState(() {
+      _documentsFuture = _fetchCategoryDocuments();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +38,6 @@ class VaultCategoryScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
@@ -33,7 +53,7 @@ class VaultCategoryScreen extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: Text(
-                        categoryName,
+                        widget.categoryName,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -42,12 +62,14 @@ class VaultCategoryScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // ── FAB "+" ──
                   GestureDetector(
-                    onTap: () => context.push(
-                      '/vault-create-subfolder',
-                      extra: categoryName,
-                    ),
+                    onTap: () async {
+                      await context.push(
+                        '/vault-create-subfolder',
+                        extra: widget.categoryName,
+                      );
+                      if (mounted) await _reloadDocuments();
+                    },
                     child: Container(
                       width: 40,
                       height: 40,
@@ -65,7 +87,6 @@ class VaultCategoryScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -73,13 +94,14 @@ class VaultCategoryScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
-
-                    // ── Create Subfolder Button ──
                     GestureDetector(
-                      onTap: () => context.push(
-                        '/vault-create-subfolder',
-                        extra: categoryName,
-                      ),
+                      onTap: () async {
+                        await context.push(
+                          '/vault-create-subfolder',
+                          extra: widget.categoryName,
+                        );
+                        if (mounted) await _reloadDocuments();
+                      },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -110,16 +132,23 @@ class VaultCategoryScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 28),
-
                     FutureBuilder<List<DocumentFile>>(
-                      future: _fetchCategoryDocuments(),
+                      future: _documentsFuture,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return const Center(
                             child: CircularProgressIndicator(color: brandRed),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Text(
+                              'Failed to load files: ${snapshot.error}',
+                              style: const TextStyle(color: brandRed),
+                            ),
                           );
                         }
 
@@ -143,7 +172,6 @@ class VaultCategoryScreen extends StatelessWidget {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ── Sub Folders Section ──
                             const Text(
                               'Sub Folders',
                               style: TextStyle(
@@ -168,34 +196,31 @@ class VaultCategoryScreen extends StatelessWidget {
                                 itemCount: folders.length,
                                 itemBuilder: (context, index) {
                                   final folder = folders[index];
-                                  // Find items in this folder
                                   final itemCount = allDocs
                                       .where((d) => d.folderId == folder.id)
                                       .length;
                                   return _SubfolderRow(
                                     name: folder.displayName,
                                     itemCount: '$itemCount items',
-                                    onTap: () {
-                                      // We pass the folderId so the subfolder screen knows what to fetch
-                                      context.push(
+                                    onTap: () async {
+                                      await context.push(
                                         '/vault-subfolder',
                                         extra: {
                                           'folderName': folder.displayName,
                                           'folderId': folder.id,
-                                          'categoryName': categoryName,
+                                          'categoryName': widget.categoryName,
                                         },
                                       );
+                                      if (mounted) {
+                                        await _reloadDocuments();
+                                      }
                                     },
-                                    onMenuTap: () => _showFolderMenu(
-                                      context,
-                                      folder.displayName,
-                                    ),
+                                    onMenuTap: () =>
+                                        _showFolderMenu(folder, allDocs),
                                   );
                                 },
                               ),
                             const SizedBox(height: 32),
-
-                            // ── Recent Files Section ──
                             const Text(
                               'Recent Files',
                               style: TextStyle(
@@ -230,9 +255,8 @@ class VaultCategoryScreen extends StatelessWidget {
                                     fileInfo:
                                         '${(doc.size / 1024).toStringAsFixed(1)} KB',
                                     fileType: isPdf ? 'pdf' : 'image',
-                                    onTap: () => _previewDocument(context, doc),
-                                    onMenuTap: () =>
-                                        _showFileMenu(context, doc.displayName),
+                                    onTap: () => _previewDocument(doc),
+                                    onMenuTap: () => _showFileMenu(doc),
                                   );
                                 },
                               ),
@@ -240,7 +264,6 @@ class VaultCategoryScreen extends StatelessWidget {
                         );
                       },
                     ),
-
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -252,11 +275,11 @@ class VaultCategoryScreen extends StatelessWidget {
     );
   }
 
-  void _showFolderMenu(BuildContext context, String folderName) {
+  void _showFolderMenu(DocumentFile folder, List<DocumentFile> allDocs) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
+      builder: (sheetContext) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -277,13 +300,30 @@ class VaultCategoryScreen extends StatelessWidget {
             _MenuOption(
               icon: Icons.edit_outlined,
               label: 'Rename',
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                final result = await context.push<String>(
+                  '/vault-edit-folder',
+                  extra: {
+                    'folderName': folder.displayName,
+                    'folderId': folder.id,
+                    'categoryName': widget.categoryName,
+                  },
+                );
+                if (result != null && mounted) {
+                  await _reloadDocuments();
+                  _showMessage('Folder renamed successfully.');
+                }
+              },
             ),
             _MenuOption(
               icon: 'assets/images/black_delete.png',
               label: 'Delete',
               color: brandRed,
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await _deleteFolder(folder, allDocs);
+              },
             ),
             SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
           ],
@@ -292,11 +332,11 @@ class VaultCategoryScreen extends StatelessWidget {
     );
   }
 
-  void _showFileMenu(BuildContext context, String fileName) {
+  void _showFileMenu(DocumentFile doc) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
+      builder: (sheetContext) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -315,19 +355,36 @@ class VaultCategoryScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             _MenuOption(
+              icon: Icons.edit_outlined,
+              label: 'Rename',
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await _renameFile(doc);
+              },
+            ),
+            _MenuOption(
               icon: 'assets/images/black_delete.png',
               label: 'Delete',
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await _deleteFile(doc);
+              },
             ),
             _MenuOption(
               icon: 'assets/images/black_download.png',
               label: 'Download',
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await _downloadDocument(doc);
+              },
             ),
             _MenuOption(
               icon: 'assets/images/black_share.png',
               label: 'Share/Send',
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await _shareDocument(doc);
+              },
             ),
             SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
           ],
@@ -336,22 +393,146 @@ class VaultCategoryScreen extends StatelessWidget {
     );
   }
 
-  Future<List<DocumentFile>> _fetchCategoryDocuments() async {
-    String module = 'loans';
-    if (categoryName.contains('Housing')) module = 'housing';
-    if (categoryName.contains('Insurance')) module = 'insurance';
-    if (categoryName.contains('Document')) module = 'documents';
+  Future<void> _deleteFolder(
+    DocumentFile folder,
+    List<DocumentFile> allDocs,
+  ) async {
+    final confirm = await _confirm(
+      title: 'Delete Folder',
+      message:
+          'This will delete the folder and all files inside it. This action cannot be undone.',
+    );
+    if (confirm != true) return;
 
-    return LoanService().fetchDocumentsByModule(module);
+    final service = LoanService();
+    final children = allDocs.where((doc) => doc.folderId == folder.id).toList();
+
+    try {
+      for (final child in children) {
+        await service.deleteDocument(child.id);
+      }
+      await service.deleteDocument(folder.id);
+      await _reloadDocuments();
+      _showMessage('Folder deleted successfully.');
+    } catch (e) {
+      _showMessage('Failed to delete folder: $e', isError: true);
+    }
   }
 
-  void _previewDocument(BuildContext context, DocumentFile doc) {
+  Future<void> _deleteFile(DocumentFile doc) async {
+    final confirm = await _confirm(
+      title: 'Delete File',
+      message: 'Are you sure you want to delete this file?',
+    );
+    if (confirm != true) return;
+
+    try {
+      await LoanService().deleteDocument(doc.id);
+      await _reloadDocuments();
+      _showMessage('File deleted successfully.');
+    } catch (e) {
+      _showMessage('Failed to delete file: $e', isError: true);
+    }
+  }
+
+  Future<void> _renameFile(DocumentFile doc) async {
+    final controller = TextEditingController(text: doc.displayName);
+    final save = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename File'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (save != true) return;
+
+    final newName = controller.text.trim();
+    if (newName.isEmpty || newName == doc.displayName) return;
+
+    try {
+      await LoanService().renameDocument(doc.id, newName);
+      await _reloadDocuments();
+      _showMessage('File renamed successfully.');
+    } catch (e) {
+      _showMessage('Failed to rename file: $e', isError: true);
+    }
+  }
+
+  Future<void> _downloadDocument(DocumentFile doc) async {
+    try {
+      final result = await VaultFileService.downloadDocument(doc);
+      _showMessage(
+        result.savedToGallery
+            ? 'Downloaded successfully. Saved to gallery.'
+            : 'Downloaded successfully.',
+      );
+    } catch (e) {
+      _showMessage('Failed to download file: $e', isError: true);
+    }
+  }
+
+  Future<void> _shareDocument(DocumentFile doc) async {
+    try {
+      await VaultFileService.shareDocument(doc);
+    } catch (e) {
+      _showMessage('Failed to share file: $e', isError: true);
+    }
+  }
+
+  Future<bool?> _confirm({required String title, required String message}) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<List<DocumentFile>> _fetchCategoryDocuments() async {
+    return LoanService().fetchDocumentsByModule(_currentModule);
+  }
+
+  String get _currentModule {
+    String module = 'loans';
+    if (widget.categoryName.contains('Housing')) module = 'housing';
+    if (widget.categoryName.contains('Insurance')) module = 'insurance';
+    if (widget.categoryName.contains('Document')) module = 'documents';
+    return module;
+  }
+
+  void _previewDocument(DocumentFile doc) {
     final isPdf =
         doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
     if (isPdf) {
       _launchURL(doc.path);
     } else {
-      _showImagePreview(context, doc);
+      _showImagePreview(doc);
     }
   }
 
@@ -359,12 +540,13 @@ class VaultCategoryScreen extends StatelessWidget {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+      _showMessage('Opening document...');
     } else {
-      debugPrint('Could not launch $url');
+      _showMessage('Could not open the document.', isError: true);
     }
   }
 
-  void _showImagePreview(BuildContext context, DocumentFile doc) {
+  void _showImagePreview(DocumentFile doc) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -385,10 +567,16 @@ class VaultCategoryScreen extends StatelessWidget {
                       child: CircularProgressIndicator(color: Colors.white),
                     );
                   },
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child: Text(
+                      'Preview unavailable',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
                 ),
               ),
             ),
-            PositionBag(
+            Positioned(
               top: 10,
               right: 10,
               child: IconButton(
@@ -401,20 +589,18 @@ class VaultCategoryScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-class PositionBag extends StatelessWidget {
-  final double? top;
-  final double? right;
-  final Widget child;
-  const PositionBag({super.key, this.top, this.right, required this.child});
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(top: top, right: right, child: child);
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? brandRed : null,
+      ),
+    );
   }
 }
 
-// ── Subfolder Row ────────────────────────────────────────────────────────────
 class _SubfolderRow extends StatelessWidget {
   final String name;
   final String itemCount;
@@ -440,7 +626,6 @@ class _SubfolderRow extends StatelessWidget {
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Row(
             children: [
-              // Folder icon
               Container(
                 width: 42,
                 height: 42,
@@ -490,11 +675,10 @@ class _SubfolderRow extends StatelessWidget {
   }
 }
 
-// ── Recent File Row ──────────────────────────────────────────────────────────
 class _RecentFileRow extends StatelessWidget {
   final String fileName;
   final String fileInfo;
-  final String fileType; // 'pdf', 'image', etc.
+  final String fileType;
   final VoidCallback onTap;
   final VoidCallback onMenuTap;
 
@@ -518,7 +702,6 @@ class _RecentFileRow extends StatelessWidget {
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Row(
             children: [
-              // File type icon
               Container(
                 width: 42,
                 height: 42,
@@ -547,8 +730,6 @@ class _RecentFileRow extends StatelessWidget {
                   children: [
                     Text(
                       fileName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -582,48 +763,33 @@ class _RecentFileRow extends StatelessWidget {
   }
 }
 
-// ── Menu Option ──────────────────────────────────────────────────────────────
 class _MenuOption extends StatelessWidget {
   final dynamic icon;
   final String label;
-  final Color? color;
+  final Color color;
   final VoidCallback onTap;
 
   const _MenuOption({
     required this.icon,
     required this.label,
-    this.color,
+    this.color = const Color(0xFF111111),
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? const Color(0xFF111111);
-    return GestureDetector(
+    return ListTile(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          children: [
-            icon is IconData
-                ? Icon(icon as IconData, color: c, size: 22)
-                : Image.asset(
-                    icon as String,
-                    width: 22,
-                    height: 22,
-                    color: color == brandRed ? brandRed : null,
-                  ),
-            const SizedBox(width: 14),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: c,
-              ),
-            ),
-          ],
+      contentPadding: EdgeInsets.zero,
+      leading: icon is IconData
+          ? Icon(icon as IconData, color: color)
+          : Image.asset(icon as String, width: 22, height: 22),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: color,
         ),
       ),
     );

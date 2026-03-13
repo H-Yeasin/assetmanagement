@@ -52,6 +52,8 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
   }) async {
+    if (!await StorageService.getReminderNotificationsEnabled()) return;
+
     // Only schedule if the date is in the future
     if (scheduledDate.isBefore(DateTime.now())) return;
 
@@ -79,9 +81,53 @@ class NotificationService {
     await _notificationsPlugin.cancel(id);
   }
 
+  static Future<void> cancelAllReminders() async {
+    await _notificationsPlugin.cancelAll();
+  }
+
+  static Future<void> showInstantNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    await _notificationsPlugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'vault_download_channel',
+          'Vault Downloads',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
+
+  static Future<bool> areReminderNotificationsEnabled() {
+    return StorageService.getReminderNotificationsEnabled();
+  }
+
+  static Future<void> setReminderNotificationsEnabled(bool enabled) async {
+    await StorageService.setReminderNotificationsEnabled(enabled);
+    if (enabled) {
+      await syncAllReminders();
+      return;
+    }
+
+    await cancelAllReminders();
+  }
+
   /// Syncs all active reminders from Firestore and schedules them locally.
   static Future<void> syncAllReminders() async {
     try {
+      if (!await StorageService.getReminderNotificationsEnabled()) {
+        await cancelAllReminders();
+        return;
+      }
+
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
@@ -97,6 +143,10 @@ class NotificationService {
 
       for (var doc in snapshot.docs) {
         final data = doc.data();
+        if (data['notificationEnabled'] == false) {
+          await cancelReminder(getNotificationId(doc.id));
+          continue;
+        }
         if (data['remindAt'] is Timestamp) {
           final DateTime remindAt = (data['remindAt'] as Timestamp).toDate();
           if (remindAt.isAfter(DateTime.now())) {

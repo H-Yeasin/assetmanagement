@@ -202,9 +202,9 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
   void initState() {
     super.initState();
     _isAutoPayment = widget.loan.autoPay;
-    _amountController.text = NumberFormat(
-      '#,##0.00',
-    ).format(widget.loan.monthlyPayment);
+    _amountController.text = widget.loan.monthlyPayment == 0
+        ? ''
+        : NumberFormat('#,##0.00').format(widget.loan.monthlyPayment);
     // Set current month as default
     _selectedMonth = DateFormat('MMMM').format(DateTime.now());
   }
@@ -219,8 +219,13 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
     setState(() => _isProcessing = true);
     try {
       final completedP = widget.loan.completedPayments + 1;
-      final remaining =
-          widget.loan.remainingBalance - widget.loan.monthlyPayment;
+      final existingRemaining = widget.loan.remainingBalance > 0
+          ? widget.loan.remainingBalance
+          : (widget.loan.totalAmount > 0
+                ? widget.loan.totalAmount -
+                      (widget.loan.completedPayments * widget.loan.monthlyPayment)
+                : widget.loan.monthlyPayment);
+      final remaining = existingRemaining - widget.loan.monthlyPayment;
 
       await _loanService.updateLoan(widget.loan.id!, {
         'completedPayments': completedP,

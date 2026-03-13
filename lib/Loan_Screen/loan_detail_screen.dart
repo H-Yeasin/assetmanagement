@@ -112,7 +112,20 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   String _selectedReminder = 'Same day';
   bool _isReminderEnabled = true;
 
+  double _paymentProgress() {
+    if (_currentLoan.totalPayments <= 0) return 0.0;
+    final progress = _currentLoan.completedPayments / _currentLoan.totalPayments;
+    if (progress < 0) return 0.0;
+    if (progress > 1) return 1.0;
+    return progress;
+  }
+
   String _getTimeLeft() {
+    final remainingPayments =
+        _currentLoan.totalPayments - _currentLoan.completedPayments;
+    if (remainingPayments > 0) {
+      return '$remainingPayments payment${remainingPayments == 1 ? '' : 's'} left';
+    }
     if (_currentLoan.endDate == null) return 'N/A';
     final now = DateTime.now();
     final difference = _currentLoan.endDate!.difference(now);
@@ -299,10 +312,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
-                                value: _currentLoan.totalPayments > 0
-                                    ? (_currentLoan.completedPayments /
-                                          _currentLoan.totalPayments)
-                                    : 0.0,
+                                value: _paymentProgress(),
                                 backgroundColor: const Color(0xFFE0E0E0),
                                 valueColor: const AlwaysStoppedAnimation<Color>(
                                   brandRed,

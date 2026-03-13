@@ -16,6 +16,8 @@ class StorageService {
   static const _kSessionPersistent = 'session_persistent';
   static const _kRememberMe = 'remember_me';
   static const _kRememberedEmail = 'remembered_email';
+  static const _kReminderNotificationsEnabled =
+      'reminder_notifications_enabled';
 
   // ── Save session after login / register ────────────────────────────────────
   static Future<void> saveSession({
@@ -109,4 +111,17 @@ class StorageService {
 
   static Future<String?> getRememberedEmail() =>
       _storage.read(key: _kRememberedEmail);
+
+  // ── Reminder Notifications ────────────────────────────────────────────────
+  static Future<void> setReminderNotificationsEnabled(bool enabled) =>
+      _storage.write(
+        key: _kReminderNotificationsEnabled,
+        value: enabled ? 'true' : 'false',
+      );
+
+  static Future<bool> getReminderNotificationsEnabled() async {
+    final val = await _storage.read(key: _kReminderNotificationsEnabled);
+    if (val == null) return true;
+    return val == 'true';
+  }
 }

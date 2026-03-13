@@ -8,6 +8,15 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
 
   const HousingAdditionalDetailsScreen({super.key, required this.cost});
 
+  double _annualCost() => cost.amount * 12;
+
+  double _averageWeeklyCost() => cost.amount * 12 / 52;
+
+  String _reminderText() {
+    if (cost.dueDate == null) return 'No due date set';
+    return 'Due on ${DateFormat('MMM dd, yyyy').format(cost.dueDate!)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final categoryLabel = HousingCost.displayCategories.firstWhere(
@@ -90,16 +99,16 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
                                 iconPath:
                                     'assets/images/icon/Property_Taxes.png',
                                 iconColor: const Color(0xFF888888), // greyish
-                                title: 'Property Taxes',
+                                title: 'Annual Cost',
                                 value:
-                                    '\$ ${NumberFormat('#,##0.00').format(cost.amount * 0.12)}',
+                                    '\$ ${NumberFormat('#,##0.00').format(_annualCost())}',
                               ),
                               _DetailCard(
                                 iconPath: 'assets/images/icon/condo.png',
                                 iconColor: const Color(0xFF2196F3), // blue
-                                title: 'Condo/HOA',
+                                title: 'Weekly Average',
                                 value:
-                                    '\$ ${NumberFormat('#,##0.00').format(cost.amount * 0.11)}',
+                                    '\$ ${NumberFormat('#,##0.00').format(_averageWeeklyCost())}',
                               ),
                               _DetailCard(
                                 iconPath: 'assets/images/icon/installment.png',
@@ -178,7 +187,7 @@ class HousingAdditionalDetailsScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '4 days before date',
+                                  _reminderText(),
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey.shade500,

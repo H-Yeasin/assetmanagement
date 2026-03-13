@@ -3,6 +3,7 @@ import '../Home_Dashboard/widgets.dart';
 import 'add_documents_screen.dart';
 import 'models/loan_model.dart';
 import '../services/loan_service.dart';
+import '../services/notification_service.dart';
 import 'package:intl/intl.dart';
 import 'models/document_model.dart';
 
@@ -75,6 +76,26 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
     },
   ];
 
+  String _decimalText(double value, {int decimals = 2}) {
+    if (value == 0) return '';
+    return value.toStringAsFixed(decimals);
+  }
+
+  String _intText(int value) {
+    if (value == 0) return '';
+    return value.toString();
+  }
+
+  DateTime? _parseDateText(String value) {
+    if (value.trim().isEmpty) return null;
+    for (final pattern in ['MM/dd/yy', 'MM/dd/yyyy']) {
+      try {
+        return DateFormat(pattern).parseStrict(value);
+      } catch (_) {}
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -85,16 +106,18 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
     _nameController = TextEditingController(text: loan.name);
     _monthlyPaymentController = TextEditingController(
-      text: loan.monthlyPayment.toString(),
+      text: _decimalText(loan.monthlyPayment),
     );
     _paymentDateController = TextEditingController(
-      text: loan.paymentDate?.day.toString() ?? '15',
+      text: loan.paymentDate != null
+          ? DateFormat('MM/dd/yy').format(loan.paymentDate!)
+          : '',
     );
     _totalAmountController = TextEditingController(
-      text: loan.totalAmount.toString(),
+      text: _decimalText(loan.totalAmount),
     );
     _interestRateController = TextEditingController(
-      text: loan.interestRate.toString(),
+      text: _decimalText(loan.interestRate),
     );
     _startDateController = TextEditingController(
       text: loan.startDate != null
@@ -109,7 +132,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
     _lenderController = TextEditingController(text: loan.lender ?? '');
     _notesController = TextEditingController(text: loan.notes ?? '');
     _remainingBalanceController = TextEditingController(
-      text: loan.remainingBalance.toString(),
+      text: _decimalText(loan.remainingBalance),
     );
 
     _propertyAddressController = TextEditingController(
@@ -119,16 +142,16 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
       text: loan.apartmentName ?? '',
     );
     _totalPaymentsController = TextEditingController(
-      text: loan.totalPayments.toString(),
+      text: _intText(loan.totalPayments),
     );
     _completedPaymentsController = TextEditingController(
-      text: loan.completedPayments.toString(),
+      text: _intText(loan.completedPayments),
     );
     _annualPaymentController = TextEditingController(
-      text: (loan.monthlyPayment * 12).toStringAsFixed(2),
+      text: _decimalText(loan.monthlyPayment * 12),
     );
     _timeLeftController = TextEditingController(
-      text: (loan.totalPayments - loan.completedPayments).toString(),
+      text: _intText(loan.totalPayments - loan.completedPayments),
     );
 
     _documents = loan.documents.map((doc) {
@@ -996,7 +1019,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
           ? 0.0
           : (totalAmount - (completedP * monthly));
 
-      final day = int.tryParse(_paymentDateController.text) ?? 15;
+      final paymentDate = _parseDateText(_paymentDateController.text);
       final now = DateTime.now();
 
       final Map<String, dynamic> updates = {
@@ -1006,21 +1029,17 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
             : _selectedCategory,
         'monthlyPayment': monthly,
         'paymentDate': DateTime(
-          widget.loan.paymentDate?.year ?? now.year,
-          widget.loan.paymentDate?.month ?? now.month,
-          day,
+          paymentDate?.year ?? widget.loan.paymentDate?.year ?? now.year,
+          paymentDate?.month ?? widget.loan.paymentDate?.month ?? now.month,
+          paymentDate?.day ?? widget.loan.paymentDate?.day ?? now.day,
         ).toIso8601String(),
         'autoPay': _autoPayment,
         'totalAmount': totalAmount,
         'totalPayments': totalP,
         'completedPayments': completedP,
         'interestRate': double.tryParse(_interestRateController.text) ?? 0.0,
-        'startDate': DateFormat(
-          'MM/dd/yy',
-        ).tryParse(_startDateController.text)?.toIso8601String(),
-        'endDate': DateFormat(
-          'MM/dd/yy',
-        ).tryParse(_endDateController.text)?.toIso8601String(),
+        'startDate': _parseDateText(_startDateController.text)?.toIso8601String(),
+        'endDate': _parseDateText(_endDateController.text)?.toIso8601String(),
         'remainingBalance': isCarLoan
             ? (double.tryParse(_remainingBalanceController.text) ?? 0.0)
             : remaining,
@@ -1033,6 +1052,29 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
       };
 
       await _loanService.updateLoan(widget.loan.id!, updates);
+
+      final reminder = await _loanService.createReminder(
+        itemType: 'loan',
+        itemId: widget.loan.id!,
+        remindAt: DateTime(
+          paymentDate?.year ?? widget.loan.paymentDate?.year ?? now.year,
+          paymentDate?.month ?? widget.loan.paymentDate?.month ?? now.month,
+          paymentDate?.day ?? widget.loan.paymentDate?.day ?? now.day,
+        ),
+        title: 'Loan Payment Reminder: ${_nameController.text}',
+        note: 'Reminder for your loan upcoming payment.',
+      );
+
+      await NotificationService.scheduleReminder(
+        id: NotificationService.getNotificationId(reminder['id']),
+        title: reminder['title'] ?? 'Loan Reminder',
+        body: reminder['note'] ?? 'Upcoming loan payment.',
+        scheduledDate: DateTime(
+          paymentDate?.year ?? widget.loan.paymentDate?.year ?? now.year,
+          paymentDate?.month ?? widget.loan.paymentDate?.month ?? now.month,
+          paymentDate?.day ?? widget.loan.paymentDate?.day ?? now.day,
+        ),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

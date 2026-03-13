@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'package:intl/intl.dart';
+import '../services/housing_service.dart';
+import '../services/insurance_service.dart';
 import '../services/loan_service.dart';
+import '../Housing_Living_cost/models/housing_cost_model.dart';
+import '../Insurance/models/insurance_model.dart';
 import '../Loan_Screen/models/loan_model.dart';
 import 'widgets.dart';
 
@@ -10,6 +14,8 @@ class HomeDashboardScreen extends StatelessWidget {
   HomeDashboardScreen({super.key});
 
   final LoanService _loanService = LoanService();
+  final HousingService _housingService = HousingService();
+  final InsuranceService _insuranceService = InsuranceService();
 
   void _showAddItemSheet(BuildContext context) {
     showModalBottomSheet(
@@ -139,21 +145,45 @@ class HomeDashboardScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  CategoryCard(
-                    iconPath: 'assets/images/icon/housing.png',
-                    title: 'Housing / Living Costs',
-                    subtitle: 'up to date',
-                    iconColor: Colors.purple,
-                    onTap: () {
-                      context.go('/housing-costs');
+                  StreamBuilder<List<HousingCost>>(
+                    stream: _housingService.streamHousingCosts(),
+                    builder: (context, snapshot) {
+                      final count = snapshot.hasData
+                          ? snapshot.data!.length
+                          : 0;
+                      final loadingText =
+                          snapshot.connectionState == ConnectionState.waiting
+                          ? '...'
+                          : '$count added';
+                      return CategoryCard(
+                        iconPath: 'assets/images/icon/housing.png',
+                        title: 'Housing / Living Costs',
+                        subtitle: loadingText,
+                        iconColor: Colors.purple,
+                        onTap: () {
+                          context.go('/housing-costs');
+                        },
+                      );
                     },
                   ),
-                  CategoryCard(
-                    iconPath: 'assets/images/icon/insurance.png',
-                    title: 'Insurance',
-                    subtitle: '3 policies',
-                    iconColor: Colors.blue,
-                    onTap: () => context.push('/my-insurances'),
+                  StreamBuilder<List<InsurancePolicy>>(
+                    stream: _insuranceService.streamInsurances(),
+                    builder: (context, snapshot) {
+                      final count = snapshot.hasData
+                          ? snapshot.data!.length
+                          : 0;
+                      final loadingText =
+                          snapshot.connectionState == ConnectionState.waiting
+                          ? '...'
+                          : '$count policies';
+                      return CategoryCard(
+                        iconPath: 'assets/images/icon/insurance.png',
+                        title: 'Insurance',
+                        subtitle: loadingText,
+                        iconColor: Colors.blue,
+                        onTap: () => context.push('/my-insurances'),
+                      );
+                    },
                   ),
                   StreamBuilder<int>(
                     stream: _loanService.streamDocumentsCount(),

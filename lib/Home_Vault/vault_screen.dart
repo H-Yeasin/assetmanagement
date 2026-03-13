@@ -4,6 +4,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../services/security_service.dart';
 import '../services/biometric_service.dart';
 import '../services/loan_service.dart';
+import 'vault_access_gate.dart';
 
 class VaultScreen extends StatefulWidget {
   final String? initialCategory;
@@ -16,12 +17,22 @@ class VaultScreen extends StatefulWidget {
 class _VaultScreenState extends State<VaultScreen> {
   bool _unlocked = false;
   bool _isChecking = true;
-  bool _isSaving = false;
+  final TextEditingController _searchController = TextEditingController();
+  late Future<Map<String, _VaultModuleStats>> _statsFuture;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
+    _statsFuture = _fetchVaultStats();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkSecurity());
+  }
+
+  @override
+  void dispose() {
+    VaultAccessSession.reset();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkSecurity() async {
@@ -32,6 +43,7 @@ class _VaultScreenState extends State<VaultScreen> {
 
     if (!biometricEnabled && !pinEnabled) {
       // No security set – open vault directly
+      VaultAccessSession.unlock();
       setState(() {
         _unlocked = true;
         _isChecking = false;
@@ -55,6 +67,7 @@ class _VaultScreenState extends State<VaultScreen> {
         );
         if (!mounted) return;
         if (success) {
+          VaultAccessSession.unlock();
           setState(() {
             _unlocked = true;
             _isChecking = false;
@@ -79,6 +92,7 @@ class _VaultScreenState extends State<VaultScreen> {
       final result = await context.push<bool>('/pin-verify');
       if (mounted) {
         if (result == true) {
+          VaultAccessSession.unlock();
           setState(() => _unlocked = true);
           if (widget.initialCategory != null) {
             Future.delayed(Duration.zero, () {
@@ -89,6 +103,7 @@ class _VaultScreenState extends State<VaultScreen> {
           }
         } else {
           // Navigated back without unlocking
+          VaultAccessSession.reset();
           context.go('/home');
         }
       }
@@ -98,10 +113,11 @@ class _VaultScreenState extends State<VaultScreen> {
     // No fallback available (biometric failed and no PIN) – back out
     if (!mounted) return;
     setState(() => _isChecking = false);
+    VaultAccessSession.reset();
     if (mounted) context.go('/home');
   }
 
-  Future<Map<String, String>> _fetchVaultStats() async {
+  Future<Map<String, _VaultModuleStats>> _fetchVaultStats() async {
     try {
       final results = await Future.wait([
         LoanService().fetchDocumentsByModule('loans'),
@@ -111,13 +127,31 @@ class _VaultScreenState extends State<VaultScreen> {
       ]);
 
       return {
-        'loans': results[0].length.toString(),
-        'housing': results[1].length.toString(),
-        'insurance': results[2].length.toString(),
-        'documents': results[3].length.toString(),
+        'loans': _VaultModuleStats.fromDocuments(results[0]),
+        'housing': _VaultModuleStats.fromDocuments(results[1]),
+        'insurance': _VaultModuleStats.fromDocuments(results[2]),
+        'documents': _VaultModuleStats.fromDocuments(results[3]),
       };
     } catch (e) {
-      return {'loans': '0', 'housing': '0', 'insurance': '0', 'documents': '0'};
+      return {
+        'loans': const _VaultModuleStats.empty(),
+        'housing': const _VaultModuleStats.empty(),
+        'insurance': const _VaultModuleStats.empty(),
+        'documents': const _VaultModuleStats.empty(),
+      };
+    }
+  }
+
+  Future<void> _refreshStats() async {
+    setState(() {
+      _statsFuture = _fetchVaultStats();
+    });
+  }
+
+  Future<void> _openCategory(String title) async {
+    await context.push('/vault-category', extra: title);
+    if (mounted) {
+      await _refreshStats();
     }
   }
 
@@ -189,21 +223,42 @@ class _VaultScreenState extends State<VaultScreen> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: const Color(0xFFEEEEEE)),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.search,
                             color: Color(0xFFBBBBBB),
                             size: 22,
                           ),
-                          SizedBox(width: 12),
-                          Text(
-                            'Search documents',
-                            style: TextStyle(
-                              color: Color(0xFFBBBBBB),
-                              fontSize: 14,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (value) {
+                                setState(() => _searchQuery = value.trim());
+                              },
+                              decoration: const InputDecoration(
+                                hintText: 'Search vault categories',
+                                hintStyle: TextStyle(
+                                  color: Color(0xFFBBBBBB),
+                                  fontSize: 14,
+                                ),
+                                border: InputBorder.none,
+                              ),
                             ),
                           ),
+                          if (_searchQuery.isNotEmpty)
+                            GestureDetector(
+                              onTap: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                              child: const Icon(
+                                Icons.close,
+                                color: Color(0xFFBBBBBB),
+                                size: 18,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -211,17 +266,63 @@ class _VaultScreenState extends State<VaultScreen> {
                     const SizedBox(height: 24),
 
                     // ── Category Grid (2x2) ──
-                    FutureBuilder<Map<String, String>>(
-                      future: _fetchVaultStats(),
+                    FutureBuilder<Map<String, _VaultModuleStats>>(
+                      future: _statsFuture,
                       builder: (context, snapshot) {
                         final stats =
                             snapshot.data ??
                             {
-                              'loans': '...',
-                              'housing': '...',
-                              'insurance': '...',
-                              'documents': '...',
+                              'loans': const _VaultModuleStats.empty(),
+                              'housing': const _VaultModuleStats.empty(),
+                              'insurance': const _VaultModuleStats.empty(),
+                              'documents': const _VaultModuleStats.empty(),
                             };
+                        final categories = [
+                          _VaultCategoryConfig(
+                            iconPath: 'assets/images/icon/loan.png',
+                            title: 'Loans',
+                            subtitle: stats['loans']!.label,
+                            iconColor: brandRed,
+                          ),
+                          _VaultCategoryConfig(
+                            iconPath: 'assets/images/icon/housing.png',
+                            title: 'Housing / Living Costs',
+                            subtitle: stats['housing']!.label,
+                            iconColor: const Color(0xFF9C27B0),
+                          ),
+                          _VaultCategoryConfig(
+                            iconPath: 'assets/images/icon/insurance.png',
+                            title: 'Insurance',
+                            subtitle: stats['insurance']!.label,
+                            iconColor: const Color(0xFF2196F3),
+                          ),
+                          _VaultCategoryConfig(
+                            iconPath: 'assets/images/icon/doccument.png',
+                            title: 'Documents',
+                            subtitle: stats['documents']!.label,
+                            iconColor: const Color(0xFFFF9800),
+                          ),
+                        ];
+                        final filteredCategories = categories
+                            .where(
+                              (category) =>
+                                  _searchQuery.isEmpty ||
+                                  category.title.toLowerCase().contains(
+                                    _searchQuery.toLowerCase(),
+                                  ),
+                            )
+                            .toList();
+
+                        if (filteredCategories.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Text(
+                              'No vault categories matched your search.',
+                              style: TextStyle(color: Color(0xFF888888)),
+                            ),
+                          );
+                        }
+
                         return GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -229,48 +330,17 @@ class _VaultScreenState extends State<VaultScreen> {
                           mainAxisSpacing: 14,
                           crossAxisSpacing: 14,
                           childAspectRatio: 1.3,
-                          children: [
-                            _VaultCategoryCard(
-                              iconPath: 'assets/images/icon/loan.png',
-                              title: 'Loans',
-                              subtitle: '${stats['loans']} records',
-                              iconColor: brandRed,
-                              onTap: () => context.push(
-                                '/vault-category',
-                                extra: 'Loans',
-                              ),
-                            ),
-                            _VaultCategoryCard(
-                              iconPath: 'assets/images/icon/housing.png',
-                              title: 'Housing / Living Costs',
-                              subtitle: '${stats['housing']} records',
-                              iconColor: const Color(0xFF9C27B0),
-                              onTap: () => context.push(
-                                '/vault-category',
-                                extra: 'Housing / Living Costs',
-                              ),
-                            ),
-                            _VaultCategoryCard(
-                              iconPath: 'assets/images/icon/insurance.png',
-                              title: 'Insurance',
-                              subtitle: '${stats['insurance']} records',
-                              iconColor: const Color(0xFF2196F3),
-                              onTap: () => context.push(
-                                '/vault-category',
-                                extra: 'Insurance',
-                              ),
-                            ),
-                            _VaultCategoryCard(
-                              iconPath: 'assets/images/icon/doccument.png',
-                              title: 'Documents',
-                              subtitle: '${stats['documents']} saved',
-                              iconColor: const Color(0xFFFF9800),
-                              onTap: () => context.push(
-                                '/vault-category',
-                                extra: 'Documents',
-                              ),
-                            ),
-                          ],
+                          children: filteredCategories
+                              .map(
+                                (category) => _VaultCategoryCard(
+                                  iconPath: category.iconPath,
+                                  title: category.title,
+                                  subtitle: category.subtitle,
+                                  iconColor: category.iconColor,
+                                  onTap: () => _openCategory(category.title),
+                                ),
+                              )
+                              .toList(),
                         );
                       },
                     ),
@@ -320,7 +390,7 @@ class _VaultScreenState extends State<VaultScreen> {
               ),
             ),
 
-            // ── "Save Documents" Button ──
+            // ── Primary Action ──
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
               child: SizedBox(
@@ -335,122 +405,11 @@ class _VaultScreenState extends State<VaultScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: _isSaving
-                      ? null
-                      : () async {
-                          setState(() => _isSaving = true);
-                          try {
-                            final stats = await _fetchVaultStats();
-                            int totalDocs = 0;
-                            for (var val in stats.values) {
-                              totalDocs += int.tryParse(val) ?? 0;
-                            }
-
-                            if (!mounted) return;
-
-                            if (totalDocs > 0) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Row(
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: Colors.white,
-                                      ),
-                                      SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          'Documents are saved successfully',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  backgroundColor: const Color(
-                                    0xFF4CAF50,
-                                  ), // Green
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  margin: EdgeInsets.only(
-                                    bottom:
-                                        (context.mounted
-                                            ? MediaQuery.of(context).size.height
-                                            : 800) -
-                                        220,
-                                    left: 20,
-                                    right: 20,
-                                  ),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            } else {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Row(
-                                    children: [
-                                      Icon(
-                                        Icons.info_outline,
-                                        color: Colors.white,
-                                      ),
-                                      SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          'No documents found to save.',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  backgroundColor: const Color(
-                                    0xFFFFA000,
-                                  ), // Amber
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  margin: EdgeInsets.only(
-                                    bottom:
-                                        (context.mounted
-                                            ? MediaQuery.of(context).size.height
-                                            : 800) -
-                                        220,
-                                    left: 20,
-                                    right: 20,
-                                  ),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            }
-                          } finally {
-                            if (mounted) setState(() => _isSaving = false);
-                          }
-                        },
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Save Documents',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                  onPressed: () => _openCategory('Documents'),
+                  child: const Text(
+                    'Browse Documents',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ),
@@ -458,6 +417,50 @@ class _VaultScreenState extends State<VaultScreen> {
         ),
       ),
     );
+  }
+}
+
+class _VaultCategoryConfig {
+  final String iconPath;
+  final String title;
+  final String subtitle;
+  final Color iconColor;
+
+  const _VaultCategoryConfig({
+    required this.iconPath,
+    required this.title,
+    required this.subtitle,
+    required this.iconColor,
+  });
+}
+
+class _VaultModuleStats {
+  final int fileCount;
+  final int folderCount;
+
+  const _VaultModuleStats({required this.fileCount, required this.folderCount});
+
+  const _VaultModuleStats.empty() : fileCount = 0, folderCount = 0;
+
+  factory _VaultModuleStats.fromDocuments(List<dynamic> documents) {
+    int files = 0;
+    int folders = 0;
+    for (final document in documents) {
+      final mimeType = document.mimeType?.toString() ?? '';
+      if (mimeType == 'application/vnd.anick-giroux.folder') {
+        folders++;
+      } else {
+        files++;
+      }
+    }
+    return _VaultModuleStats(fileCount: files, folderCount: folders);
+  }
+
+  String get label {
+    final fileLabel = '$fileCount ${fileCount == 1 ? 'file' : 'files'}';
+    final folderLabel =
+        '$folderCount ${folderCount == 1 ? 'folder' : 'folders'}';
+    return '$fileLabel • $folderLabel';
   }
 }
 

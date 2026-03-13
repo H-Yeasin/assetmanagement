@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../services/subscription_service.dart';
+import 'payment_status_screen.dart';
 
 class ChoosePaymentScreen extends StatefulWidget {
   const ChoosePaymentScreen({super.key});
@@ -12,12 +15,13 @@ class ChoosePaymentScreen extends StatefulWidget {
 }
 
 class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
-  int _selectedMethod = 0; // 0 = Debit/Credit Card, 1 = Stripe
-  bool _isLoading = false;
-
+  final SubscriptionService _subscriptionService = SubscriptionService();
   final TextEditingController _cardNumberController = TextEditingController();
   final TextEditingController _expiryController = TextEditingController();
   final TextEditingController _cvvController = TextEditingController();
+
+  int _selectedMethod = 0;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -27,84 +31,266 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
     super.dispose();
   }
 
-  Future<void> _initiatePayment() async {
+  Future<void> _pay() async {
+    if (_selectedMethod == 0) {
+      await _payWithCard();
+      return;
+    }
+    await _payWithStripeSheet();
+  }
+
+  Future<void> _payWithCard() async {
+    if (_isLoading) return;
+
+    final cardNumber = _cardNumberController.text.replaceAll(' ', '');
+    final expiry = _expiryController.text.trim();
+    final cvv = _cvvController.text.trim();
+
+    if (cardNumber.isEmpty || expiry.isEmpty || cvv.isEmpty) {
+      _showError('Please complete all card details.');
+      return;
+    }
+
+    final expiryParts = expiry.split('/');
+    if (expiryParts.length != 2) {
+      _showError('Expiry date must be in MM/YY format.');
+      return;
+    }
+
+    final expMonth = int.tryParse(expiryParts[0]) ?? 0;
+    final expYear = int.tryParse('20${expiryParts[1]}') ?? 0;
+    if (expMonth < 1 || expMonth > 12 || expYear < DateTime.now().year) {
+      _showError('Enter a valid expiry date.');
+      return;
+    }
+
     setState(() => _isLoading = true);
+    SubscriptionCheckout? checkout;
     try {
-      // 1. Create Payment Intent on our backend
-      final callable = FirebaseFunctions.instance.httpsCallable(
-        'createStripePaymentIntent',
+      // Ensure Stripe is configured with a valid publishable key first
+      await _subscriptionService.ensureStripeConfigured(forceRefresh: true);
+
+      checkout = await _subscriptionService.createCheckout();
+
+      await Stripe.instance.dangerouslyUpdateCardDetails(
+        CardDetails(
+          number: cardNumber,
+          expirationMonth: expMonth,
+          expirationYear: expYear,
+          cvc: cvv,
+        ),
       );
-      final result = await callable.call({
-        'amount': 699, // \$6.99 in cents
-        'currency': 'usd',
-      });
 
-      final clientSecret = result.data['clientSecret'] as String;
-
-      if (_selectedMethod == 0) {
-        // Debit/Credit Card (Custom UI with manual Card tokenization)
-        if (_cardNumberController.text.isEmpty ||
-            _expiryController.text.isEmpty ||
-            _cvvController.text.isEmpty) {
-          throw Exception('Please completely fill out your card details.');
-        }
-
-        // Parse expiry from MM/YY
-        final expiryParts = _expiryController.text.split('/');
-        if (expiryParts.length != 2) {
-          throw Exception('Invalid Expiry Date format MM/YY');
-        }
-        final expMonth = int.tryParse(expiryParts[0]) ?? 0;
-        final expYear = int.tryParse('20${expiryParts[1]}') ?? 0;
-
-        // Sync details to Stripe internally
-        await Stripe.instance.dangerouslyUpdateCardDetails(
-          CardDetails(
-            number: _cardNumberController.text.replaceAll(' ', ''),
-            expirationMonth: expMonth,
-            expirationYear: expYear,
-            cvc: _cvvController.text,
+      final setupIntent = await Stripe.instance.confirmSetupIntent(
+        paymentIntentClientSecret: checkout.clientSecret,
+        params: const PaymentMethodParams.card(
+          paymentMethodData: PaymentMethodData(
+            billingDetails: BillingDetails(name: 'FFP Vault User'),
           ),
-        );
+        ),
+      );
 
-        // Confirm the payment directly using the filled custom CardData
-        await Stripe.instance.confirmPayment(
-          paymentIntentClientSecret: clientSecret,
-          data: const PaymentMethodParams.card(
-            paymentMethodData: PaymentMethodData(
-              billingDetails: BillingDetails(name: 'Anick Giroux User'),
-            ),
-          ),
-        );
-      } else {
-        // Stripe Payment Sheet Flow
-        await Stripe.instance.initPaymentSheet(
-          paymentSheetParameters: SetupPaymentSheetParameters(
-            paymentIntentClientSecret: clientSecret,
-            merchantDisplayName: 'Anick Giroux',
-            style: ThemeMode.light,
-          ),
-        );
-        await Stripe.instance.presentPaymentSheet();
+      final paymentMethodId = setupIntent.paymentMethodId;
+      if (paymentMethodId.isEmpty) {
+        throw StateError('Payment method setup was not completed.');
       }
 
-      // 4. On success
-      if (mounted) {
-        context.push('/payment-success');
-      }
+      await _subscriptionService.finalizePayment(
+        subscriptionId: checkout.subscriptionId,
+        paymentMethodId: paymentMethodId,
+        setupIntentId: setupIntent.id,
+      );
+
+      if (!mounted) return;
+      context.go(
+        '/payment-success',
+        extra: const PaymentStatusArgs(
+          isSuccess: true,
+          title: 'Payment Successful',
+          message:
+              'Welcome to the FFP Vault.\n\nYour subscription is now active and you can start organizing your finances with clarity and confidence.',
+          buttonLabel: 'Open the Vault',
+        ),
+      );
+    } on StripeException catch (e) {
+      await _cleanupFailedCheckout(checkout);
+      _handleStripeFailure(e);
+    } on FirebaseFunctionsException catch (e) {
+      await _cleanupFailedCheckout(checkout);
+      _handleFunctionsFailure(e);
+    } on StateError catch (e) {
+      await _cleanupFailedCheckout(checkout);
+      if (!mounted) return;
+      context.go(
+        '/payment-failed',
+        extra: PaymentStatusArgs(
+          isSuccess: false,
+          title: 'Payment Not Available',
+          message:
+              e.message.contains('publishable key') ||
+                  e.message.contains('not configured')
+              ? 'Payment is not yet configured. Please try again later or contact support.'
+              : e.message,
+        ),
+      );
     } catch (e) {
-      final msg = e is StripeException
-          ? e.error.localizedMessage
-          : e.toString();
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Payment Error: $msg')));
-      }
+      await _cleanupFailedCheckout(checkout);
+      _handleGenericFailure(e);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _payWithStripeSheet() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+    SubscriptionCheckout? checkout;
+    try {
+      // Ensure Stripe is configured with a valid publishable key first
+      await _subscriptionService.ensureStripeConfigured(forceRefresh: true);
+
+      checkout = await _subscriptionService.createCheckout();
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          setupIntentClientSecret: checkout.clientSecret,
+          customerId: checkout.customerId,
+          customerEphemeralKeySecret: checkout.customerEphemeralKeySecret,
+          merchantDisplayName: 'Anick Giroux',
+          paymentMethodOrder: const ['card'],
+          returnURL: 'anickgiroux://stripe-redirect',
+          style: ThemeMode.light,
+          allowsDelayedPaymentMethods: false,
+        ),
+      );
+
+      await Stripe.instance.presentPaymentSheet();
+      final setupIntent = await Stripe.instance.retrieveSetupIntent(
+        checkout.clientSecret,
+      );
+      final paymentMethodId = setupIntent.paymentMethodId;
+      if (paymentMethodId.isEmpty) {
+        throw StateError('Payment method setup was not completed.');
+      }
+      await _subscriptionService.finalizePayment(
+        subscriptionId: checkout.subscriptionId,
+        paymentMethodId: paymentMethodId,
+        setupIntentId: setupIntent.id,
+      );
+
+      if (!mounted) return;
+      context.go(
+        '/payment-success',
+        extra: const PaymentStatusArgs(
+          isSuccess: true,
+          title: 'Payment Successful',
+          message:
+              'Welcome to the FFP Vault.\n\nYour subscription is now active and you can start organizing your finances with clarity and confidence.',
+          buttonLabel: 'Open the Vault',
+        ),
+      );
+    } on StripeException catch (e) {
+      await _cleanupFailedCheckout(checkout);
+      _handleStripeFailure(e);
+    } on FirebaseFunctionsException catch (e) {
+      await _cleanupFailedCheckout(checkout);
+      _handleFunctionsFailure(e);
+    } on StateError catch (e) {
+      await _cleanupFailedCheckout(checkout);
+      if (!mounted) return;
+      context.go(
+        '/payment-failed',
+        extra: PaymentStatusArgs(
+          isSuccess: false,
+          title: 'Payment Not Available',
+          message:
+              e.message.contains('publishable key') ||
+                  e.message.contains('not configured')
+              ? 'Payment is not yet configured. Please try again later or contact support.'
+              : e.message,
+        ),
+      );
+    } catch (e) {
+      await _cleanupFailedCheckout(checkout);
+      _handleGenericFailure(e);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _cleanupFailedCheckout(SubscriptionCheckout? checkout) async {
+    final subscriptionId = checkout?.subscriptionId ?? '';
+    if (subscriptionId.isEmpty) return;
+
+    try {
+      await _subscriptionService.abandonCheckout(
+        subscriptionId: subscriptionId,
+      );
+    } catch (_) {
+      // Best-effort cleanup for abandoned incomplete subscriptions.
+    }
+  }
+
+  void _handleStripeFailure(StripeException e) {
+    if (!mounted) return;
+    final cancelled = e.error.code == FailureCode.Canceled;
+    context.go(
+      '/payment-failed',
+      extra: PaymentStatusArgs(
+        isSuccess: false,
+        title: cancelled ? 'Payment Cancelled' : 'Payment Failed',
+        message: e.error.localizedMessage ?? 'Payment was not completed.',
+      ),
+    );
+  }
+
+  void _handleGenericFailure(Object error) {
+    if (!mounted) return;
+    final message = switch (error) {
+      StripeConfigException(:final message) => message.trim(),
+      _ => error.toString().replaceFirst('Exception: ', '').trim(),
+    };
+    context.go(
+      '/payment-failed',
+      extra: PaymentStatusArgs(
+        isSuccess: false,
+        title: 'Payment Failed',
+        message: message.isNotEmpty
+            ? message
+            : 'We could not verify your payment right now. Please try again.',
+      ),
+    );
+  }
+
+  void _handleFunctionsFailure(FirebaseFunctionsException error) {
+    if (!mounted) return;
+
+    final message = switch (error.code) {
+      'already-exists' => 'This account already has an active subscription.',
+      'failed-precondition' =>
+        'Your payment could not be completed. Please try again.',
+      'unauthenticated' => 'Please log in again before continuing.',
+      _ =>
+        error.message?.trim().isNotEmpty == true
+            ? error.message!.trim()
+            : 'We could not verify your payment right now. Please try again.',
+    };
+
+    context.go(
+      '/payment-failed',
+      extra: PaymentStatusArgs(
+        isSuccess: false,
+        title: 'Payment Failed',
+        message: message,
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -121,11 +307,10 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-                    // App bar row
                     Row(
                       children: [
                         GestureDetector(
-                          onTap: () => context.pop(),
+                          onTap: _isLoading ? null : () => context.pop(),
                           child: const Icon(
                             Icons.chevron_left,
                             color: Color(0xFFC61C36),
@@ -144,7 +329,6 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // Payment method options
                     _PaymentMethodTile(
                       icon: Image.asset(
                         'assets/images/creditcard.png',
@@ -165,15 +349,12 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                         height: 24,
                       ),
                       title: 'Stripe',
-                      subtitle: 'Pay with Stripe',
+                      subtitle: 'Secure payment powered by Stripe',
                       isSelected: _selectedMethod == 1,
                       onTap: () => setState(() => _selectedMethod = 1),
                     ),
-                    const SizedBox(height: 28),
-
-                    // Conditionally show custom Card Details UI
                     if (_selectedMethod == 0) ...[
-                      // Card Details section
+                      const SizedBox(height: 28),
                       const Text(
                         'Card Details',
                         style: TextStyle(
@@ -183,7 +364,6 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Card Number
                       const Text(
                         'Card Number',
                         style: TextStyle(
@@ -208,77 +388,70 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                             'assets/images/creditcard.png',
                             width: 24,
                             height: 24,
-                            color: const Color(0xFF999999),
+                            color: const Color(0xFF777777),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Expiry + CVV row
+                      Row(
+                        children: const [
+                          Expanded(
+                            child: Text(
+                              'Expiry Date',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              'CVC',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Expiry Date',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _CardInputField(
-                                  controller: _expiryController,
-                                  hintText: 'MM/YY',
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    _ExpiryDateFormatter(),
-                                  ],
-                                  maxLength: 5,
-                                ),
+                            child: _CardInputField(
+                              controller: _expiryController,
+                              hintText: 'MM/YY',
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                _ExpiryDateFormatter(),
                               ],
+                              maxLength: 5,
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'CVV',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _CardInputField(
-                                  controller: _cvvController,
-                                  hintText: '123',
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                  maxLength: 3,
-                                  obscureText: true,
-                                ),
+                            child: _CardInputField(
+                              controller: _cvvController,
+                              hintText: '123',
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
                               ],
+                              maxLength: 4,
                             ),
                           ),
                         ],
                       ),
                     ],
-
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
-            // Bottom section
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               decoration: const BoxDecoration(
@@ -289,35 +462,33 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
               ),
               child: Column(
                 children: [
-                  // Total amount
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Total Amount',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Colors.black,
+                          color: Color(0xFF283252),
                         ),
                       ),
                       Text(
-                        '\$6.99',
-                        style: TextStyle(
+                        _selectedMethod == 0 ? '\$6.99' : '\$6.99 / month',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A2E),
+                          color: Color(0xFF283252),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
-                  // Pay button
                   SizedBox(
                     width: double.infinity,
                     height: 54,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _initiatePayment,
+                      onPressed: _isLoading ? null : _pay,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFC61C36),
                         foregroundColor: Colors.white,
@@ -327,42 +498,40 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                         elevation: 0,
                       ),
                       child: _isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Row(
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Pay \$6.99',
-                                  style: TextStyle(
+                                  _selectedMethod == 0
+                                      ? 'Pay \$6.99'
+                                      : 'Pay Securely',
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward, size: 18),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_forward, size: 18),
                               ],
                             ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Security note
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(
-                        'assets/images/shield_icon.png',
-                        width: 14,
-                        height: 14,
-                        color: const Color(0xFF888888),
+                      const Icon(
+                        Icons.shield_outlined,
+                        size: 18,
+                        color: Color(0xFF888888),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'Your payment is encrypted and secure',
-                        style: TextStyle(
+                      Text(
+                        _selectedMethod == 0
+                            ? 'Your payment is encrypted and secure'
+                            : 'Your payment is encrypted and verified server-side',
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFF888888),
                         ),
@@ -430,7 +599,7 @@ class _PaymentMethodTile extends StatelessWidget {
                   subtitle,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF888888),
+                    color: Color(0xFF777777),
                   ),
                 ),
               ],
@@ -448,16 +617,14 @@ class _CardInputField extends StatelessWidget {
   final TextInputType keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final int? maxLength;
-  final bool obscureText;
   final Widget? suffixIcon;
 
   const _CardInputField({
     required this.controller,
     required this.hintText,
-    this.keyboardType = TextInputType.text,
+    required this.keyboardType,
     this.inputFormatters,
     this.maxLength,
-    this.obscureText = false,
     this.suffixIcon,
   });
 
@@ -467,7 +634,6 @@ class _CardInputField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
-      obscureText: obscureText,
       maxLength: maxLength,
       style: const TextStyle(
         fontSize: 15,
@@ -476,7 +642,7 @@ class _CardInputField extends StatelessWidget {
       ),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 15),
+        hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 15),
         counterText: '',
         suffixIcon: suffixIcon,
         contentPadding: const EdgeInsets.symmetric(
@@ -485,11 +651,11 @@ class _CardInputField extends StatelessWidget {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFDDDDDD), width: 1),
+          borderSide: const BorderSide(color: Color(0xFF283252), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFC61C36), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF283252), width: 1.5),
         ),
         filled: true,
         fillColor: Colors.white,
@@ -524,12 +690,14 @@ class _ExpiryDateFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    final text = newValue.text.replaceAll('/', '');
+    final digits = newValue.text.replaceAll('/', '');
     final buffer = StringBuffer();
-    for (int i = 0; i < text.length; i++) {
+
+    for (int i = 0; i < digits.length && i < 4; i++) {
       if (i == 2) buffer.write('/');
-      buffer.write(text[i]);
+      buffer.write(digits[i]);
     }
+
     final formatted = buffer.toString();
     return newValue.copyWith(
       text: formatted,

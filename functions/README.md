@@ -22,6 +22,13 @@ Set these as function environment variables/secrets before deploy:
 - `SMTP_USER`
 - `SMTP_PASS`
 - `SMTP_FROM`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PUBLISHABLE_KEY_SECRET`
+- `FIRESTORE_DB_ID` (set to `ffpvault` if you use the named Firestore database)
+
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PUBLISHABLE_KEY_SECRET`
+are configured as Firebase Functions secrets in this project.
 
 ## 3) Deploy functions
 

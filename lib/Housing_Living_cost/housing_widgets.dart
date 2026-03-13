@@ -193,9 +193,9 @@ class _HousingPaymentModalState extends State<HousingPaymentModal> {
   void initState() {
     super.initState();
     _isAutoPayment = widget.cost.autoPay;
-    _amountController.text = NumberFormat(
-      '#,##0.00',
-    ).format(widget.cost.amount);
+    _amountController.text = widget.cost.amount == 0
+        ? ''
+        : NumberFormat('#,##0.00').format(widget.cost.amount);
     _selectedMonth = DateFormat('MMMM').format(DateTime.now());
   }
 

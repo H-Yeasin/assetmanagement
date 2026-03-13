@@ -27,12 +27,17 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
   bool _isSaving = false;
   List<Map<String, dynamic>> _uploadedDocuments = [];
 
+  String _decimalText(double value) {
+    if (value == 0) return '';
+    return value.toStringAsFixed(2);
+  }
+
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.cost.name);
     _amountController = TextEditingController(
-      text: widget.cost.amount.toStringAsFixed(2),
+      text: _decimalText(widget.cost.amount),
     );
     _dueDateController = TextEditingController(
       text: widget.cost.dueDate != null

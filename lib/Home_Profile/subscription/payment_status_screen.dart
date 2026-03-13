@@ -1,10 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:async';
 
-class PaymentStatusScreen extends StatelessWidget {
+import '../../services/subscription_service.dart';
+
+class PaymentStatusArgs {
   final bool isSuccess;
+  final String title;
+  final String message;
+  final String buttonLabel;
 
-  const PaymentStatusScreen({super.key, this.isSuccess = true});
+  const PaymentStatusArgs({
+    required this.isSuccess,
+    required this.title,
+    required this.message,
+    this.buttonLabel = 'Done',
+  });
+}
+
+class PaymentStatusScreen extends StatefulWidget {
+  final PaymentStatusArgs args;
+
+  const PaymentStatusScreen({super.key, required this.args});
+
+  @override
+  State<PaymentStatusScreen> createState() => _PaymentStatusScreenState();
+}
+
+class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
+  final SubscriptionService _subscriptionService = SubscriptionService();
+  bool _isOpeningVault = false;
+
+  Future<void> _handlePrimaryAction() async {
+    if (!widget.args.isSuccess) {
+      context.go('/home');
+      return;
+    }
+
+    if (_isOpeningVault) return;
+
+    setState(() => _isOpeningVault = true);
+    try {
+      await _subscriptionService.waitForActiveSubscription();
+      if (!mounted) return;
+      context.go('/vault');
+    } on TimeoutException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Your plan is still finishing activation. Please try again in a moment.',
+          ),
+        ),
+      );
+      context.go('/subscription-plan');
+    } catch (_) {
+      if (!mounted) return;
+      context.go('/subscription-plan');
+    } finally {
+      if (mounted) {
+        setState(() => _isOpeningVault = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,32 +78,27 @@ class PaymentStatusScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Status icon
                       Image.asset(
-                        isSuccess
+                        widget.args.isSuccess
                             ? 'assets/images/payment_success.png'
                             : 'assets/images/payment_failed.png',
                         width: 120,
                         height: 120,
                       ),
                       const SizedBox(height: 32),
-                      // Title
                       Text(
-                        isSuccess ? 'Payment Successful' : 'Payment Failed',
+                        widget.args.title,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
-                          color: isSuccess
+                          color: widget.args.isSuccess
                               ? const Color(0xFF2E9E5B)
                               : const Color(0xFFC61C36),
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Subtitle
                       Text(
-                        isSuccess
-                            ? 'Your job is now live and visible to our\ncreative community'
-                            : 'Something went wrong with your payment.\nPlease try again.',
+                        widget.args.message,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 14,
@@ -58,16 +111,13 @@ class PaymentStatusScreen extends StatelessWidget {
                 ),
               ),
             ),
-            // Done button
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
               child: SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () {
-                    context.go('/home');
-                  },
+                  onPressed: _handlePrimaryAction,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFC61C36),
                     foregroundColor: Colors.white,
@@ -76,10 +126,22 @@ class PaymentStatusScreen extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+                  child: _isOpeningVault
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          widget.args.buttonLabel,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
             ),

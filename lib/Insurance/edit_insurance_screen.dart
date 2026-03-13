@@ -49,13 +49,23 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     'Critical Illness',
   ];
 
+  String _decimalText(double value) {
+    if (value == 0) return '';
+    return value.toStringAsFixed(2);
+  }
+
+  String _intText(int? value) {
+    if (value == null || value == 0) return '';
+    return value.toString();
+  }
+
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.policy.name);
     _providerController = TextEditingController(text: widget.policy.provider);
     _amountController = TextEditingController(
-      text: widget.policy.premium.toString(),
+      text: _decimalText(widget.policy.premium),
     );
     _dateController = TextEditingController(
       text: widget.policy.renewalDate != null
@@ -79,10 +89,10 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     );
     _timeLeftController = TextEditingController(text: widget.policy.timeLeft);
     _paymentsCompletedController = TextEditingController(
-      text: widget.policy.paymentsCompleted?.toString() ?? '',
+      text: _intText(widget.policy.paymentsCompleted),
     );
     _totalPaymentsController = TextEditingController(
-      text: widget.policy.totalPayments?.toString() ?? '',
+      text: _intText(widget.policy.totalPayments),
     );
     _startDateController = TextEditingController(
       text: widget.policy.startDate != null

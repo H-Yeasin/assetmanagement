@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'models/insurance_model.dart';
 import '../services/insurance_service.dart';
+import '../services/notification_service.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'dart:ui';
 
@@ -177,7 +178,25 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         personalInsuranceType: _personalInsuranceType,
       );
 
-      await _apiService.createInsurance(policy);
+      final createdPolicy = await _apiService.createInsurance(policy);
+
+      if (renewalDate != null && createdPolicy.id != null) {
+        final reminder = await _apiService.createReminder(
+          itemId: createdPolicy.id!,
+          itemType: 'insurance',
+          title: 'Insurance Renewal: ${createdPolicy.name}',
+          remindAt: renewalDate,
+          note: 'Automatic renewal reminder for your insurance policy.',
+        );
+
+        await NotificationService.scheduleReminder(
+          id: NotificationService.getNotificationId(reminder['id']),
+          title: reminder['title'] ?? 'Insurance Reminder',
+          body: reminder['note'] ?? 'Upcoming insurance renewal.',
+          scheduledDate: renewalDate,
+        );
+      }
+
       if (mounted) context.pop(true);
     } catch (e) {
       if (mounted) {

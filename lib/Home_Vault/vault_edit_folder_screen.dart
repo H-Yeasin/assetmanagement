@@ -7,11 +7,13 @@ import '../Loan_Screen/models/document_model.dart';
 class VaultEditFolderScreen extends StatefulWidget {
   final String folderName;
   final String folderId;
+  final String categoryName;
 
   const VaultEditFolderScreen({
     super.key,
     required this.folderName,
     required this.folderId,
+    required this.categoryName,
   });
 
   @override
@@ -224,7 +226,15 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
   }
 
   Future<List<DocumentFile>> _fetchFolderDocuments() async {
-    return LoanService().fetchDocumentsByModule('loans');
+    return LoanService().fetchDocumentsByModule(_currentModule);
+  }
+
+  String get _currentModule {
+    String module = 'loans';
+    if (widget.categoryName.contains('Housing')) module = 'housing';
+    if (widget.categoryName.contains('Insurance')) module = 'insurance';
+    if (widget.categoryName.contains('Document')) module = 'documents';
+    return module;
   }
 
   Future<void> _deleteDocument(String id) async {
@@ -282,13 +292,7 @@ class _VaultEditFolderScreenState extends State<VaultEditFolderScreen> {
     try {
       await LoanService().renameDocument(widget.folderId, newName);
       if (mounted) {
-        // We pop and ideally we would notify the caller about the new name.
-        // For simplicity we just return to previous screen. Wait, we should pop twice?
-        // Or pop back to vault main screen.
-        context.pop();
-        context.pop();
-        // We pop twice because subfolder screen has the old name in its state/arguments.
-        // It's easiest to go back to VaultCategoryScreen.
+        context.pop(newName);
       }
     } catch (e) {
       if (mounted) {

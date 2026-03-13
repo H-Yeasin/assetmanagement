@@ -72,21 +72,44 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     await _loadData();
   }
 
-  double get _totalMonthlyPayment {
-    // For simplicity, assuming monthly if not specified, or dividing annual by 12
-    return _policies.fold(0.0, (sum, p) {
-      final freq = p.paymentFrequency?.toLowerCase() ?? '';
-      if (freq.contains('annually') || freq.contains('yearly')) {
-        return sum + (p.premium / 12);
-      } else if (freq.contains('quarterly')) {
-        return sum + (p.premium / 3);
+  double _monthlyEquivalent(InsurancePolicy policy) {
+    final freq = policy.paymentFrequency?.toLowerCase() ?? '';
+    if (freq.contains('annually') || freq.contains('yearly')) {
+      return policy.premium / 12;
+    }
+    if (freq.contains('quarterly')) {
+      return policy.premium / 3;
+    }
+    return policy.premium;
+  }
+
+  double _outstandingAmount(InsurancePolicy policy) {
+    final totalPayments = policy.totalPayments ?? 0;
+    final completedPayments = policy.paymentsCompleted ?? 0;
+
+    if (totalPayments > 0) {
+      final remainingPayments = totalPayments - completedPayments;
+      if (remainingPayments > 0) {
+        return remainingPayments * _monthlyEquivalent(policy);
       }
-      return sum + p.premium;
-    });
+    }
+
+    final freq = policy.paymentFrequency?.toLowerCase() ?? '';
+    if (freq.contains('annually') || freq.contains('yearly')) {
+      return policy.premium;
+    }
+    if (freq.contains('quarterly')) {
+      return policy.premium * 3;
+    }
+    return policy.premium;
+  }
+
+  double get _totalMonthlyPayment {
+    return _policies.fold(0.0, (sum, p) => sum + _monthlyEquivalent(p));
   }
 
   double get _totalOutstanding {
-    return _policies.fold(0.0, (sum, p) => sum + p.premium);
+    return _policies.fold(0.0, (sum, p) => sum + _outstandingAmount(p));
   }
 
   List<InsurancePolicy> get _filteredPolicies {

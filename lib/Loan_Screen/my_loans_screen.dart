@@ -66,6 +66,23 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
     return _allLoans;
   }
 
+  double _estimatedRemainingBalance(Loan loan) {
+    if (loan.remainingBalance > 0) {
+      return loan.remainingBalance;
+    }
+
+    final remainingPayments = loan.totalPayments - loan.completedPayments;
+    if (remainingPayments > 0 && loan.monthlyPayment > 0) {
+      final projected = remainingPayments * loan.monthlyPayment;
+      if (loan.totalAmount > 0) {
+        return projected > loan.totalAmount ? loan.totalAmount : projected;
+      }
+      return projected;
+    }
+
+    return loan.totalAmount > 0 ? loan.totalAmount : 0.0;
+  }
+
   double get _totalMonthlyPayment {
     return _allLoans
         .where((l) => l.status == 'active')
@@ -75,7 +92,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
   double get _totalOutstanding {
     return _allLoans
         .where((l) => l.status == 'active')
-        .fold(0.0, (sum, l) => sum + l.remainingBalance);
+        .fold(0.0, (sum, l) => sum + _estimatedRemainingBalance(l));
   }
 
   @override

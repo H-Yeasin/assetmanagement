@@ -8,14 +8,14 @@ import 'package:anick_giroux/Loan_Screen/models/document_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:anick_giroux/firebase_options.dart';
 import 'package:anick_giroux/services/notification_service.dart';
+import 'package:anick_giroux/services/subscription_service.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Stripe.publishableKey =
-      'pk_test_51RVRsRFxx6GHySDfLZIuLy002ZBfusrV5YuBtoxr2PbWi0AqYMPRn03xtQAf6u31U3PbUqC8zwkO6XYCypIa0VJt00iLx7IDJ7';
+  Stripe.urlScheme = 'anickgiroux';
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -35,6 +35,11 @@ void main() async {
   // Non-blocking initialization to avoid white screen hang
   NotificationService.init().then((_) {
     NotificationService.initFCM();
+  });
+
+  // Preload Stripe config so PaymentSheet can open with a ready publishable key.
+  SubscriptionService().ensureStripeConfigured().catchError((error) {
+    debugPrint('Stripe initialization skipped: $error');
   });
 
   runApp(const ProviderScope(child: MyApp()));

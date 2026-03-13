@@ -490,27 +490,139 @@ class _CategoryOption extends StatelessWidget {
 
 // ── Realistic Calendar Widget (TableCalendar) ───────────────────────────────
 class CalendarWidget extends StatefulWidget {
-  const CalendarWidget({super.key});
+  final Set<DateTime> paidDays;
+  final Set<DateTime> manualDays;
+  final DateTime? initialFocusedDay;
+  final String calendarId;
+
+  const CalendarWidget({
+    super.key,
+    this.paidDays = const {},
+    this.manualDays = const {},
+    this.initialFocusedDay,
+    required this.calendarId,
+  });
 
   @override
   State<CalendarWidget> createState() => _CalendarWidgetState();
 }
 
 class _CalendarWidgetState extends State<CalendarWidget> {
-  DateTime _focusedDay = DateTime(2025, 1, 3);
-  DateTime? _selectedDay = DateTime(2025, 1, 3);
+  late DateTime _focusedDay;
+  DateTime? _selectedDay;
 
-  // Dummy data for event markers
-  final Set<DateTime> _paidDays = {
-    DateTime(2025, 1, 11),
-    DateTime(2025, 1, 22),
-  };
+  String get _focusedStorageKey => '${widget.calendarId}_focused_day';
+  String get _selectedStorageKey => '${widget.calendarId}_selected_day';
 
-  final Set<DateTime> _manualDays = {
-    DateTime(2025, 1, 3), // Rent due date from mockup
-    DateTime(2025, 1, 17),
-    DateTime(2025, 1, 26),
-  };
+  @override
+  void initState() {
+    super.initState();
+    final initialFocused = _normalizedDay(
+      widget.initialFocusedDay ?? DateTime.now(),
+    );
+    final storedFocused =
+        PageStorage.maybeOf(context)?.readState(
+              context,
+              identifier: _focusedStorageKey,
+            )
+            as DateTime?;
+    final storedSelected =
+        PageStorage.maybeOf(context)?.readState(
+              context,
+              identifier: _selectedStorageKey,
+            )
+            as DateTime?;
+
+    _focusedDay = _normalizedDay(storedFocused ?? initialFocused);
+    _selectedDay = storedSelected != null
+        ? _normalizedDay(storedSelected)
+        : _focusedDay;
+  }
+
+  DateTime _normalizedDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  void _persistCalendarState() {
+    final storage = PageStorage.maybeOf(context);
+    storage?.writeState(
+      context,
+      _focusedDay,
+      identifier: _focusedStorageKey,
+    );
+    storage?.writeState(
+      context,
+      _selectedDay,
+      identifier: _selectedStorageKey,
+    );
+  }
+
+  void _updateFocusedDay(DateTime focusedDay, {DateTime? selectedDay}) {
+    setState(() {
+      _focusedDay = _normalizedDay(focusedDay);
+      if (selectedDay != null) {
+        _selectedDay = _normalizedDay(selectedDay);
+      }
+    });
+    _persistCalendarState();
+  }
+
+  bool _hasManualMarker(DateTime date) =>
+      widget.manualDays.contains(_normalizedDay(date));
+
+  bool _hasPaidMarker(DateTime date) =>
+      widget.paidDays.contains(_normalizedDay(date));
+
+  Widget _buildDayCell(
+    DateTime date, {
+    required bool isSelected,
+    required bool isToday,
+  }) {
+    final hasManualMarker = _hasManualMarker(date);
+    final hasPaidMarker = _hasPaidMarker(date);
+    final markerColor = hasManualMarker
+        ? brandRed
+        : hasPaidMarker
+        ? const Color(0xFF8FD3F4)
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFFB3E5FC)
+            : isToday
+            ? brandRed.withValues(alpha: 0.2)
+            : Colors.transparent,
+        shape: BoxShape.circle,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            '${date.day}',
+            style: TextStyle(
+              fontWeight: isSelected || isToday
+                  ? FontWeight.w700
+                  : FontWeight.w500,
+              color: isToday && !isSelected ? brandRed : const Color(0xFF111111),
+            ),
+          ),
+          if (markerColor != null)
+            Positioned(
+              bottom: 6,
+              child: Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: markerColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   void _showMonthPicker() async {
     final DateTime? picked = await showDatePicker(
@@ -522,9 +634,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       helpText: 'Select Month',
     );
     if (picked != null) {
-      setState(() {
-        _focusedDay = DateTime(picked.year, picked.month, 1);
-      });
+      _updateFocusedDay(DateTime(picked.year, picked.month, 1));
     }
   }
 
@@ -542,9 +652,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             selectedDate: _focusedDay,
             onChanged: (DateTime dateTime) {
               Navigator.pop(context);
-              setState(() {
-                _focusedDay = DateTime(dateTime.year, _focusedDay.month, 1);
-              });
+              _updateFocusedDay(DateTime(dateTime.year, _focusedDay.month, 1));
             },
           ),
         ),
@@ -591,13 +699,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
               IconButton(
                 icon: const Icon(Icons.chevron_left, color: Color(0xFF888888)),
                 onPressed: () {
-                  setState(() {
-                    _focusedDay = DateTime(
-                      _focusedDay.year,
-                      _focusedDay.month - 1,
-                      1,
-                    );
-                  });
+                  _updateFocusedDay(
+                    DateTime(_focusedDay.year, _focusedDay.month - 1, 1),
+                  );
                 },
               ),
               Row(
@@ -658,13 +762,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
               IconButton(
                 icon: const Icon(Icons.chevron_right, color: Color(0xFF888888)),
                 onPressed: () {
-                  setState(() {
-                    _focusedDay = DateTime(
-                      _focusedDay.year,
-                      _focusedDay.month + 1,
-                      1,
-                    );
-                  });
+                  _updateFocusedDay(
+                    DateTime(_focusedDay.year, _focusedDay.month + 1, 1),
+                  );
                 },
               ),
             ],
@@ -676,11 +776,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             focusedDay: _focusedDay,
             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
             onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
+              _updateFocusedDay(focusedDay, selectedDay: selectedDay);
             },
+            onPageChanged: (focusedDay) => _updateFocusedDay(focusedDay),
             calendarFormat: CalendarFormat.month,
             startingDayOfWeek: StartingDayOfWeek.sunday,
             headerVisible: false, // Hide default header
@@ -724,57 +822,12 @@ class _CalendarWidgetState extends State<CalendarWidget> {
               outsideDaysVisible: false,
             ),
             calendarBuilders: CalendarBuilders(
-              markerBuilder: (context, date, events) {
-                final normalizedDate = DateTime(
-                  date.year,
-                  date.month,
-                  date.day,
-                );
-                if (_manualDays.contains(normalizedDate)) {
-                  return Positioned(
-                    bottom: 4,
-                    child: Container(
-                      width: 4,
-                      height: 4,
-                      decoration: const BoxDecoration(
-                        color: brandRed,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  );
-                }
-                if (_paidDays.contains(normalizedDate)) {
-                  return Positioned(
-                    bottom: 4,
-                    child: Container(
-                      width: 4,
-                      height: 4,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFB3E5FC),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  );
-                }
-                return null;
-              },
-              selectedBuilder: (context, date, _) {
-                return Container(
-                  margin: const EdgeInsets.all(4),
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFB3E5FC),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${date.day}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF111111),
-                    ),
-                  ),
-                );
-              },
+              defaultBuilder: (context, date, _) =>
+                  _buildDayCell(date, isSelected: false, isToday: false),
+              todayBuilder: (context, date, _) =>
+                  _buildDayCell(date, isSelected: false, isToday: true),
+              selectedBuilder: (context, date, _) =>
+                  _buildDayCell(date, isSelected: true, isToday: false),
             ),
           ),
           const SizedBox(height: 16),
@@ -822,14 +875,35 @@ class _CalendarLegend extends StatelessWidget {
 
 // ── Notification Toggle ──────────────────────────────────────────────────────
 class NotificationToggle extends StatefulWidget {
-  const NotificationToggle({super.key});
+  final bool initialValue;
+  final ValueChanged<bool>? onChanged;
+
+  const NotificationToggle({
+    super.key,
+    this.initialValue = true,
+    this.onChanged,
+  });
 
   @override
   State<NotificationToggle> createState() => _NotificationToggleState();
 }
 
 class _NotificationToggleState extends State<NotificationToggle> {
-  bool _isOn = false;
+  late bool _isOn;
+
+  @override
+  void initState() {
+    super.initState();
+    _isOn = widget.initialValue;
+  }
+
+  @override
+  void didUpdateWidget(covariant NotificationToggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue) {
+      _isOn = widget.initialValue;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -876,7 +950,10 @@ class _NotificationToggleState extends State<NotificationToggle> {
           ),
           Switch(
             value: _isOn,
-            onChanged: (v) => setState(() => _isOn = v),
+            onChanged: (v) {
+              setState(() => _isOn = v);
+              widget.onChanged?.call(v);
+            },
             activeThumbColor: Colors.white,
             activeTrackColor: brandRed,
           ),

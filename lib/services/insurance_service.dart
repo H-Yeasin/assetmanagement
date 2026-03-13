@@ -161,6 +161,7 @@ class InsuranceService {
 
     if (relatedType != null) docData['relatedType'] = relatedType;
     if (relatedId != null) docData['relatedId'] = relatedId;
+    if (folderId != null) docData['folderId'] = folderId;
 
     final docRef = await _firestore.collection('documents').add(docData);
 
@@ -200,6 +201,17 @@ class InsuranceService {
     final doc = await _firestore.collection('documents').doc(id).get();
     if (doc.exists) {
       try {
+        final data = doc.data();
+        if (data != null &&
+            data['mimeType'] != 'application/vnd.anick-giroux.folder' &&
+            _uid != null &&
+            data['module'] != null &&
+            data['filename'] != null) {
+          await _storage
+              .ref()
+              .child('${data['module']}/$_uid/${data['filename']}')
+              .delete();
+        }
         await _firestore.collection('documents').doc(id).delete();
       } catch (e) {
         debugPrint('Error deleting document: $e');
@@ -233,12 +245,39 @@ class InsuranceService {
       'title': title,
       'note': note,
       'isDone': false,
+      'notificationEnabled': true,
       'createdAt': FieldValue.serverTimestamp(),
     };
+
+    final existing = await _firestore
+        .collection('reminders')
+        .where('userId', isEqualTo: _uid)
+        .where('itemType', isEqualTo: itemType)
+        .where('itemId', isEqualTo: itemId)
+        .where('isDone', isEqualTo: false)
+        .limit(1)
+        .get();
+
+    if (existing.docs.isNotEmpty) {
+      final docRef = existing.docs.first.reference;
+      await docRef.update({...data, 'updatedAt': FieldValue.serverTimestamp()});
+      final doc = await docRef.get();
+      return {...doc.data()!, 'id': doc.id};
+    }
 
     final docRef = await _firestore.collection('reminders').add(data);
     final doc = await docRef.get();
     return {...doc.data()!, 'id': doc.id};
+  }
+
+  Future<void> updateReminderNotificationEnabled(
+    String id,
+    bool enabled,
+  ) async {
+    await _firestore.collection('reminders').doc(id).update({
+      'notificationEnabled': enabled,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<List<dynamic>> fetchUpcomingReminders({

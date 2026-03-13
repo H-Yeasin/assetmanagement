@@ -68,37 +68,61 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
     }
   }
 
-  void _rescheduleNotification() {
-    if (_baseReminderDate == null || !_reminderEnabled) {
-      if (_cost.id != null) {
-        NotificationService.cancelReminder(_cost.id.hashCode);
-      }
+  Future<void> _rescheduleNotification() async {
+    final baseDate = _baseReminderDate ?? _cost.dueDate;
+    if (_cost.id == null || baseDate == null) return;
+
+    if (!_reminderEnabled) {
+      final existing = await _apiService.createReminder(
+        itemId: _cost.id!,
+        itemType: 'housing',
+        title: 'Payment Reminder: ${_cost.name}',
+        remindAt: baseDate,
+        note: 'Reminder for ${_cost.category} payment.',
+      );
+      await _apiService.updateReminderNotificationEnabled(
+        existing['id'].toString(),
+        false,
+      );
+      await NotificationService.cancelReminder(
+        NotificationService.getNotificationId(existing['id'].toString()),
+      );
       return;
     }
 
-    DateTime scheduledDate = _baseReminderDate!;
+    DateTime scheduledDate = baseDate;
     switch (_reminderTiming) {
       case '1 day before':
-        scheduledDate = scheduledDate.subtract(const Duration(days: 1));
+        scheduledDate = baseDate.subtract(const Duration(days: 1));
         break;
       case '3 days before':
-        scheduledDate = scheduledDate.subtract(const Duration(days: 3));
+        scheduledDate = baseDate.subtract(const Duration(days: 3));
         break;
       case '1 week before':
-        scheduledDate = scheduledDate.subtract(const Duration(days: 7));
+        scheduledDate = baseDate.subtract(const Duration(days: 7));
         break;
       default:
         break;
     }
 
-    if (_cost.id != null) {
-      NotificationService.scheduleReminder(
-        id: _cost.id.hashCode,
-        title: 'Housing Payment Reminder',
-        body: 'Reminder for ${_cost.name} payment.',
-        scheduledDate: scheduledDate,
-      );
-    }
+    final reminder = await _apiService.createReminder(
+      itemId: _cost.id!,
+      itemType: 'housing',
+      title: 'Payment Reminder: ${_cost.name}',
+      remindAt: scheduledDate,
+      note: 'Reminder for ${_cost.category} payment.',
+    );
+
+    await _apiService.updateReminderNotificationEnabled(
+      reminder['id'].toString(),
+      true,
+    );
+    await NotificationService.scheduleReminder(
+      id: NotificationService.getNotificationId(reminder['id'].toString()),
+      title: reminder['title'] ?? 'Housing Payment Reminder',
+      body: reminder['note'] ?? 'Reminder for housing payment.',
+      scheduledDate: scheduledDate,
+    );
   }
 
   Future<void> _refreshCost() async {

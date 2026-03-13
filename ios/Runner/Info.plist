@@ -68,6 +68,14 @@
 				<string>com.googleusercontent.apps.165022828842-f91ng888e1mhg3uieth81u9aq4e6j560</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>anickgiroux</string>
+			</array>
+		</dict>
 	</array>
 	<key>GIDClientID</key>
 	<string>165022828842-f91ng888e1mhg3uieth81u9aq4e6j560.apps.googleusercontent.com</string>

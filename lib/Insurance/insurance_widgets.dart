@@ -332,9 +332,9 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
   void initState() {
     super.initState();
     _isAutoPayment = widget.policy.isAutoPay ?? false;
-    _amountController.text = NumberFormat(
-      '#,##0.00',
-    ).format(widget.policy.premium);
+    _amountController.text = widget.policy.premium == 0
+        ? ''
+        : NumberFormat('#,##0.00').format(widget.policy.premium);
     _selectedMonth = DateFormat('MMMM').format(DateTime.now());
   }
 

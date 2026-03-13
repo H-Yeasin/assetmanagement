@@ -32,6 +32,28 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
     '1 week before',
   ];
 
+  double _monthlyEquivalent() {
+    final freq = _policy.paymentFrequency?.toLowerCase() ?? '';
+    if (freq.contains('annually') || freq.contains('yearly')) {
+      return _policy.premium / 12;
+    }
+    if (freq.contains('quarterly')) {
+      return _policy.premium / 3;
+    }
+    return _policy.premium;
+  }
+
+  double _annualEquivalent() {
+    final freq = _policy.paymentFrequency?.toLowerCase() ?? '';
+    if (freq.contains('monthly')) {
+      return _policy.premium * 12;
+    }
+    if (freq.contains('quarterly')) {
+      return _policy.premium * 4;
+    }
+    return _policy.premium;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -63,37 +85,61 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
     }
   }
 
-  void _rescheduleNotification() {
-    if (_baseReminderDate == null || !_reminderEnabled) {
-      if (_policy.id != null) {
-        NotificationService.cancelReminder(_policy.id.hashCode);
-      }
+  Future<void> _rescheduleNotification() async {
+    final baseDate = _baseReminderDate ?? _policy.renewalDate;
+    if (_policy.id == null || baseDate == null) return;
+
+    if (!_reminderEnabled) {
+      final existing = await _apiService.createReminder(
+        itemId: _policy.id!,
+        itemType: 'insurance',
+        title: 'Insurance Renewal: ${_policy.name}',
+        remindAt: baseDate,
+        note: 'Automatic renewal reminder for your insurance policy.',
+      );
+      await _apiService.updateReminderNotificationEnabled(
+        existing['id'].toString(),
+        false,
+      );
+      await NotificationService.cancelReminder(
+        NotificationService.getNotificationId(existing['id'].toString()),
+      );
       return;
     }
 
-    DateTime scheduledDate = _baseReminderDate!;
+    DateTime scheduledDate = baseDate;
     switch (_selectedReminder) {
       case '1 day before':
-        scheduledDate = scheduledDate.subtract(const Duration(days: 1));
+        scheduledDate = baseDate.subtract(const Duration(days: 1));
         break;
       case '3 days before':
-        scheduledDate = scheduledDate.subtract(const Duration(days: 3));
+        scheduledDate = baseDate.subtract(const Duration(days: 3));
         break;
       case '1 week before':
-        scheduledDate = scheduledDate.subtract(const Duration(days: 7));
+        scheduledDate = baseDate.subtract(const Duration(days: 7));
         break;
       default:
         break;
     }
 
-    if (_policy.id != null) {
-      NotificationService.scheduleReminder(
-        id: _policy.id.hashCode,
-        title: 'Insurance Renewal Reminder',
-        body: 'Reminder for ${_policy.name} insurance.',
-        scheduledDate: scheduledDate,
-      );
-    }
+    final reminder = await _apiService.createReminder(
+      itemId: _policy.id!,
+      itemType: 'insurance',
+      title: 'Insurance Renewal: ${_policy.name}',
+      remindAt: scheduledDate,
+      note: 'Automatic renewal reminder for your insurance policy.',
+    );
+
+    await _apiService.updateReminderNotificationEnabled(
+      reminder['id'].toString(),
+      true,
+    );
+    await NotificationService.scheduleReminder(
+      id: NotificationService.getNotificationId(reminder['id'].toString()),
+      title: reminder['title'] ?? 'Insurance Reminder',
+      body: reminder['note'] ?? 'Upcoming insurance renewal.',
+      scheduledDate: scheduledDate,
+    );
   }
 
   Future<void> _refreshPolicy() async {
@@ -249,15 +295,20 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '\$${NumberFormat('#,##0.00').format(_policy.paymentFrequency?.toLowerCase() == 'monthly'
-                        ? _policy.premium * 12
-                        : _policy.paymentFrequency?.toLowerCase() == 'quarterly'
-                        ? _policy.premium * 4
-                        : _policy.premium)}',
+                    '\$${NumberFormat('#,##0.00').format(_annualEquivalent())}',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF111111),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Monthly equivalent: \$${NumberFormat('#,##0.00').format(_monthlyEquivalent())}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF888888),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
