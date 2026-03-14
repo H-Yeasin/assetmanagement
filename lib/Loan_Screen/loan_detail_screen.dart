@@ -113,6 +113,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   bool _isReminderEnabled = true;
 
   double _paymentProgress() {
+    if (_currentLoan.status == 'completed') return 1.0;
     if (_currentLoan.totalPayments <= 0) return 0.0;
     final progress = _currentLoan.completedPayments / _currentLoan.totalPayments;
     if (progress < 0) return 0.0;
@@ -121,6 +122,9 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   }
 
   String _getTimeLeft() {
+    if (_currentLoan.status == 'completed') {
+      return 'Completed';
+    }
     final remainingPayments =
         _currentLoan.totalPayments - _currentLoan.completedPayments;
     if (remainingPayments > 0) {
@@ -297,7 +301,9 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '${_currentLoan.completedPayments} of ${_currentLoan.totalPayments} payments completed',
+                                    _currentLoan.status == 'completed'
+                                        ? 'All payments completed'
+                                        : '${_currentLoan.completedPayments} of ${_currentLoan.totalPayments} payments completed',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -352,97 +358,99 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                       const SizedBox(height: 16),
 
                       // ── Action Buttons ──
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _ActionButton(
-                              iconPath: 'assets/images/icon/setup_payment.png',
-                              label: 'Pay',
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  useRootNavigator: true,
-                                  barrierColor: Colors.black.withValues(
-                                    alpha: 0.3,
-                                  ), // #000000 30%
-                                  builder: (context) => Stack(
-                                    children: [
-                                      // Applying Background blur: 4
-                                      Positioned.fill(
-                                        child: BackdropFilter(
-                                          filter: ImageFilter.blur(
-                                            sigmaX: 4,
-                                            sigmaY: 4,
-                                          ),
-                                          child: Container(
-                                            color: Colors.transparent,
-                                          ),
-                                        ),
-                                      ),
-                                      Center(
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: SizedBox(
-                                            width: 343, // Fixed (343px)
-                                            child: SetupPaymentModal(
-                                              loan: _currentLoan,
-                                              onPaymentConfirmed: _refreshLoan,
+                      if (_currentLoan.status != 'completed') ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _ActionButton(
+                                iconPath: 'assets/images/icon/setup_payment.png',
+                                label: 'Pay',
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    useRootNavigator: true,
+                                    barrierColor: Colors.black.withValues(
+                                      alpha: 0.3,
+                                    ), // #000000 30%
+                                    builder: (context) => Stack(
+                                      children: [
+                                        // Applying Background blur: 4
+                                        Positioned.fill(
+                                          child: BackdropFilter(
+                                            filter: ImageFilter.blur(
+                                              sigmaX: 4,
+                                              sigmaY: 4,
+                                            ),
+                                            child: Container(
+                                              color: Colors.transparent,
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _ActionButton(
-                              iconPath: 'assets/images/icon/remind.png',
-                              label: 'Remind',
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  useRootNavigator: true,
-                                  barrierColor: Colors.black.withValues(
-                                    alpha: 0.3,
-                                  ), // #000000 30%
-                                  builder: (context) => Stack(
-                                    children: [
-                                      // Applying Background blur: 4
-                                      Positioned.fill(
-                                        child: BackdropFilter(
-                                          filter: ImageFilter.blur(
-                                            sigmaX: 4,
-                                            sigmaY: 4,
-                                          ),
-                                          child: Container(
+                                        Center(
+                                          child: Material(
                                             color: Colors.transparent,
-                                          ),
-                                        ),
-                                      ),
-                                      Center(
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: SizedBox(
-                                            width: 343, // Fixed (343px)
-                                            child: ReminderModal(
-                                              loan: _currentLoan,
+                                            child: SizedBox(
+                                              width: 343, // Fixed (343px)
+                                              child: SetupPaymentModal(
+                                                loan: _currentLoan,
+                                                onPaymentConfirmed: _refreshLoan,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ).then((_) => _fetchReminder());
-                              },
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _ActionButton(
+                                iconPath: 'assets/images/icon/remind.png',
+                                label: 'Remind',
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    useRootNavigator: true,
+                                    barrierColor: Colors.black.withValues(
+                                      alpha: 0.3,
+                                    ), // #000000 30%
+                                    builder: (context) => Stack(
+                                      children: [
+                                        // Applying Background blur: 4
+                                        Positioned.fill(
+                                          child: BackdropFilter(
+                                            filter: ImageFilter.blur(
+                                              sigmaX: 4,
+                                              sigmaY: 4,
+                                            ),
+                                            child: Container(
+                                              color: Colors.transparent,
+                                            ),
+                                          ),
+                                        ),
+                                        Center(
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: SizedBox(
+                                              width: 343, // Fixed (343px)
+                                              child: ReminderModal(
+                                                loan: _currentLoan,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ).then((_) => _fetchReminder());
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // ── Additional Details Button ──
                       GestureDetector(

@@ -128,10 +128,16 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: const Color(
-        0xFFFBFBFB,
-      ), // Very slight off-white background
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        context.go('/home');
+      },
+      child: Scaffold(
+        backgroundColor: const Color(
+          0xFFFBFBFB,
+        ), // Very slight off-white background
       body: SafeArea(
         child: Column(
           children: [
@@ -409,12 +415,16 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── Active Loans Label ──
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24),
+                    // ── Dynamic Loans Label ──
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Text(
-                        'ACTIVE LOANS',
-                        style: TextStyle(
+                        _selectedTab == 2
+                            ? 'COMPLETED LOANS'
+                            : _selectedTab == 1
+                                ? 'ACTIVE LOANS'
+                                : 'ALL LOANS',
+                        style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF888888),
                           fontWeight: FontWeight.w600,
@@ -480,27 +490,142 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                               iconPath = 'assets/images/icon/personal_loan.png';
                             }
 
-                            return LoanListItem(
-                              iconPath: iconPath,
-                              title: loan.name,
-                              subtitle: loan.lender ?? '',
-                              // Format amounts to look like $420,000 without decimal zeroes if whole.
-                              amount: NumberFormat.simpleCurrency(
-                                decimalDigits: loan.totalAmount % 1 == 0
-                                    ? 0
-                                    : 2,
-                              ).format(loan.totalAmount),
-                              status: loan.autoPay
-                                  ? 'Paid automatically'
-                                  : 'Manual payment required',
-                              isPaid: loan.autoPay,
-                              onTap: () async {
-                                await context.push<bool>(
-                                  '/loan-detail',
-                                  extra: loan,
+                              if (loan.status == 'completed') {
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.02,
+                                        ),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFF3E5F5),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.check_circle_rounded,
+                                          color: Colors.green,
+                                          size: 24,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Text(
+                                                  loan.name,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color(0xFF555555),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  NumberFormat.simpleCurrency()
+                                                      .format(loan.totalAmount),
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color(0xFF888888),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Text(
+                                                  'Completed on ${loan.completedAt != null ? DateFormat('MMM d, y').format(loan.completedAt!) : 'N/A'}',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Color(0xFFBBBBBB),
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                      0xFFE8F5E9,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          6,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Colors.green
+                                                          .withValues(
+                                                            alpha: 0.1,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  child: const Text(
+                                                    'Completed',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: Colors.green,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 );
-                              },
-                            );
+                              }
+
+                              return LoanListItem(
+                                iconPath: iconPath,
+                                title: loan.name,
+                                subtitle: loan.lender ?? '',
+                                // Format amounts to look like $420,000 without decimal zeroes if whole.
+                                amount: NumberFormat.simpleCurrency(
+                                  decimalDigits: loan.totalAmount % 1 == 0
+                                      ? 0
+                                      : 2,
+                                ).format(loan.totalAmount),
+                                status: loan.autoPay
+                                    ? 'Paid automatically'
+                                    : 'Manual payment required',
+                                isPaid: loan.autoPay,
+                                onTap: () async {
+                                  await context.push<bool>(
+                                    '/loan-detail',
+                                    extra: loan,
+                                  );
+                                },
+                              );
                           }).toList(),
                         ),
                       ),
@@ -543,6 +668,6 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

@@ -75,9 +75,15 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFB),
-      body: SafeArea(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        context.go('/home');
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFBFBFB),
+        body: SafeArea(
         child: Column(
           children: [
             // ── App Bar ──
@@ -247,6 +253,6 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

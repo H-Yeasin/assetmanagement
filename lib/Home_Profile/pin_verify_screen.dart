@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/security_service.dart';
+import '../Home_Vault/vault_access_gate.dart';
 
 /// PIN entry screen that guards access to the Vault.
 /// Shows up when PIN is set and the user tries to open the Vault.
@@ -75,6 +76,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
 
     if (correct) {
       // Unlock: navigate back with success flag
+      VaultAccessSession.unlock();
       context.pop(true);
     } else {
       _attempts++;

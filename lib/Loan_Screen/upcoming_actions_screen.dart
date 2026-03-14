@@ -44,16 +44,16 @@ class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
             color: Color(0xFF111111),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: const Text(
-              'Edit',
-              style: TextStyle(color: brandRed, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
+        // actions: [
+        //   TextButton(
+        //     onPressed: () {},
+        //     child: const Text(
+        //       'Edit',
+        //       style: TextStyle(color: brandRed, fontWeight: FontWeight.w600),
+        //     ),
+        //   ),
+        //   const SizedBox(width: 8),
+        // ],
         centerTitle: true,
       ),
       body: StreamBuilder<List<dynamic>>(
@@ -94,14 +94,14 @@ class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Text(
-                      'See All',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF111111),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    // Text(
+                    //   'See All',
+                    //   style: TextStyle(
+                    //     fontSize: 13,
+                    //     color: Color(0xFF111111),
+                    //     fontWeight: FontWeight.w700,
+                    //   ),
+                    // ),
                   ],
                 ),
                 const SizedBox(height: 16),

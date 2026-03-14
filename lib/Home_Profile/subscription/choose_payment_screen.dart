@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
@@ -16,18 +15,14 @@ class ChoosePaymentScreen extends StatefulWidget {
 
 class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
   final SubscriptionService _subscriptionService = SubscriptionService();
-  final TextEditingController _cardNumberController = TextEditingController();
-  final TextEditingController _expiryController = TextEditingController();
-  final TextEditingController _cvvController = TextEditingController();
+  final CardEditController _cardController = CardEditController();
 
   int _selectedMethod = 0;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _cardNumberController.dispose();
-    _expiryController.dispose();
-    _cvvController.dispose();
+    _cardController.dispose();
     super.dispose();
   }
 
@@ -42,25 +37,8 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
   Future<void> _payWithCard() async {
     if (_isLoading) return;
 
-    final cardNumber = _cardNumberController.text.replaceAll(' ', '');
-    final expiry = _expiryController.text.trim();
-    final cvv = _cvvController.text.trim();
-
-    if (cardNumber.isEmpty || expiry.isEmpty || cvv.isEmpty) {
-      _showError('Please complete all card details.');
-      return;
-    }
-
-    final expiryParts = expiry.split('/');
-    if (expiryParts.length != 2) {
-      _showError('Expiry date must be in MM/YY format.');
-      return;
-    }
-
-    final expMonth = int.tryParse(expiryParts[0]) ?? 0;
-    final expYear = int.tryParse('20${expiryParts[1]}') ?? 0;
-    if (expMonth < 1 || expMonth > 12 || expYear < DateTime.now().year) {
-      _showError('Enter a valid expiry date.');
+    if (!_cardController.complete) {
+      _showError('Please complete your card details.');
       return;
     }
 
@@ -71,15 +49,6 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
       await _subscriptionService.ensureStripeConfigured(forceRefresh: true);
 
       checkout = await _subscriptionService.createCheckout();
-
-      await Stripe.instance.dangerouslyUpdateCardDetails(
-        CardDetails(
-          number: cardNumber,
-          expirationMonth: expMonth,
-          expirationYear: expYear,
-          cvc: cvv,
-        ),
-      );
 
       final setupIntent = await Stripe.instance.confirmSetupIntent(
         paymentIntentClientSecret: checkout.clientSecret,
@@ -310,7 +279,15 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                     Row(
                       children: [
                         GestureDetector(
-                          onTap: _isLoading ? null : () => context.pop(),
+                          onTap: _isLoading
+                              ? null
+                              : () {
+                                if (GoRouter.of(context).canPop()) {
+                                  GoRouter.of(context).pop();
+                                } else {
+                                  context.go('/home');
+                                }
+                              },
                           child: const Icon(
                             Icons.chevron_left,
                             color: Color(0xFFC61C36),
@@ -356,7 +333,7 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                     if (_selectedMethod == 0) ...[
                       const SizedBox(height: 28),
                       const Text(
-                        'Card Details',
+                        'Card Information',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -364,88 +341,34 @@ class _ChoosePaymentScreenState extends State<ChoosePaymentScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Card Number',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 18,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      _CardInputField(
-                        controller: _cardNumberController,
-                        hintText: '0000 0000 0000 0000',
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          _CardNumberFormatter(),
-                        ],
-                        maxLength: 19,
-                        suffixIcon: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Image.asset(
-                            'assets/images/creditcard.png',
-                            width: 24,
-                            height: 24,
-                            color: const Color(0xFF777777),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF283252),
+                            width: 1,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: const [
-                          Expanded(
-                            child: Text(
-                              'Expiry Date',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black,
-                              ),
+                        child: CardField(
+                          controller: _cardController,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Card Details',
+                            hintStyle: const TextStyle(
+                              color: Color(0xFFAAAAAA),
                             ),
                           ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              'CVC',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _CardInputField(
-                              controller: _expiryController,
-                              hintText: 'MM/YY',
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                _ExpiryDateFormatter(),
-                              ],
-                              maxLength: 5,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _CardInputField(
-                              controller: _cvvController,
-                              hintText: '123',
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              maxLength: 4,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ],
@@ -611,97 +534,4 @@ class _PaymentMethodTile extends StatelessWidget {
   }
 }
 
-class _CardInputField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hintText;
-  final TextInputType keyboardType;
-  final List<TextInputFormatter>? inputFormatters;
-  final int? maxLength;
-  final Widget? suffixIcon;
 
-  const _CardInputField({
-    required this.controller,
-    required this.hintText,
-    required this.keyboardType,
-    this.inputFormatters,
-    this.maxLength,
-    this.suffixIcon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      maxLength: maxLength,
-      style: const TextStyle(
-        fontSize: 15,
-        color: Colors.black,
-        fontWeight: FontWeight.w400,
-      ),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 15),
-        counterText: '',
-        suffixIcon: suffixIcon,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF283252), width: 1),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF283252), width: 1.5),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-    );
-  }
-}
-
-class _CardNumberFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final text = newValue.text.replaceAll(' ', '');
-    final buffer = StringBuffer();
-    for (int i = 0; i < text.length; i++) {
-      if (i > 0 && i % 4 == 0) buffer.write(' ');
-      buffer.write(text[i]);
-    }
-    final formatted = buffer.toString();
-    return newValue.copyWith(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
-
-class _ExpiryDateFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digits = newValue.text.replaceAll('/', '');
-    final buffer = StringBuffer();
-
-    for (int i = 0; i < digits.length && i < 4; i++) {
-      if (i == 2) buffer.write('/');
-      buffer.write(digits[i]);
-    }
-
-    final formatted = buffer.toString();
-    return newValue.copyWith(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}

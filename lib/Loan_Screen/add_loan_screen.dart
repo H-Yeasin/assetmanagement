@@ -940,6 +940,18 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
 
       final pDate = _parseDateText(_paymentDateController.text) ?? DateTime.now();
 
+      int totalP = isMortgage
+          ? (int.tryParse(_totalPaymentsController.text) ?? 0)
+          : (int.tryParse(_totalPaymentsController.text) ?? 0);
+          
+      if (totalP == 0 && monthly > 0 && totalAmount > 0) {
+        totalP = (totalAmount / monthly).ceil();
+      }
+
+      int completedP = isMortgage
+          ? (int.tryParse(_completedPaymentsController.text) ?? 0)
+          : (int.tryParse(_completedPaymentsController.text) ?? 0);
+
       final loan = Loan(
         userId: '', // Let backend handle or provide via auth provider
         name: _nameController.text,
@@ -958,12 +970,8 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         apartmentName: isMortgage ? _apartmentNameController.text : null,
         lender: _lenderController.text,
         amortizationPeriod: isMortgage ? _selectedAmortization : null,
-        totalPayments: isMortgage
-            ? (int.tryParse(_totalPaymentsController.text) ?? 0)
-            : (int.tryParse(_totalPaymentsController.text) ?? 0),
-        completedPayments: isMortgage
-            ? (int.tryParse(_completedPaymentsController.text) ?? 0)
-            : (int.tryParse(_completedPaymentsController.text) ?? 0),
+        totalPayments: totalP,
+        completedPayments: completedP,
       );
 
       final createdLoan = await _loanService.createLoan(loan);

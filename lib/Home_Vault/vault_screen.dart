@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
-import '../services/security_service.dart';
-import '../services/biometric_service.dart';
 import '../services/loan_service.dart';
-import 'vault_access_gate.dart';
 
 class VaultScreen extends StatefulWidget {
   final String? initialCategory;
@@ -15,8 +12,6 @@ class VaultScreen extends StatefulWidget {
 }
 
 class _VaultScreenState extends State<VaultScreen> {
-  bool _unlocked = false;
-  bool _isChecking = true;
   final TextEditingController _searchController = TextEditingController();
   late Future<Map<String, _VaultModuleStats>> _statsFuture;
   String _searchQuery = '';
@@ -25,97 +20,19 @@ class _VaultScreenState extends State<VaultScreen> {
   void initState() {
     super.initState();
     _statsFuture = _fetchVaultStats();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkSecurity());
+    if (widget.initialCategory != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.push('/vault-category', extra: widget.initialCategory);
+      });
+    }
   }
 
   @override
   void dispose() {
-    VaultAccessSession.reset();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _checkSecurity() async {
-    final biometricEnabled = await SecurityService.isBiometricEnabled();
-    final pinEnabled = await SecurityService.isPinSet();
-
-    if (!mounted) return;
-
-    if (!biometricEnabled && !pinEnabled) {
-      // No security set – open vault directly
-      VaultAccessSession.unlock();
-      setState(() {
-        _unlocked = true;
-        _isChecking = false;
-      });
-      if (widget.initialCategory != null) {
-        Future.delayed(Duration.zero, () {
-          if (mounted) {
-            context.push('/vault-category', extra: widget.initialCategory);
-          }
-        });
-      }
-      return;
-    }
-
-    if (biometricEnabled) {
-      // Try biometric first
-      final reason = await BiometricService.unavailableReason();
-      if (reason == null) {
-        final success = await BiometricService.authenticate(
-          reason: 'Authenticate to open your FFP Vault',
-        );
-        if (!mounted) return;
-        if (success) {
-          VaultAccessSession.unlock();
-          setState(() {
-            _unlocked = true;
-            _isChecking = false;
-          });
-          if (widget.initialCategory != null) {
-            Future.delayed(Duration.zero, () {
-              if (mounted) {
-                context.push('/vault-category', extra: widget.initialCategory);
-              }
-            });
-          }
-          return;
-        }
-        // Biometric failed/cancelled – fall through to PIN if set
-      }
-    }
-
-    if (pinEnabled) {
-      // Show PIN screen
-      if (!mounted) return;
-      setState(() => _isChecking = false);
-      final result = await context.push<bool>('/pin-verify');
-      if (mounted) {
-        if (result == true) {
-          VaultAccessSession.unlock();
-          setState(() => _unlocked = true);
-          if (widget.initialCategory != null) {
-            Future.delayed(Duration.zero, () {
-              if (mounted) {
-                context.push('/vault-category', extra: widget.initialCategory);
-              }
-            });
-          }
-        } else {
-          // Navigated back without unlocking
-          VaultAccessSession.reset();
-          context.go('/home');
-        }
-      }
-      return;
-    }
-
-    // No fallback available (biometric failed and no PIN) – back out
-    if (!mounted) return;
-    setState(() => _isChecking = false);
-    VaultAccessSession.reset();
-    if (mounted) context.go('/home');
-  }
 
   Future<Map<String, _VaultModuleStats>> _fetchVaultStats() async {
     try {
@@ -157,23 +74,17 @@ class _VaultScreenState extends State<VaultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isChecking) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator(color: brandRed)),
-      );
-    }
-
-    if (!_unlocked) {
-      // Will be redirected to pin-verify – show blank
-      return const Scaffold(backgroundColor: Colors.white);
-    }
-
     return _buildVaultContent(context);
   }
 
   Widget _buildVaultContent(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        context.go('/home');
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -416,7 +327,7 @@ class _VaultScreenState extends State<VaultScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

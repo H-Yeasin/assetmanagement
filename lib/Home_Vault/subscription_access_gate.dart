@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../Home_Dashboard/widgets.dart';
 import '../services/subscription_service.dart';
 
 class SubscriptionAccessGate extends StatefulWidget {
@@ -23,10 +22,8 @@ class _SubscriptionAccessGateState extends State<SubscriptionAccessGate> {
       stream: _subscriptionService.streamSubscription(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(child: CircularProgressIndicator(color: brandRed)),
-          );
+          // Show transparent container while waiting — no spinner flash
+          return const Scaffold(backgroundColor: Colors.white);
         }
 
         final subscription = snapshot.data ?? SubscriptionState.inactive;
@@ -43,10 +40,7 @@ class _SubscriptionAccessGateState extends State<SubscriptionAccessGate> {
           });
         }
 
-        return const Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(child: CircularProgressIndicator(color: brandRed)),
-        );
+        return const Scaffold(backgroundColor: Colors.white);
       },
     );
   }

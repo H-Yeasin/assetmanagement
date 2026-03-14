@@ -83,11 +83,22 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: widget.child,
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _calculateSelectedIndex(context),
-        onTap: (index) => _onTabTapped(index, context),
+    final location = GoRouterState.of(context).uri.toString();
+    final isOnHome = location.startsWith('/home');
+
+    return PopScope(
+      canPop: isOnHome, // allow native exit only when on home
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return; // already popped (we're on home)
+        // Not on home — go to home
+        GoRouter.of(context).go('/home');
+      },
+      child: Scaffold(
+        body: widget.child,
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: _calculateSelectedIndex(context),
+          onTap: (index) => _onTabTapped(index, context),
+        ),
       ),
     );
   }

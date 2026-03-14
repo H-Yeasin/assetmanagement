@@ -477,13 +477,25 @@ class AuthService {
       await NotificationService.initFCM();
     } catch (_) {}
 
+    // Fetch the latest metadata from Firestore to ensure local storage starts with correct data
+    String finalName = userName;
+    String? finalAvatar = user.photoURL;
+
+    try {
+      final doc = await _db.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data();
+        finalName = data?['fullName'] as String? ?? userName;
+        finalAvatar = data?['avatarUrl'] as String? ?? user.photoURL;
+      }
+    } catch (_) {}
+
     final idToken = await user.getIdToken();
     return {
       'statusCode': 200,
       'success': true,
       'message': message,
       'data': {
-        // Keep these keys to avoid breaking existing UI.
         'accessToken': idToken,
         'refreshToken': user.refreshToken ?? '',
         '_id': user.uid,
@@ -491,8 +503,8 @@ class AuthService {
           '_id': user.uid,
           'email': user.email ?? '',
           'phone': user.phoneNumber ?? '',
-          'fullName': userName,
-          'avatar': {'url': user.photoURL ?? ''},
+          'fullName': finalName,
+          'avatar': {'url': finalAvatar ?? ''},
         },
       },
     };

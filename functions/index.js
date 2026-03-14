@@ -700,17 +700,27 @@ export const createStripePaymentIntent = onCall({secrets: [stripeSecretKey]}, as
       }
     }
 
+    // Get or create product for the subscription
+    const products = await stripe.products.list({
+      limit: 1,
+      active: true,
+    });
+    let product = products.data.find((p) => p.name === SUBSCRIPTION_PLAN.name);
+    if (!product) {
+      product = await stripe.products.create({
+        name: SUBSCRIPTION_PLAN.name,
+      });
+    }
+
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{
         price_data: {
           currency: SUBSCRIPTION_PLAN.currency,
+          product: product.id,
           unit_amount: SUBSCRIPTION_PLAN.amount,
           recurring: {
             interval: "month",
-          },
-          product_data: {
-            name: SUBSCRIPTION_PLAN.name,
           },
         },
       }],
@@ -765,10 +775,11 @@ export const createStripePaymentIntent = onCall({secrets: [stripeSecretKey]}, as
       planName: SUBSCRIPTION_PLAN.name,
     };
   } catch (error) {
+    console.error("Stripe Error in createStripePaymentIntent:", error);
     if (error instanceof HttpsError) {
       throw error;
     }
-    throw new HttpsError("internal", error.message);
+    throw new HttpsError("internal", error.message || "An unknown internal error occurred.");
   }
 });
 

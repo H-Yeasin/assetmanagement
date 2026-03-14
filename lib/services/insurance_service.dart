@@ -102,26 +102,37 @@ class InsuranceService {
   }) async {
     if (_uid == null) return [];
 
-    final now = DateTime.now();
-    final start = from ?? now;
-    final end = to ?? DateTime(now.year, now.month + 2, now.day);
-
-    Query query = _firestore
+    // Fetch all policies; filter/sort in-memory to avoid Firestore index issues
+    final snapshot = await _firestore
         .collection('insurancePolicies')
         .where('userId', isEqualTo: _uid)
-        .where('renewalDate', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('renewalDate', isLessThanOrEqualTo: Timestamp.fromDate(end))
-        .orderBy('renewalDate');
+        .get();
 
-    final snapshot = await query.get();
-    return snapshot.docs
+    final policies = snapshot.docs
         .map(
           (doc) => InsurancePolicy.fromJson({
-            ...doc.data() as Map<String, dynamic>,
+            ...doc.data(),
             'id': doc.id,
           }),
         )
-        .toList();
+        .where((p) {
+          final r = p.renewalDate;
+          if (r == null) return false;
+          if (from != null && r.isBefore(from)) return false;
+          if (to != null && r.isAfter(to)) return false;
+          return true;
+        })
+        .toList()
+      ..sort((a, b) {
+        final aDate = a.renewalDate;
+        final bDate = b.renewalDate;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return aDate.compareTo(bDate);
+      });
+
+    return policies;
   }
 
   // ── Documents ─────────────────────────────────────────────────────────────

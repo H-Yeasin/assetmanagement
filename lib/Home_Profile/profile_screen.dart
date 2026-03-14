@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
+import '../services/user_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
+    await UserService.syncProfileWithFirestore();
     final name = await StorageService.getUserName() ?? 'User';
     final email = await StorageService.getUserEmail() ?? '';
     final avatar = await StorageService.getUserAvatar();
@@ -37,9 +39,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F6F6),
-      body: SafeArea(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        context.go('/home');
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F6F6),
+        body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 30),
           child: Column(
@@ -228,7 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }
 

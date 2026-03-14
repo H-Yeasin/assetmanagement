@@ -117,14 +117,14 @@ class _InsuranceUpcomingActionsScreenState
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
-                          'See All',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF111111),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        // Text(
+                        //   'See All',
+                        //   style: TextStyle(
+                        //     fontSize: 14,
+                        //     color: Color(0xFF111111),
+                        //     fontWeight: FontWeight.w700,
+                        //   ),
+                        // ),
                       ],
                     ),
                     const SizedBox(height: 16),

@@ -19,6 +19,7 @@ import 'package:anick_giroux/Home_Vault/vault_subfolder_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_edit_folder_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_create_subfolder_screen.dart';
 import 'package:anick_giroux/Home_Vault/vault_access_gate.dart';
+
 import 'package:anick_giroux/Home_Profile/profile_screen.dart';
 import 'package:anick_giroux/Home_Profile/edit_profile_screen.dart';
 import 'package:anick_giroux/Home_Profile/data_security_screen.dart';
@@ -83,7 +84,9 @@ final GoRouter appRouter = GoRouter(
           path: '/vault',
           builder: (context, state) {
             final category = state.extra as String?;
-            return VaultScreen(initialCategory: category);
+            return VaultAccessGate(
+              child: VaultScreen(initialCategory: category),
+            );
           },
         ),
         GoRoute(

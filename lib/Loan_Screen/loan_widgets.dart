@@ -227,11 +227,34 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
                 : widget.loan.monthlyPayment);
       final remaining = existingRemaining - widget.loan.monthlyPayment;
 
-      await _loanService.updateLoan(widget.loan.id!, {
+      int totalP = widget.loan.totalPayments;
+      if (totalP == 0 && widget.loan.monthlyPayment > 0 && widget.loan.totalAmount > 0) {
+        totalP = (widget.loan.totalAmount / widget.loan.monthlyPayment).ceil();
+      }
+
+      final isCompleted = totalP > 0 && completedP >= totalP;
+      
+      final Map<String, dynamic> updates = {
         'completedPayments': completedP,
         'remainingBalance': remaining > 0 ? remaining : 0,
         'autoPay': _isAutoPayment,
-      });
+      };
+      
+      if (totalP > 0) {
+         updates['totalPayments'] = totalP;
+      }
+
+      if (isCompleted) {
+        updates['status'] = 'completed';
+        updates['completedAt'] = null; // We will use LoanService.markCompleted instead if needed, or directly update here. The api uses updateLoan. 
+        // to use serverTimestamp we can't easily here without importing cloud_firestore, so let's import it or just use Timestamp.now()
+      }
+      
+      await _loanService.updateLoan(widget.loan.id!, updates);
+      
+      if (isCompleted) {
+         await _loanService.markCompleted(widget.loan.id!);
+      }
 
       if (mounted) {
         Navigator.pop(context);

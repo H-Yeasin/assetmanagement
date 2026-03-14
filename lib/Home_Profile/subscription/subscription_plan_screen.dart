@@ -88,7 +88,13 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                         const SizedBox(height: 16),
                         if (isActive)
                           GestureDetector(
-                            onTap: () => context.pop(),
+                            onTap: () {
+                              if (GoRouter.of(context).canPop()) {
+                                GoRouter.of(context).pop();
+                              } else {
+                                context.go('/home');
+                              }
+                            },
                             child: const Icon(
                               Icons.arrow_back,
                               color: Colors.black,
@@ -100,7 +106,13 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               GestureDetector(
-                                onTap: () => context.pop(),
+                                onTap: () {
+                                  if (GoRouter.of(context).canPop()) {
+                                    GoRouter.of(context).pop();
+                                  } else {
+                                    context.go('/home');
+                                  }
+                                },
                                 child: const Padding(
                                   padding: EdgeInsets.only(top: 4),
                                   child: Icon(
@@ -302,26 +314,35 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                     ),
                                   ),
                                   if (isActive)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 7,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: const Color(0xFFDDDDDD),
-                                          width: 1,
+                                    GestureDetector(
+                                      onTap: subscription.cancelAtPeriodEnd || _isCancelling
+                                          ? null
+                                          : _cancelSubscription,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 7,
                                         ),
-                                      ),
-                                      child: const Text(
-                                        'CANCEL ANYTIME',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF555555),
-                                          letterSpacing: 0.5,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: const Color(0xFFDDDDDD),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          subscription.cancelAtPeriodEnd
+                                              ? 'CANCELLED'
+                                              : 'CANCEL ANYTIME',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: subscription.cancelAtPeriodEnd
+                                                ? const Color(0xFFFF9800)
+                                                : const Color(0xFF555555),
+                                            letterSpacing: 0.5,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -378,7 +399,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                       ),
                       const SizedBox(height: 14),
                       GestureDetector(
-                        onTap: () => context.pop(),
+                        onTap: () => context.go('/home'),
                         child: Text(
                           isActive ? 'Back to Profile' : 'Continue later',
                           style: const TextStyle(

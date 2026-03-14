@@ -61,16 +61,16 @@ class _CompletedLoansScreenState extends State<CompletedLoansScreen> {
             color: Color(0xFF111111),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: const Text(
-              'Edit',
-              style: TextStyle(color: brandRed, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
+        // actions: [
+        //   TextButton(
+        //     onPressed: () {},
+        //     child: const Text(
+        //       'Edit',
+        //       style: TextStyle(color: brandRed, fontWeight: FontWeight.w600),
+        //     ),
+        //   ),
+        //   const SizedBox(width: 8),
+        // ],
         centerTitle: true,
       ),
       body: _isLoading

@@ -43,6 +43,20 @@ class StorageService {
     ]);
   }
 
+  // ── Update partial profile data ────────────────────────────────────────────
+  static Future<void> updateNameAndAvatar({
+    required String name,
+    String? avatar,
+  }) async {
+    await Future.wait([
+      _storage.write(key: _kUserName, value: name),
+      if (avatar != null)
+        _storage.write(key: _kUserAvatar, value: avatar)
+      else
+        _storage.delete(key: _kUserAvatar),
+    ]);
+  }
+
   // ── Getters ────────────────────────────────────────────────────────────────
   static Future<String?> getAccessToken() => _storage.read(key: _kAccessToken);
 

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:anick_giroux/services/storage_service.dart';
 import 'dart:io';
 
 class UserService {
@@ -12,6 +13,28 @@ class UserService {
   );
   // Use default storage instance to inherit default rules correctly
   static final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  // ── Sync Profile with Firestore ───────────────────────────────────────────
+  static Future<void> syncProfileWithFirestore() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final doc = await _db.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data();
+        final name = data?['fullName'] as String? ?? user.displayName ?? 'User';
+        final avatar = data?['avatarUrl'] as String? ?? user.photoURL;
+
+        await StorageService.updateNameAndAvatar(
+          name: name,
+          avatar: avatar,
+        );
+      }
+    } catch (_) {
+      // Best-effort sync should not crash the app
+    }
+  }
 
   // ── Update Profile (Name & Avatar) ─────────────────────────────────────────
   static Future<Map<String, dynamic>> updateProfile({

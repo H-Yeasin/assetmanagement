@@ -197,7 +197,18 @@ class SubscriptionService {
       }
       throw StateError('Stripe publishable key is not configured.');
     }
-    if (Stripe.publishableKey != config.publishableKey) {
+
+    bool needsUpdate = false;
+    try {
+      if (Stripe.publishableKey != config.publishableKey) {
+        needsUpdate = true;
+      }
+    } catch (_) {
+      // The getter throws if publishableKey is not yet set
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
       Stripe.publishableKey = config.publishableKey;
       await Stripe.instance.applySettings();
     }

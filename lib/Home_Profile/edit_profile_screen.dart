@@ -31,6 +31,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _loadData() async {
+    await UserService.syncProfileWithFirestore();
     final name = await StorageService.getUserName() ?? '';
     final email = await StorageService.getUserEmail() ?? '';
     final avatar = await StorageService.getUserAvatar();
