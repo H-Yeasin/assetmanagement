@@ -101,6 +101,7 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
 
       // Fall back to PIN
       if (pinEnabled) {
+        if (!mounted) return;
         final result = await GoRouter.of(context).push<bool>('/pin-verify');
         if (!mounted) return;
         if (result == true) {

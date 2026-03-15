@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 class ImageGallerySaver {
   static const MethodChannel _channel =
-      const MethodChannel('image_gallery_saver');
+      MethodChannel('image_gallery_saver');
 
   /// save image to Gallery
   /// imageBytes can't null
