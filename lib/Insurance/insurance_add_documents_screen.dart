@@ -101,6 +101,39 @@ class _InsuranceAddDocumentsScreenState
     }
   }
 
+  void _showImageSourcePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Camera'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
@@ -304,7 +337,7 @@ class _InsuranceAddDocumentsScreenState
                             const SizedBox(width: 16),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => _pickImage(ImageSource.gallery),
+                                onTap: () => _showImageSourcePicker(context),
                                 child: _buildUploadCard(
                                   icon: Icons.camera_alt_outlined,
                                   label: 'Image',
@@ -554,7 +587,38 @@ class _InsuranceAddDocumentsScreenState
           subtitle,
           style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
         ),
-        trailing: const SizedBox.shrink(), // Access restricted to Vault
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert, color: Color(0xFF888888)),
+          onSelected: (value) {
+            if (value == 'rename') {
+              onRename?.call();
+            } else if (value == 'delete') {
+              onDelete?.call();
+            }
+          },
+          itemBuilder: (BuildContext context) => [
+            const PopupMenuItem(
+              value: 'rename',
+              child: Row(
+                children: [
+                  Icon(Icons.edit_outlined, size: 20),
+                  SizedBox(width: 8),
+                  Text('Rename'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Delete', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

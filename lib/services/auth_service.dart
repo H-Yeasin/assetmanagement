@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:anick_giroux/services/notification_service.dart';
+import 'package:ffp_vault/services/notification_service.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;

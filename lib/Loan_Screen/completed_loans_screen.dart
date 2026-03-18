@@ -50,7 +50,7 @@ class _CompletedLoansScreenState extends State<CompletedLoansScreen> {
         backgroundColor: const Color(0xFFF9F9F9),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left, color: Color(0xFF111111)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF111111)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(

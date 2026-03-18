@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
     <application
-        android:label="anick_giroux"
+        android:label="FFP Vault"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

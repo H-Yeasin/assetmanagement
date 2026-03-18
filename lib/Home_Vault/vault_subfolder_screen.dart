@@ -459,14 +459,48 @@ class _VaultSubfolderScreenState extends State<VaultSubfolderScreen> {
   }
 
   Future<void> _downloadDocument(DocumentFile doc) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset('assets/images/logo.png', width: 60, height: 60),
+              const SizedBox(height: 20),
+              const CircularProgressIndicator(color: brandRed),
+              const SizedBox(height: 16),
+              const Text(
+                'Downloading...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF111111),
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
     try {
       final result = await VaultFileService.downloadDocument(doc);
+      if (mounted) Navigator.pop(context);
       _showMessage(
         result.savedToGallery
             ? 'Downloaded successfully. Saved to gallery.'
             : 'Downloaded successfully.',
       );
     } catch (e) {
+      if (mounted) Navigator.pop(context);
       _showMessage('Failed to download file: $e', isError: true);
     }
   }

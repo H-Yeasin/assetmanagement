@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/insurance_service.dart';
 import 'models/insurance_model.dart';
-import 'package:anick_giroux/Insurance/insurance_widgets.dart';
+import 'package:ffp_vault/Insurance/insurance_widgets.dart';
 import 'package:intl/intl.dart';
 
 class InsuranceUpcomingActionsScreen extends StatefulWidget {

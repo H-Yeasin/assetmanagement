@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
 
 import '../services/loan_service.dart';
+import '../services/housing_service.dart';
+import '../services/insurance_service.dart';
 import 'models/loan_model.dart';
 
 class AddDocumentsScreen extends StatefulWidget {
@@ -28,6 +30,8 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
   List<Map<String, dynamic>> _documents = [];
   final ImagePicker _picker = ImagePicker();
   final LoanService _loanService = LoanService();
+  final HousingService _housingService = HousingService();
+  final InsuranceService _insuranceService = InsuranceService();
   bool _isUploading = false;
   bool _isLoading = false;
 
@@ -80,7 +84,6 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     if (source == ImageSource.gallery) {
-      // Use FilePicker for gallery to get original filename
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
       );
@@ -89,11 +92,9 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
         await _uploadDocument(file, result.files.single.name);
       }
     } else {
-      // Use ImagePicker for camera
       final XFile? image = await _picker.pickImage(source: source);
       if (image != null) {
         File file = File(image.path);
-        // Generate a descriptive name for camera photos
         String timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
         String extension = image.path.split('.').last.toLowerCase();
         await _uploadDocument(file, 'IMG_$timestamp.$extension');
@@ -101,14 +102,66 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
     }
   }
 
+  void _showImageSourcePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Camera'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _uploadDocument(File file, String fileName) async {
     setState(() => _isUploading = true);
     try {
-      final documentFile = await _loanService.uploadDocument(
-        file,
-        relatedType: 'loans',
-        relatedId: widget.loan?.id,
-      );
+      final documentFile;
+
+      if (widget.module == 'housing') {
+        documentFile = await _housingService.uploadDocument(
+          file,
+          module: widget.module,
+          relatedType: widget.module,
+          relatedId: widget.loan?.id,
+        );
+      } else if (widget.module == 'insurance') {
+        documentFile = await _insuranceService.uploadDocument(
+          file,
+          module: widget.module,
+          relatedType: widget.module,
+          relatedId: widget.loan?.id,
+        );
+      } else {
+        documentFile = await _loanService.uploadDocument(
+          file,
+          module: widget.module,
+          relatedType: widget.module,
+          relatedId: widget.loan?.id,
+        );
+      }
 
       setState(() {
         _documents.add({
@@ -158,7 +211,14 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
     if (confirm == true) {
       setState(() => _isUploading = true);
       try {
-        await _loanService.deleteDocument(docId);
+        if (widget.module == 'housing') {
+          await _housingService.deleteDocument(docId);
+        } else if (widget.module == 'insurance') {
+          await _insuranceService.deleteDocument(docId);
+        } else {
+          await _loanService.deleteDocument(docId);
+        }
+
         setState(() {
           _documents.removeAt(index);
         });
@@ -212,7 +272,14 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
     if (newName != null && newName.isNotEmpty && newName != currentName) {
       setState(() => _isUploading = true);
       try {
-        await _loanService.renameDocument(docId, newName);
+        if (widget.module == 'housing') {
+          await _housingService.renameDocument(docId, newName);
+        } else if (widget.module == 'insurance') {
+          await _insuranceService.renameDocument(docId, newName);
+        } else {
+          await _loanService.renameDocument(docId, newName);
+        }
+
         setState(() {
           _documents[index]['name'] = newName;
         });
@@ -236,7 +303,7 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFDFD), // Very light background
+      backgroundColor: const Color(0xFFFDFDFD),
       body: SafeArea(
         child: Column(
           children: [
@@ -304,7 +371,7 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => _pickImage(ImageSource.gallery),
+                                onTap: () => _showImageSourcePicker(context),
                                 child: _buildUploadCard(
                                   icon: Icons.camera_alt_outlined,
                                   label: 'Image',
@@ -575,7 +642,38 @@ class _AddDocumentsScreenState extends State<AddDocumentsScreen> {
           subtitle,
           style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
         ),
-        trailing: const SizedBox.shrink(), // Access restricted to Vault
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert, color: Color(0xFF888888)),
+          onSelected: (value) {
+            if (value == 'rename') {
+              onRename?.call();
+            } else if (value == 'delete') {
+              onDelete?.call();
+            }
+          },
+          itemBuilder: (BuildContext context) => [
+            const PopupMenuItem(
+              value: 'rename',
+              child: Row(
+                children: [
+                  Icon(Icons.edit_outlined, size: 20),
+                  SizedBox(width: 8),
+                  Text('Rename'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Delete', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

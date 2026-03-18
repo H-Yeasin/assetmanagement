@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:anick_giroux/router.dart';
+import 'package:ffp_vault/router.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -9,7 +9,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Anick Giroux',
+      title: 'FFP Vault',
       theme: ThemeData(useMaterial3: true),
       routerConfig: appRouter,
     );

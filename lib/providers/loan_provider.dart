@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:anick_giroux/Loan_Screen/models/loan_model.dart';
+import 'package:ffp_vault/Loan_Screen/models/loan_model.dart';
 // Note: We'll inject Hive directly here later when the model is adapted for HiveType.
 
 class LoanNotifier extends StateNotifier<List<Loan>> {
