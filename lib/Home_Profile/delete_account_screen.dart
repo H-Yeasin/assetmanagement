@@ -4,6 +4,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/user_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -16,11 +17,25 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isPasswordRequired = true;
 
   @override
   void initState() {
     super.initState();
+    _checkProvider();
     _prefillEmail();
+  }
+
+  void _checkProvider() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final isPasswordProvider = user.providerData.any(
+        (p) => p.providerId == 'password',
+      );
+      setState(() {
+        _isPasswordRequired = isPasswordProvider;
+      });
+    }
   }
 
   Future<void> _prefillEmail() async {
@@ -119,13 +134,15 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               ),
               const SizedBox(height: 24),
 
-              _buildLabel('Password'),
-              _InputField(
-                controller: _passwordController,
-                obscureText: true,
-                hintText: '••••••',
-              ),
-              const SizedBox(height: 32),
+              if (_isPasswordRequired) ...[
+                _buildLabel('Password'),
+                _InputField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  hintText: '••••••',
+                ),
+                const SizedBox(height: 32),
+              ],
 
               // Confirm button
               SizedBox(
