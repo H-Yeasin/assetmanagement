@@ -1,5 +1,5 @@
-name: anick_giroux
-description: "A new Flutter project."
+name: ffp_vault
+description: "Financial Freedom Power."
 
 publish_to: 'none' 
 
@@ -55,6 +55,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.9
   hive_generator: ^2.0.1
+  flutter_launcher_icons: ^0.13.1
 
 
 flutter:
@@ -81,3 +82,9 @@ flutter:
     - assets/images/black_share.png
     - assets/images/lottie_Animation/
     - assets/images/
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21

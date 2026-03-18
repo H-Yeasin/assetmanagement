@@ -138,16 +138,18 @@ class HousingService {
 
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+    final contentType = _getMimeType(file.path);
     final ref = _storage.ref().child('$module/$_uid/$fileName');
 
-    final uploadTask = await ref.putFile(
+    final uploadTask = ref.putFile(
       file,
-      SettableMetadata(contentType: _getMimeType(file.path)),
+      SettableMetadata(contentType: contentType),
     );
-    final downloadUrl = await uploadTask.ref.getDownloadURL();
+    await uploadTask.whenComplete(() => null);
+    final downloadUrl = await ref.getDownloadURL();
 
     final Map<String, dynamic> docData = <String, dynamic>{
-      'userId': _uid,
+      'userId': _uid!,
       'module': module,
       'originalName': file.path.split('/').last,
       'displayName': displayName ?? file.path.split('/').last,
@@ -165,7 +167,6 @@ class HousingService {
 
     final docRef = await _firestore.collection('documents').add(docData);
 
-    // Update relationship if needed
     if (relatedType == 'housing' && relatedId != null) {
       final Map<String, Object> updateData = <String, Object>{
         'documents': FieldValue.arrayUnion(<String>[docRef.id]),
@@ -200,21 +201,25 @@ class HousingService {
   Future<void> deleteDocument(String id) async {
     final doc = await _firestore.collection('documents').doc(id).get();
     if (doc.exists) {
-      try {
-        final data = doc.data();
-        if (data != null &&
-            data['mimeType'] != 'application/vnd.anick-giroux.folder' &&
-            _uid != null &&
-            data['module'] != null &&
-            data['filename'] != null) {
+      final data = doc.data();
+      if (data != null &&
+          data['mimeType'] != 'application/vnd.anick-giroux.folder' &&
+          _uid != null &&
+          data['module'] != null &&
+          data['filename'] != null) {
+        try {
           await _storage
               .ref()
               .child('${data['module']}/$_uid/${data['filename']}')
               .delete();
+        } catch (e) {
+          debugPrint('Storage deletion failed or file already deleted: $e');
         }
+      }
+      try {
         await _firestore.collection('documents').doc(id).delete();
       } catch (e) {
-        debugPrint('Error deleting document: $e');
+        debugPrint('Firestore deletion failed: $e');
       }
     }
   }
@@ -292,8 +297,16 @@ class HousingService {
       case 'jpg':
       case 'jpeg':
         return 'image/jpeg';
+      case 'heic':
+        return 'image/heic';
+      case 'heif':
+        return 'image/heif';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
       default:
-        return 'application/octet-stream';
+        return 'image/jpeg';
     }
   }
 }

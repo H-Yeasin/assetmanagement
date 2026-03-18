@@ -114,16 +114,18 @@ class LoanService {
 
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+    final contentType = _getMimeType(file.path);
     final ref = _storage.ref().child('$module/$_uid/$fileName');
 
-    final uploadTask = await ref.putFile(
+    final uploadTask = ref.putFile(
       file,
-      SettableMetadata(contentType: _getMimeType(file.path)),
+      SettableMetadata(contentType: contentType),
     );
-    final downloadUrl = await uploadTask.ref.getDownloadURL();
+    await uploadTask.whenComplete(() => null);
+    final downloadUrl = await ref.getDownloadURL();
 
     final Map<String, dynamic> docData = <String, dynamic>{
-      'userId': _uid,
+      'userId': _uid!,
       'module': module,
       'originalName': file.path.split('/').last,
       'displayName': displayName ?? file.path.split('/').last,
@@ -139,10 +141,8 @@ class LoanService {
     if (relatedId != null) docData['relatedId'] = relatedId;
     if (folderId != null) docData['folderId'] = folderId;
 
-    // Use a temporary variable to help with type inference if needed
     final docRef = await _firestore.collection('documents').add(docData);
 
-    // Update relationship if needed
     if (relatedType == 'loans' && relatedId != null) {
       final Map<String, Object> updateData = <String, Object>{
         'documents': FieldValue.arrayUnion(<String>[docRef.id]),
@@ -182,7 +182,7 @@ class LoanService {
       'filename': 'folder_$name',
       'mimeType': 'application/vnd.anick-giroux.folder',
       'size': 0,
-      'path': '', // No physical file path
+      'path': '',
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -199,21 +199,25 @@ class LoanService {
   Future<void> deleteDocument(String id) async {
     final doc = await _firestore.collection('documents').doc(id).get();
     if (doc.exists) {
-      try {
-        final data = doc.data();
-        if (data != null &&
-            data['mimeType'] != 'application/vnd.anick-giroux.folder' &&
-            _uid != null &&
-            data['module'] != null &&
-            data['filename'] != null) {
+      final data = doc.data();
+      if (data != null &&
+          data['mimeType'] != 'application/vnd.anick-giroux.folder' &&
+          _uid != null &&
+          data['module'] != null &&
+          data['filename'] != null) {
+        try {
           await _storage
               .ref()
               .child('${data['module']}/$_uid/${data['filename']}')
               .delete();
+        } catch (e) {
+          debugPrint('Storage deletion failed or file already deleted: $e');
         }
+      }
+      try {
         await _firestore.collection('documents').doc(id).delete();
       } catch (e) {
-        debugPrint('Error deleting document from storage: $e');
+        debugPrint('Firestore deletion failed: $e');
       }
     }
   }
@@ -233,8 +237,6 @@ class LoanService {
   }) async {
     if (_uid == null) return [];
 
-    // Simplistic implementation: get active loans and return them
-    // Real implementation would calculate occurrences between from/to
     final loans = await fetchLoans(status: 'active');
     return loans
         .map(
@@ -458,8 +460,16 @@ class LoanService {
       case 'jpg':
       case 'jpeg':
         return 'image/jpeg';
+      case 'heic':
+        return 'image/heic';
+      case 'heif':
+        return 'image/heif';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
       default:
-        return 'application/octet-stream';
+        return 'image/jpeg';
     }
   }
 }

@@ -265,18 +265,20 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Image.asset(
-                      InsurancePolicy.categoryIcon(_selectedCategory),
-                      width: 14,
-                      height: 14,
-                      color: Colors.white,
-                      errorBuilder: (c, e, s) => const Icon(
-                        Icons.directions_car,
+                    if (_selectedCategory != 'Other') ...[
+                      Image.asset(
+                        InsurancePolicy.categoryIcon(_selectedCategory),
+                        width: 14,
+                        height: 14,
                         color: Colors.white,
-                        size: 14,
+                        errorBuilder: (c, e, s) => const Icon(
+                          Icons.directions_car,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
+                      const SizedBox(width: 8),
+                    ],
                     Text(
                       _selectedCategory,
                       style: const TextStyle(
@@ -330,22 +332,24 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                   ),
                   child: Row(
                     children: [
-                      Image.asset(
-                        InsurancePolicy.categoryIcon(cat),
-                        width: 16,
-                        height: 16,
-                        color: isSelected
-                            ? Colors.white
-                            : const Color(0xFF555555),
-                        errorBuilder: (c, e, s) => Icon(
-                          Icons.shield,
+                      if (cat != 'Other') ...[
+                        Image.asset(
+                          InsurancePolicy.categoryIcon(cat),
+                          width: 16,
+                          height: 16,
                           color: isSelected
                               ? Colors.white
                               : const Color(0xFF555555),
-                          size: 16,
+                          errorBuilder: (c, e, s) => Icon(
+                            Icons.shield,
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF555555),
+                            size: 16,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
+                        const SizedBox(width: 8),
+                      ],
                       Text(
                         cat,
                         style: TextStyle(

@@ -100,6 +100,7 @@ class NotificationService {
           'Vault Downloads',
           importance: Importance.max,
           priority: Priority.high,
+          largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         ),
         iOS: DarwinNotificationDetails(),
       ),
