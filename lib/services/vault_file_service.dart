@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:gal/gal.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -18,6 +19,8 @@ class VaultDownloadResult {
 class VaultFileService {
   static int _notificationId(DocumentFile doc) =>
       (doc.id.hashCode ^ doc.filename.hashCode) & 0x7fffffff;
+
+  static bool _isImage(DocumentFile doc) => doc.mimeType.startsWith('image/');
 
   static Future<File> _downloadToFile(
     DocumentFile doc,
@@ -41,16 +44,49 @@ class VaultFileService {
       body: '${doc.displayName} is downloading.',
     );
 
-    final docsDir = await getApplicationDocumentsDirectory();
-    final vaultDir = Directory('${docsDir.path}/vault_downloads');
+    if (_isImage(doc)) {
+      final tempDir = await getTemporaryDirectory();
+      final file = await _downloadToFile(doc, tempDir);
+
+      final hasAccess = await Gal.hasAccess(toAlbum: true);
+      if (!hasAccess) {
+        await Gal.requestAccess(toAlbum: true);
+      }
+
+      try {
+        await Gal.putImage(file.path, album: 'FFP Vault');
+      } catch (e) {
+        throw Exception('Failed to save image to gallery: $e');
+      }
+
+      await NotificationService.showInstantNotification(
+        id: notificationId,
+        title: 'Download Complete',
+        body: '${doc.displayName} was saved to your gallery in the FFP Vault album.',
+      );
+      return VaultDownloadResult(savedPath: file.path);
+    }
+
+    Directory? baseDir;
+    if (Platform.isAndroid) {
+      baseDir = Directory('/storage/emulated/0/Download');
+      if (!await baseDir.exists()) {
+        baseDir = await getExternalStorageDirectory();
+      }
+    } else {
+      baseDir = await getApplicationDocumentsDirectory();
+    }
+
+    final vaultDir = Directory('${baseDir!.path}/FFP Vault');
     if (!await vaultDir.exists()) {
       await vaultDir.create(recursive: true);
     }
     final file = await _downloadToFile(doc, vaultDir);
+
     await NotificationService.showInstantNotification(
       id: notificationId,
       title: 'Download Complete',
-      body: '${doc.displayName} was downloaded successfully.',
+      body: '${doc.displayName} was downloaded successfully to ${Platform.isIOS ? 'Files app' : 'Downloads folder'}.',
     );
     return VaultDownloadResult(savedPath: file.path);
   }

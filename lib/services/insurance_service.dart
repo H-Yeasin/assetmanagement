@@ -178,7 +178,7 @@ class InsuranceService {
 
     // Update relationship if needed
     if (relatedType == 'insurance' && relatedId != null) {
-      final Map<String, dynamic> updateData = <String, dynamic>{
+      final Map<String, Object> updateData = <String, Object>{
         'documents': FieldValue.arrayUnion(<String>[docRef.id]),
       };
       await _firestore

@@ -5,7 +5,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'models/housing_cost_model.dart';
 import '../services/housing_service.dart';
-import '../Loan_Screen/add_documents_screen.dart';
+import 'housing_add_documents_screen.dart';
 
 class AddHousingCostScreen extends StatefulWidget {
   const AddHousingCostScreen({super.key});
@@ -559,9 +559,8 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AddDocumentsScreen(
+            builder: (_) => HousingAddDocumentsScreen(
               initialDocuments: _uploadedDocuments,
-              module: 'housing',
             ),
           ),
         );
