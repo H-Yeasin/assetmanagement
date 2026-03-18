@@ -475,12 +475,8 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
 
   Future<void> _downloadDocument(DocumentFile doc) async {
     try {
-      final result = await VaultFileService.downloadDocument(doc);
-      _showMessage(
-        result.savedToGallery
-            ? 'Downloaded successfully. Saved to gallery.'
-            : 'Downloaded successfully.',
-      );
+      await VaultFileService.downloadDocument(doc);
+      _showMessage('Downloaded successfully.');
     } catch (e) {
       _showMessage('Failed to download file: $e', isError: true);
     }
