@@ -46,12 +46,23 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
   Future<void> _onConfirmDelete() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
     if (email.isEmpty) {
       _showSnack('Please enter your email');
       return;
     }
+
+    if (_isPasswordRequired) {
+      final inputPassword = await _showPasswordPrompt();
+      if (inputPassword == null) return; // User cancelled
+      if (inputPassword.trim().isEmpty) {
+        _showSnack('Password is required to delete your account.');
+        return;
+      }
+      _passwordController.text = inputPassword;
+    }
+
+    final password = _passwordController.text.trim();
 
     setState(() => _isLoading = true);
     try {
@@ -76,6 +87,59 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<String?> _showPasswordPrompt() async {
+    _passwordController.clear();
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Text(
+            'Password Required',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Please enter your password to confirm account deletion.',
+                style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+              ),
+              const SizedBox(height: 16),
+              _InputField(
+                controller: _passwordController,
+                obscureText: true,
+                hintText: '••••••',
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFF666666), fontWeight: FontWeight.w500),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, _passwordController.text),
+              child: Text(
+                'Verify & Delete',
+                style: TextStyle(color: brandRed, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showSnack(String message) {
@@ -132,17 +196,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 hintText: 'you@gmail.com',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 24),
-
-              if (_isPasswordRequired) ...[
-                _buildLabel('Password'),
-                _InputField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  hintText: '••••••',
-                ),
-                const SizedBox(height: 32),
-              ],
+              const SizedBox(height: 32),
 
               // Confirm button
               SizedBox(

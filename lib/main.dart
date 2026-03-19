@@ -10,7 +10,7 @@ import 'package:ffp_vault/firebase_options.dart';
 import 'package:ffp_vault/services/notification_service.dart';
 import 'package:ffp_vault/services/subscription_service.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
+// import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
