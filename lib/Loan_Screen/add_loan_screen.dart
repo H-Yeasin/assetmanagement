@@ -781,7 +781,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             spreadRadius: 1,
           ),
@@ -928,7 +928,6 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
     );
   }
 
-
   Future<void> _saveLoan() async {
     if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(
@@ -977,7 +976,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
       int totalP = isMortgage
           ? (int.tryParse(_totalPaymentsController.text) ?? 0)
           : (int.tryParse(_totalPaymentsController.text) ?? 0);
-          
+
       if (totalP == 0 && monthly > 0 && totalAmount > 0) {
         totalP = (totalAmount / monthly).ceil();
       }
@@ -1227,10 +1226,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
             ),
           ),
           isExpanded: true,
-          icon: const Icon(
-            Icons.keyboard_arrow_down,
-            color: Color(0xFF111111),
-          ),
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF111111)),
           style: const TextStyle(
             color: Color(0xFF111111),
             fontSize: 14,
