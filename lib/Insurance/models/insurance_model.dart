@@ -106,11 +106,13 @@ class InsurancePolicy {
       paymentsCompleted:
           json['paymentsCompleted'] ?? extraData['paymentsCompleted'],
       totalPayments: json['totalPayments'] ?? extraData['totalPayments'],
-      startDate: _parseDate(json['startDate']) ??
+      startDate:
+          _parseDate(json['startDate']) ??
           (extraData['startDate'] != null
               ? _parseDate(extraData['startDate'])
               : null),
-      endDate: _parseDate(json['endDate']) ??
+      endDate:
+          _parseDate(json['endDate']) ??
           (extraData['endDate'] != null
               ? _parseDate(extraData['endDate'])
               : null),
@@ -201,6 +203,8 @@ class InsurancePolicy {
         return 'assets/images/insurance/catagorypersonal.png';
       case 'appliance':
         return 'assets/images/insurance/appliance.png';
+      case 'other':
+        return 'assets/images/insurance/other.png';
       default:
         return 'assets/images/insurance/carauto.png';
     }

@@ -28,6 +28,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     'Home',
     'Auto',
     'Appliance',
+    'Other',
   ];
 
   @override
