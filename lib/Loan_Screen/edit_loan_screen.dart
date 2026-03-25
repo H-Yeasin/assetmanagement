@@ -1091,7 +1091,9 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         'totalPayments': totalP,
         'completedPayments': completedP,
         'interestRate': double.tryParse(_interestRateController.text) ?? 0.0,
-        'startDate': _parseDateText(_startDateController.text)?.toIso8601String(),
+        'startDate': _parseDateText(
+          _startDateController.text,
+        )?.toIso8601String(),
         'endDate': _parseDateText(_endDateController.text)?.toIso8601String(),
         'remainingBalance': isCarLoan
             ? (double.tryParse(_remainingBalanceController.text) ?? 0.0)
@@ -1317,10 +1319,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
             ),
           ),
           isExpanded: true,
-          icon: const Icon(
-            Icons.keyboard_arrow_down,
-            color: Color(0xFF111111),
-          ),
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF111111)),
           style: const TextStyle(
             color: Color(0xFF111111),
             fontSize: 14,

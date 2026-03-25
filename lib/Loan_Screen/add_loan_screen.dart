@@ -20,6 +20,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
   String _selectedFrequency = 'Monthly';
   final LoanService _loanService = LoanService();
   bool _isSaving = false;
+  bool _showAdditionalDetails = false;
 
   final TextEditingController _nameController = TextEditingController();
   final List<String> _frequencies = ['Monthly', 'Bi-weekly', 'Yearly'];
@@ -289,15 +290,28 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         _buildAutoPayToggle(),
 
         const SizedBox(height: 32),
-        const Text(
-          'Additional Details (Optional)',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF111111),
+        GestureDetector(
+          onTap: () => setState(() => _showAdditionalDetails = !_showAdditionalDetails),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Additional Details (Optional)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
+              ),
+              Icon(
+                _showAdditionalDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                color: const Color(0xFF111111),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 20),
+        if (_showAdditionalDetails) ...[
 
         // Total Amount
         _buildLabel('Total Amount'),
@@ -378,6 +392,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         ),
 
         const SizedBox(height: 24),
+        ],
         _buildAddDocumentsButton(),
         const SizedBox(height: 20),
 

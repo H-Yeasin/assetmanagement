@@ -1052,7 +1052,8 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       padding: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
         onTap: () async {
-          final DateTime initialDate = _parseDateText(controller.text) ?? DateTime.now();
+          final DateTime initialDate =
+              _parseDateText(controller.text) ?? DateTime.now();
           final DateTime? result = await showDatePicker(
             context: context,
             initialDate: initialDate,

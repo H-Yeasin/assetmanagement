@@ -42,6 +42,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   String _coverageType = 'Comprehensive';
   String? _personalInsuranceType;
   bool _isSaving = false;
+  bool _showAdditionalDetails = false;
   List<String> _documentIds = [];
 
   final List<String> _categories = [
@@ -506,28 +507,37 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
       _buildDateField(_dateController, 'mm/dd/yy'),
 
       const SizedBox(height: 12),
-      Row(
-        children: [
-          const Text(
-            'Additional Details',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
+      GestureDetector(
+        onTap: () => setState(() => _showAdditionalDetails = !_showAdditionalDetails),
+        child: Row(
+          children: [
+            const Text(
+              'Additional Details',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111111),
+              ),
             ),
-          ),
-          const SizedBox(width: 6),
-          const Text(
-            '(Optional)',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF888888),
-              fontWeight: FontWeight.w500,
+            const SizedBox(width: 6),
+            const Text(
+              '(Optional)',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF888888),
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-        ],
+            const Spacer(),
+            Icon(
+              _showAdditionalDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              color: const Color(0xFF111111),
+            ),
+          ],
+        ),
       ),
       const SizedBox(height: 20),
+      if (_showAdditionalDetails) ...[
 
       _buildLabel('Time Left'),
       _buildTextField(_timeLeftController, 'How Many Years'),
@@ -674,6 +684,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         ),
       ),
       const SizedBox(height: 24),
+      ],
 
       _buildLabel('Coverage Notes'),
       _buildTextField(
@@ -1110,7 +1121,8 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                     child: SizedBox(
                       width: 343,
                       child: CustomCalendarModal(
-                        initialDate: _parseDateText(controller.text) ?? DateTime.now(),
+                        initialDate:
+                            _parseDateText(controller.text) ?? DateTime.now(),
                       ),
                     ),
                   ),
