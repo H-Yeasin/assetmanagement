@@ -404,26 +404,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                             );
                             if (result != null &&
                                 result is List<Map<String, dynamic>>) {
-                              final docIds = result
-                                  .map((d) => d['id'] as String)
-                                  .toList();
-
-                              try {
-                                await _apiService.updateHousingCost(_cost.id!, {
-                                  'documents': docIds,
-                                });
-                                await _refreshCost();
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Error updating documents: $e',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
+                              await _refreshCost();
                             }
                           },
                           child: const Row(
@@ -450,74 +431,64 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                     const SizedBox(height: 12),
 
                     // Document list
-                    if (_cost.documents.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'No documents attached',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF888888),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    else
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: HousingCost.iconBgColorForCategory(
-                                  _cost.category,
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Image.asset(
-                                HousingCost.iconForCategory(_cost.category),
-                                width: 20,
-                                height: 20,
-                                errorBuilder: (c, e, s) =>
-                                    const Icon(Icons.folder, size: 20),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${_cost.documents.length} Documents',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF111111),
-                                    ),
-                                  ),
-                                  Text(
-                                    '${_cost.name}_attachments',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF888888),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                    StreamBuilder<int>(
+                      stream: _apiService.streamDocumentsCountForRelated(
+                        _cost.id ?? '',
                       ),
+                      builder: (context, snapshot) {
+                        final count = snapshot.data ?? 0;
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: HousingCost.iconBgColorForCategory(
+                                    _cost.category,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Image.asset(
+                                  HousingCost.iconForCategory(_cost.category),
+                                  width: 20,
+                                  height: 20,
+                                  errorBuilder: (c, e, s) =>
+                                      const Icon(Icons.folder, size: 20),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '$count ${count == 1 ? 'Document' : 'Documents'}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF111111),
+                                      ),
+                                    ),
+                                    Text(
+                                      _cost.name,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF888888),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
 
                     const SizedBox(height: 20),
 

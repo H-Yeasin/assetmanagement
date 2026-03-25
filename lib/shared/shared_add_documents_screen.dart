@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../services/loan_service.dart';
 import '../services/housing_service.dart';
 import '../services/insurance_service.dart';
+import 'vault_selection_modal.dart';
 
 class SharedAddDocumentsScreen extends StatefulWidget {
   final String title;
@@ -61,7 +62,15 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
   Future<void> _fetchExistingDocuments() async {
     setState(() => _isLoading = true);
     try {
-      final existing = await _apiService.fetchDocumentsByModule(widget.module);
+      final List<dynamic> existing;
+      if (widget.itemId != null) {
+        existing = await _apiService.fetchDocumentsByRelated(
+          widget.itemId!,
+          widget.module,
+        );
+      } else {
+        existing = await _apiService.fetchDocumentsByModule(widget.module);
+      }
       setState(() {
         _documents = existing
             .map(
@@ -147,6 +156,58 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
   }
 
   Future<void> _deleteDocument(String docId, int index) async {
+    if (widget.itemId != null) {
+      // Unlink instead of delete
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Remove Document'),
+          content: const Text(
+            'Are you sure you want to remove this document from this section? It will still be available in your Vault.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Remove', style: TextStyle(color: brandRed)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        setState(() => _isLoading = true);
+        try {
+          await _apiService.linkDocumentsToRelated(
+            [docId],
+            '', // Unlink by setting relatedId to empty string
+            '', // Unlink by setting relatedType to empty string
+          );
+          await _fetchExistingDocuments();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Document unlinked successfully')),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to unlink: $e'),
+                backgroundColor: brandRed,
+              ),
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
+      }
+      return;
+    }
+
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -192,6 +253,10 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
     int index,
     String currentName,
   ) async {
+    if (widget.itemId != null) {
+      _showVaultManagementOnlyMessage();
+      return;
+    }
     final TextEditingController controller = TextEditingController(
       text: currentName,
     );
@@ -237,6 +302,57 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
         if (mounted) setState(() => _isUploading = false);
       }
     }
+  }
+
+  Future<void> _selectFromVault() async {
+    if (widget.itemId == null) return;
+
+    final List<String>? selectedDocIds = await showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => VaultSelectionModal(
+        excludeRelatedId: widget.itemId,
+      ),
+    );
+
+    if (selectedDocIds != null && selectedDocIds.isNotEmpty) {
+      setState(() => _isLoading = true);
+      try {
+        await _apiService.linkDocumentsToRelated(
+          selectedDocIds,
+          widget.itemId!,
+          widget.module,
+        );
+        await _fetchExistingDocuments();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Documents linked successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to link documents: $e'),
+              backgroundColor: brandRed,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showVaultManagementOnlyMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Documents can only be managed (renamed/deleted) in the Vault.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -326,35 +442,104 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
                                 color: Color(0xFF111111),
                               ),
                             ),
-                            GestureDetector(
-                              onTap: _pickFile,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: brandRed),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.add, color: brandRed, size: 16),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Add Documents',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: brandRed,
-                                      ),
+                            Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: _selectFromVault,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
                                     ),
-                                  ],
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: brandRed),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(
+                                          Icons.folder_shared_outlined,
+                                          color: brandRed,
+                                          size: 16,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Select from Vault',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: brandRed,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _pickFile,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: brandRed),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(
+                                          Icons.add_to_photos_outlined,
+                                          color: brandRed,
+                                          size: 16,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Upload New',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: brandRed,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
+                        if (widget.itemId != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: brandRed.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: brandRed.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.info_outline, color: brandRed, size: 20),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'These documents are safely stored in your Vault. You can link existing ones or upload new files here.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: brandRed,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         if (_isLoading)
                           const Center(
@@ -389,13 +574,16 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
                                 subtitle:
                                     doc['subtitle'] ??
                                     'Uploaded on ${DateFormat('MMM dd, yyyy').format(doc['date'])}',
-                                onDelete: () =>
-                                    _deleteDocument(doc['id'], index),
-                                onRename: () => _renameDocument(
-                                  doc['id'],
-                                  index,
-                                  doc['name'],
-                                ),
+                                onDelete:
+                                    () => _deleteDocument(doc['id'], index),
+                                onRename:
+                                    widget.itemId != null
+                                        ? null
+                                        : () => _renameDocument(
+                                          doc['id'],
+                                          index,
+                                          doc['name'],
+                                        ),
                                 onTap: () {
                                   String category = 'Vault';
                                   if (widget.module == 'housing') category = 'Housing / Living Costs';

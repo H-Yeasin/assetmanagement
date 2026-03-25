@@ -139,7 +139,7 @@ class HousingService {
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
     final contentType = _getMimeType(file.path);
-    final ref = _storage.ref().child('$module/$_uid/$fileName');
+    final ref = _storage.ref().child('vault/$_uid/$fileName');
 
     final uploadTask = ref.putFile(
       file,
@@ -167,6 +167,8 @@ class HousingService {
 
     final docRef = await _firestore.collection('documents').add(docData);
 
+
+/*
     if (relatedType == 'housing' && relatedId != null) {
       final Map<String, Object> updateData = <String, Object>{
         'documents': FieldValue.arrayUnion(<String>[docRef.id]),
@@ -176,6 +178,7 @@ class HousingService {
           .doc(relatedId)
           .update(updateData);
     }
+*/
 
     final docSnapshot = await docRef.get();
     final Map<String, dynamic> finalData = Map<String, dynamic>.from(
@@ -196,6 +199,33 @@ class HousingService {
     return snapshot.docs
         .map((doc) => DocumentFile.fromJson({...doc.data(), 'id': doc.id}))
         .toList();
+  }
+
+  Future<List<DocumentFile>> fetchDocumentsByRelated(
+    String relatedId,
+    String relatedType,
+  ) async {
+    if (_uid == null) return [];
+    final snapshot = await _firestore
+        .collection('documents')
+        .where('userId', isEqualTo: _uid)
+        .where('relatedId', isEqualTo: relatedId)
+        .where('relatedType', isEqualTo: relatedType)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs
+        .map((doc) => DocumentFile.fromJson({...doc.data(), 'id': doc.id}))
+        .toList();
+  }
+
+  Stream<int> streamDocumentsCountForRelated(String relatedId) {
+    if (_uid == null) return Stream.value(0);
+    return _firestore
+        .collection('documents')
+        .where('userId', isEqualTo: _uid)
+        .where('relatedId', isEqualTo: relatedId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
   }
 
   Future<void> deleteDocument(String id) async {

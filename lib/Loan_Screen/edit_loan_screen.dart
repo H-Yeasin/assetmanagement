@@ -20,6 +20,8 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
   late bool _autoPayment;
   late String _selectedCategory;
   late String _selectedAmortization;
+  late String _selectedFrequency;
+  final List<String> _frequencies = ['Monthly', 'Bi-weekly', 'Yearly'];
   late List<Map<String, dynamic>> _documents;
   final LoanService _loanService = LoanService();
   bool _isSaving = false;
@@ -103,6 +105,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
     _autoPayment = loan.autoPay;
     _selectedCategory = loan.category;
     _selectedAmortization = loan.amortizationPeriod ?? '';
+    _selectedFrequency = loan.paymentFrequency;
 
     _nameController = TextEditingController(text: loan.name);
     _monthlyPaymentController = TextEditingController(
@@ -312,7 +315,6 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
         const SizedBox(height: 20),
 
-        // Monthly Payment + Payment Date
         Row(
           children: [
             Expanded(
@@ -336,8 +338,29 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
                   _buildLabel('Payment Date'),
                   _buildInputField(
                     controller: _paymentDateController,
-                    hint: 'dd',
-                    isNumber: true,
+                    hint: 'mm/dd/yyyy',
+                    isDate: true,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Payment Frequency'),
+                  _buildDropdownField(
+                    _frequencies,
+                    _selectedFrequency,
+                    'Monthly',
+                    (v) => setState(() => _selectedFrequency = v!),
                   ),
                 ],
               ),
@@ -557,6 +580,24 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         ),
         const SizedBox(height: 20),
 
+        const SizedBox(height: 20),
+        _buildLabel('Payment Date'),
+        _buildInputField(
+          controller: _paymentDateController,
+          hint: 'mm/dd/yy',
+          isDate: true,
+        ),
+        const SizedBox(height: 20),
+
+        _buildLabel('Payment Frequency'),
+        _buildDropdownField(
+          _frequencies,
+          _selectedFrequency,
+          'Monthly',
+          (v) => setState(() => _selectedFrequency = v!),
+        ),
+        const SizedBox(height: 20),
+
         Row(
           children: [
             Expanded(
@@ -594,12 +635,6 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildInputField(controller: _nameController, hint: 'Toyota Corolla'),
         const SizedBox(height: 20),
 
-        _buildLabel('Installment'),
-        _buildInputField(
-          controller: _monthlyPaymentController,
-          hint: '\$260.00',
-          isNumber: true,
-        ),
         const SizedBox(height: 20),
 
         _buildLabel('Interest rate'),
@@ -713,6 +748,24 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 20),
+
+        const SizedBox(height: 20),
+        _buildLabel('Payment Date'),
+        _buildInputField(
+          controller: _paymentDateController,
+          hint: 'mm/dd/yy',
+          isDate: true,
+        ),
+        const SizedBox(height: 20),
+
+        _buildLabel('Payment Frequency'),
+        _buildDropdownField(
+          _frequencies,
+          _selectedFrequency,
+          'Monthly',
+          (v) => setState(() => _selectedFrequency = v!),
         ),
         const SizedBox(height: 20),
 
@@ -1048,6 +1101,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         'propertyAddress': isMortgage ? _propertyAddressController.text : null,
         'apartmentName': isMortgage ? _apartmentNameController.text : null,
         'amortizationPeriod': isMortgage ? _selectedAmortization : null,
+        'paymentFrequency': _selectedFrequency,
         'documents': _documents.map((d) => d['id'] as String).toList(),
       };
 
@@ -1232,6 +1286,53 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
             ),
             const Icon(Icons.keyboard_arrow_down, color: Color(0xFF111111)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField(
+    List<String> items,
+    String? currentValue,
+    String hint,
+    ValueChanged<String?> onChanged,
+  ) {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFEBEBEB)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: currentValue,
+          hint: Text(
+            hint,
+            style: const TextStyle(
+              color: Color(0xFF888888),
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          isExpanded: true,
+          icon: const Icon(
+            Icons.keyboard_arrow_down,
+            color: Color(0xFF111111),
+          ),
+          style: const TextStyle(
+            color: Color(0xFF111111),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          items: items.map((t) {
+            String label = t;
+            if (t == 'Bi-weekly') label = 'Bi-weekly (Every 2 weeks)';
+            if (t == 'Weekly') label = 'Weekly (Every week)';
+            return DropdownMenuItem(value: t, child: Text(label));
+          }).toList(),
+          onChanged: onChanged,
         ),
       ),
     );

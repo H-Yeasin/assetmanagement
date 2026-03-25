@@ -59,6 +59,16 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     return value.toString();
   }
 
+  DateTime? _parseDateText(String value) {
+    if (value.trim().isEmpty) return null;
+    for (final pattern in ['MM/dd/yy', 'MM/dd/yyyy']) {
+      try {
+        return DateFormat(pattern).parseStrict(value);
+      } catch (_) {}
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -69,7 +79,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     );
     _dateController = TextEditingController(
       text: widget.policy.renewalDate != null
-          ? DateFormat('MM/dd/yyyy').format(widget.policy.renewalDate!)
+          ? DateFormat('MM/dd/yy').format(widget.policy.renewalDate!)
           : '',
     );
     _notesController = TextEditingController(text: widget.policy.coverageNotes);
@@ -96,12 +106,12 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     );
     _startDateController = TextEditingController(
       text: widget.policy.startDate != null
-          ? DateFormat('MM/dd/yyyy').format(widget.policy.startDate!)
+          ? DateFormat('MM/dd/yy').format(widget.policy.startDate!)
           : '',
     );
     _endDateController = TextEditingController(
       text: widget.policy.endDate != null
-          ? DateFormat('MM/dd/yyyy').format(widget.policy.endDate!)
+          ? DateFormat('MM/dd/yy').format(widget.policy.endDate!)
           : '',
     );
 
@@ -162,24 +172,9 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
             _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
           ) ??
           0.0;
-      DateTime? renewalDate;
-      if (_dateController.text.isNotEmpty) {
-        try {
-          renewalDate = DateFormat('MM/dd/yyyy').parse(_dateController.text);
-        } catch (_) {}
-      }
-      DateTime? startDate;
-      if (_startDateController.text.isNotEmpty) {
-        try {
-          startDate = DateFormat('MM/dd/yyyy').parse(_startDateController.text);
-        } catch (_) {}
-      }
-      DateTime? endDate;
-      if (_endDateController.text.isNotEmpty) {
-        try {
-          endDate = DateFormat('MM/dd/yyyy').parse(_endDateController.text);
-        } catch (_) {}
-      }
+      final renewalDate = _parseDateText(_dateController.text);
+      final startDate = _parseDateText(_startDateController.text);
+      final endDate = _parseDateText(_endDateController.text);
 
       final tempPolicy = InsurancePolicy(
         userId: widget.policy.userId,
@@ -377,7 +372,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel('Start Date'),
-                _buildDateField(_startDateController, '12 Jan 2024'),
+                _buildDateField(_startDateController, 'mm/dd/yy'),
               ],
             ),
           ),
@@ -387,7 +382,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel('End Date'),
-                _buildDateField(_endDateController, 'End Dec 2024'),
+                _buildDateField(_endDateController, 'mm/dd/yy'),
               ],
             ),
           ),
@@ -584,7 +579,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel('Start Date'),
-                _buildDateField(_startDateController, 'mm/dd/yyyy'),
+                _buildDateField(_startDateController, 'mm/dd/yy'),
               ],
             ),
           ),
@@ -707,7 +702,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel('Warranty End Date'),
-                _buildDateField(_dateController, 'mm/dd/yyyy'),
+                _buildDateField(_dateController, 'mm/dd/yy'),
               ],
             ),
           ),
@@ -1057,12 +1052,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       padding: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
         onTap: () async {
-          DateTime initialDate = DateTime.now();
-          if (controller.text.isNotEmpty) {
-            try {
-              initialDate = DateFormat('MM/dd/yyyy').parse(controller.text);
-            } catch (_) {}
-          }
+          final DateTime initialDate = _parseDateText(controller.text) ?? DateTime.now();
           final DateTime? result = await showDatePicker(
             context: context,
             initialDate: initialDate,
@@ -1080,7 +1070,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
 
           if (result != null) {
             setState(() {
-              controller.text = DateFormat('MM/dd/yyyy').format(result);
+              controller.text = DateFormat('MM/dd/yy').format(result);
             });
           }
         },

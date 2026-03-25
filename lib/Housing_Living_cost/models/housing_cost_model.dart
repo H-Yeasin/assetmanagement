@@ -57,7 +57,7 @@ class HousingCost {
       'name': name,
       'category': category,
       'amount': amount,
-      'dueDate': dueDate?.toIso8601String(),
+      'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
       'autoPay': autoPay,
       'notes': notes,
       'documents': documents

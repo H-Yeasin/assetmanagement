@@ -17,10 +17,12 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
   String _selectedCategory = 'personal';
   bool _autoPayment = true;
   String _selectedAmortization = '';
+  String _selectedFrequency = 'Monthly';
   final LoanService _loanService = LoanService();
   bool _isSaving = false;
 
   final TextEditingController _nameController = TextEditingController();
+  final List<String> _frequencies = ['Monthly', 'Bi-weekly', 'Yearly'];
   final TextEditingController _monthlyPaymentController =
       TextEditingController();
   final TextEditingController _paymentDateController = TextEditingController();
@@ -262,6 +264,27 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
 
         const SizedBox(height: 20),
 
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('Payment Frequency'),
+                  _buildDropdownField(
+                    _frequencies,
+                    _selectedFrequency,
+                    'Monthly',
+                    (v) => setState(() => _selectedFrequency = v!),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
         // Auto-payment toggle
         _buildAutoPayToggle(),
 
@@ -446,6 +469,14 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         ),
         const SizedBox(height: 20),
 
+        _buildLabel('Payment Date'),
+        _buildInputField(
+          controller: _paymentDateController,
+          hint: 'mm/dd/yy',
+          isDate: true,
+        ),
+        const SizedBox(height: 20),
+
         Row(
           children: [
             Expanded(
@@ -481,14 +512,6 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
 
         _buildLabel('Vehicle'),
         _buildInputField(controller: _nameController, hint: 'Toyota Corolla'),
-        const SizedBox(height: 20),
-
-        _buildLabel('Installment'),
-        _buildInputField(
-          controller: _monthlyPaymentController,
-          hint: '\$260.00',
-          isNumber: true,
-        ),
         const SizedBox(height: 20),
 
         _buildLabel('Interest rate'),
@@ -561,6 +584,14 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 20),
+
+        _buildLabel('Payment Date'),
+        _buildInputField(
+          controller: _paymentDateController,
+          hint: 'mm/dd/yy',
+          isDate: true,
         ),
         const SizedBox(height: 20),
 
@@ -750,7 +781,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
             spreadRadius: 1,
           ),
@@ -897,6 +928,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
     );
   }
 
+
   Future<void> _saveLoan() async {
     if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(
@@ -909,6 +941,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
 
     try {
       final bool isMortgage = _selectedCategory == 'mortgage';
+      final bool isCarLoan = _selectedCategory == 'car';
 
       double monthly;
       if (isMortgage) {
@@ -938,7 +971,8 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
       );
       final remainingValue = double.tryParse(remainingStr) ?? 0.0;
 
-      final pDate = _parseDateText(_paymentDateController.text) ?? DateTime.now();
+      final paymentDate = _parseDateText(_paymentDateController.text);
+      final now = DateTime.now();
 
       int totalP = isMortgage
           ? (int.tryParse(_totalPaymentsController.text) ?? 0)
@@ -957,31 +991,44 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         name: _nameController.text,
         category: _selectedCategory == 'business' ? 'other' : _selectedCategory,
         monthlyPayment: monthly,
-        paymentDate: pDate,
+        paymentDate: DateTime(
+          paymentDate?.year ?? now.year,
+          paymentDate?.month ?? now.month,
+          paymentDate?.day ?? now.day,
+        ),
         autoPay: _autoPayment,
         totalAmount: totalAmount,
+        totalPayments: totalP,
+        completedPayments: completedP,
         interestRate: double.tryParse(_interestRateController.text) ?? 0.0,
         startDate: _parseDateText(_startDateController.text),
         endDate: _parseDateText(_endDateController.text),
-        remainingBalance: isMortgage ? 0.0 : remainingValue,
+        remainingBalance: isCarLoan
+            ? (double.tryParse(_remainingBalanceController.text) ?? 0.0)
+            : remainingValue,
+        lender: _lenderController.text,
         notes: _notesController.text,
-        documents: _uploadedDocuments.map((d) => d['id'] as String).toList(),
         propertyAddress: isMortgage ? _propertyAddressController.text : null,
         apartmentName: isMortgage ? _apartmentNameController.text : null,
-        lender: _lenderController.text,
         amortizationPeriod: isMortgage ? _selectedAmortization : null,
-        totalPayments: totalP,
-        completedPayments: completedP,
+        paymentFrequency: _selectedFrequency,
+        documents: _uploadedDocuments.map((d) => d['id'] as String).toList(),
       );
 
       final createdLoan = await _loanService.createLoan(loan);
 
       if (createdLoan.id != null) {
+        final reminderDate = DateTime(
+          paymentDate?.year ?? now.year,
+          paymentDate?.month ?? now.month,
+          paymentDate?.day ?? now.day,
+        );
+
         final reminder = await _loanService.createReminder(
           itemType: 'loan',
           itemId: createdLoan.id!,
-          remindAt: pDate,
-          title: 'Loan Payment Reminder: ${createdLoan.name}',
+          remindAt: reminderDate,
+          title: 'Loan Payment Reminder: ${_nameController.text}',
           note: 'Reminder for your loan upcoming payment.',
         );
 
@@ -989,7 +1036,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
           id: NotificationService.getNotificationId(reminder['id']),
           title: reminder['title'] ?? 'Loan Reminder',
           body: reminder['note'] ?? 'Upcoming loan payment.',
-          scheduledDate: pDate,
+          scheduledDate: reminderDate,
         );
       }
 
@@ -1149,6 +1196,53 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
             ),
             const Icon(Icons.keyboard_arrow_down, color: Color(0xFF111111)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField(
+    List<String> items,
+    String? currentValue,
+    String hint,
+    ValueChanged<String?> onChanged,
+  ) {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFEBEBEB)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: currentValue,
+          hint: Text(
+            hint,
+            style: const TextStyle(
+              color: Color(0xFF888888),
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          isExpanded: true,
+          icon: const Icon(
+            Icons.keyboard_arrow_down,
+            color: Color(0xFF111111),
+          ),
+          style: const TextStyle(
+            color: Color(0xFF111111),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          items: items.map((t) {
+            String label = t;
+            if (t == 'Bi-weekly') label = 'Bi-weekly (Every 2 weeks)';
+            if (t == 'Weekly') label = 'Weekly (Every week)';
+            return DropdownMenuItem(value: t, child: Text(label));
+          }).toList(),
+          onChanged: onChanged,
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'models/housing_cost_model.dart';
@@ -30,6 +31,16 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
   String _decimalText(double value) {
     if (value == 0) return '';
     return value.toStringAsFixed(2);
+  }
+
+  DateTime? _parseDateText(String value) {
+    if (value.trim().isEmpty) return null;
+    for (final pattern in ['MM/dd/yy', 'MM/dd/yyyy']) {
+      try {
+        return DateFormat(pattern).parseStrict(value);
+      } catch (_) {}
+    }
+    return null;
   }
 
   @override
@@ -71,12 +82,7 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
     BuildContext context,
     TextEditingController controller,
   ) async {
-    DateTime initialDate = widget.cost.dueDate ?? DateTime.now();
-    if (controller.text.isNotEmpty) {
-      try {
-        initialDate = DateFormat('MM/dd/yy').parse(controller.text);
-      } catch (_) {}
-    }
+    final initialDate = _parseDateText(controller.text) ?? widget.cost.dueDate ?? DateTime.now();
 
     final DateTime? picked = await showDialog<DateTime>(
       context: context,
@@ -126,12 +132,7 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
             _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
           ) ??
           0.0;
-      DateTime? dueDate;
-      if (_dueDateController.text.isNotEmpty) {
-        try {
-          dueDate = DateFormat('MM/dd/yy').parse(_dueDateController.text);
-        } catch (_) {}
-      }
+      final dueDate = _parseDateText(_dueDateController.text);
 
       final updates = <String, dynamic>{
         'name': _nameController.text,
@@ -142,7 +143,7 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
         'documents': _uploadedDocuments.map((d) => d['id']).toList(),
       };
       if (dueDate != null) {
-        updates['dueDate'] = dueDate.toIso8601String();
+        updates['dueDate'] = Timestamp.fromDate(dueDate);
       }
 
       await _apiService.updateHousingCost(widget.cost.id!, updates);

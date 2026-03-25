@@ -80,6 +80,16 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
     super.dispose();
   }
 
+  DateTime? _parseDateText(String value) {
+    if (value.trim().isEmpty) return null;
+    for (final pattern in ['MM/dd/yy', 'MM/dd/yyyy']) {
+      try {
+        return DateFormat(pattern).parseStrict(value);
+      } catch (_) {}
+    }
+    return null;
+  }
+
   Future<void> _savePolicy() async {
     // Validate based on category requirements from Figma
     if ((_selectedCategory == 'Pet' &&
@@ -102,24 +112,9 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
             _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
           ) ??
           0.0;
-      DateTime? renewalDate;
-      if (_dateController.text.isNotEmpty) {
-        try {
-          renewalDate = DateFormat('MM/dd/yyyy').parse(_dateController.text);
-        } catch (_) {}
-      }
-      DateTime? startDate;
-      if (_startDateController.text.isNotEmpty) {
-        try {
-          startDate = DateFormat('MM/dd/yyyy').parse(_startDateController.text);
-        } catch (_) {}
-      }
-      DateTime? endDate;
-      if (_endDateController.text.isNotEmpty) {
-        try {
-          endDate = DateFormat('MM/dd/yyyy').parse(_endDateController.text);
-        } catch (_) {}
-      }
+      final renewalDate = _parseDateText(_dateController.text);
+      final startDate = _parseDateText(_startDateController.text);
+      final endDate = _parseDateText(_endDateController.text);
 
       // Dynamically map fields based on category
       String policyName = _nameController.text;
@@ -571,7 +566,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel('Start Date'),
-                _buildDateField(_startDateController, 'Enter start date'),
+                _buildDateField(_startDateController, 'mm/dd/yy'),
               ],
             ),
           ),
@@ -581,7 +576,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel('End Date'),
-                _buildDateField(_endDateController, 'Enter end date'),
+                _buildDateField(_endDateController, 'mm/dd/yy'),
               ],
             ),
           ),
@@ -712,7 +707,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
       _buildTextField(_providerController, 'Provider Name'),
 
       _buildLabel('Renewal Date'),
-      _buildDateField(_dateController, 'dd/mm/yyyy'),
+      _buildDateField(_dateController, 'mm/dd/yy'),
 
       _buildLabel('Coverage Notes'),
       _buildTextField(_notesController, 'Any additional notes...', maxLines: 4),
@@ -747,7 +742,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildLabel('Start Date'),
-                _buildDateField(_startDateController, 'mm/dd/yyyy'),
+                _buildDateField(_startDateController, 'mm/dd/yy'),
               ],
             ),
           ),
@@ -1115,9 +1110,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                     child: SizedBox(
                       width: 343,
                       child: CustomCalendarModal(
-                        initialDate: controller.text.isNotEmpty
-                            ? DateFormat('MM/dd/yyyy').parse(controller.text)
-                            : DateTime.now(),
+                        initialDate: _parseDateText(controller.text) ?? DateTime.now(),
                       ),
                     ),
                   ),
@@ -1128,7 +1121,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
 
           if (result != null) {
             setState(() {
-              controller.text = DateFormat('MM/dd/yyyy').format(result);
+              controller.text = DateFormat('MM/dd/yy').format(result);
             });
           }
         },

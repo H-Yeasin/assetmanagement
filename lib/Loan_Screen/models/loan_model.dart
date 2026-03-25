@@ -55,6 +55,8 @@ class Loan extends HiveObject {
   final int totalPayments;
   @HiveField(23)
   final int completedPayments;
+  @HiveField(24)
+  final String paymentFrequency;
 
   Loan({
     this.id,
@@ -81,6 +83,7 @@ class Loan extends HiveObject {
     this.amortizationPeriod,
     this.totalPayments = 0,
     this.completedPayments = 0,
+    this.paymentFrequency = 'Monthly',
   });
 
   factory Loan.fromJson(Map<String, dynamic> json) {
@@ -124,6 +127,7 @@ class Loan extends HiveObject {
       amortizationPeriod: json['amortizationPeriod'],
       totalPayments: json['totalPayments'] ?? 0,
       completedPayments: json['completedPayments'] ?? 0,
+      paymentFrequency: json['paymentFrequency'] ?? 'Monthly',
     );
   }
 
@@ -147,6 +151,7 @@ class Loan extends HiveObject {
       'amortizationPeriod': amortizationPeriod,
       'totalPayments': totalPayments,
       'completedPayments': completedPayments,
+      'paymentFrequency': paymentFrequency,
       'documents': documents
           .map((doc) => doc is String ? doc : (doc as DocumentFile).id)
           .toList(),

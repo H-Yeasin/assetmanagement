@@ -41,16 +41,21 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
   String get _amountLabel =>
       _isHousingCategory ? 'Monthly Housing Cost' : 'Amount';
 
+  DateTime? _parseDateText(String value) {
+    if (value.trim().isEmpty) return null;
+    for (final pattern in ['MM/dd/yy', 'MM/dd/yyyy']) {
+      try {
+        return DateFormat(pattern).parseStrict(value);
+      } catch (_) {}
+    }
+    return null;
+  }
+
   Future<void> _selectDate(
     BuildContext context,
     TextEditingController controller,
   ) async {
-    DateTime initialDate = DateTime.now();
-    if (controller.text.isNotEmpty) {
-      try {
-        initialDate = DateFormat('MM/dd/yy').parse(controller.text);
-      } catch (_) {}
-    }
+    final initialDate = _parseDateText(controller.text) ?? DateTime.now();
 
     final DateTime? picked = await showDialog<DateTime>(
       context: context,
@@ -100,12 +105,7 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
             _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
           ) ??
           0.0;
-      DateTime? dueDate;
-      if (_dueDateController.text.isNotEmpty) {
-        try {
-          dueDate = DateFormat('MM/dd/yy').parse(_dueDateController.text);
-        } catch (_) {}
-      }
+      final dueDate = _parseDateText(_dueDateController.text);
 
       final cost = HousingCost(
         userId: '',

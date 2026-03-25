@@ -115,7 +115,7 @@ class LoanService {
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
     final contentType = _getMimeType(file.path);
-    final ref = _storage.ref().child('$module/$_uid/$fileName');
+    final ref = _storage.ref().child('vault/$_uid/$fileName');
 
     final uploadTask = ref.putFile(
       file,
@@ -143,13 +143,6 @@ class LoanService {
 
     final docRef = await _firestore.collection('documents').add(docData);
 
-    if (relatedType == 'loans' && relatedId != null) {
-      final Map<String, Object> updateData = <String, Object>{
-        'documents': FieldValue.arrayUnion(<String>[docRef.id]),
-      };
-      await _firestore.collection('loans').doc(relatedId).update(updateData);
-    }
-
     final docSnapshot = await docRef.get();
     final Map<String, dynamic> finalData = Map<String, dynamic>.from(
       docSnapshot.data()!,
@@ -164,6 +157,23 @@ class LoanService {
         .collection('documents')
         .where('userId', isEqualTo: _uid)
         .where('module', isEqualTo: module)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs
+        .map((doc) => DocumentFile.fromJson({...doc.data(), 'id': doc.id}))
+        .toList();
+  }
+
+  Future<List<DocumentFile>> fetchDocumentsByRelated(
+    String relatedId,
+    String relatedType,
+  ) async {
+    if (_uid == null) return [];
+    final snapshot = await _firestore
+        .collection('documents')
+        .where('userId', isEqualTo: _uid)
+        .where('relatedId', isEqualTo: relatedId)
+        .where('relatedType', isEqualTo: relatedType)
         .orderBy('createdAt', descending: true)
         .get();
     return snapshot.docs
@@ -227,6 +237,24 @@ class LoanService {
       'displayName': newName,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> linkDocumentsToRelated(
+    List<String> docIds,
+    String relatedId,
+    String? relatedType,
+  ) async {
+    final WriteBatch batch = _firestore.batch();
+    for (final String id in docIds) {
+      final DocumentReference docRef =
+          _firestore.collection('documents').doc(id);
+      batch.update(docRef, {
+        'relatedId': relatedId,
+        'relatedType': relatedType,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
   }
 
   // ── Finance Logic ──────────────────────────────────────────────────────────
@@ -428,6 +456,16 @@ class LoanService {
     return _firestore
         .collection('documents')
         .where('userId', isEqualTo: _uid)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> streamDocumentsCountForRelated(String relatedId) {
+    if (_uid == null) return Stream.value(0);
+    return _firestore
+        .collection('documents')
+        .where('userId', isEqualTo: _uid)
+        .where('relatedId', isEqualTo: relatedId)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }

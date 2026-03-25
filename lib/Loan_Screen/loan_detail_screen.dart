@@ -522,32 +522,15 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                               );
                               if (result != null &&
                                   result is List<Map<String, dynamic>>) {
-                                final docIds = result
-                                    .map((d) => d['id'] as String)
-                                    .toList();
-                                try {
-                                  await _loanService.updateLoan(
-                                    _currentLoan.id!,
-                                    {'documents': docIds},
+                                await _refreshLoan();
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Documents updated successfully',
+                                      ),
+                                    ),
                                   );
-                                  await _refreshLoan();
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Documents updated successfully',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Error updating: $e'),
-                                      ),
-                                    );
-                                  }
                                 }
                               }
                             },
@@ -574,58 +557,66 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                      StreamBuilder<int>(
+                        stream: _loanService.streamDocumentsCountForRelated(
+                          _currentLoan.id ?? '',
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: brandRed.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Image.asset(
-                                'assets/images/icon/loan.png',
-                                width: 24,
-                                height: 24,
-                                color: brandRed,
-                                errorBuilder: (c, e, s) => const Icon(
-                                  Icons.description,
-                                  color: brandRed,
-                                  size: 24,
+                        builder: (context, snapshot) {
+                          final count = snapshot.data ?? 0;
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: brandRed.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Image.asset(
+                                    'assets/images/icon/loan.png',
+                                    width: 24,
+                                    height: 24,
+                                    color: brandRed,
+                                    errorBuilder: (c, e, s) => const Icon(
+                                      Icons.description,
+                                      color: brandRed,
+                                      size: 24,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${_currentLoan.documents.length} Documents',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF111111),
-                                    ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '$count ${count == 1 ? 'Document' : 'Documents'}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF111111),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _currentLoan.name,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF888888),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _currentLoan.name,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF888888),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 32),
