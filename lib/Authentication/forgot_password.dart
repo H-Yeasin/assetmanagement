@@ -123,7 +123,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                         child: CircularProgressIndicator(color: brandRed),
                       ),
                     )
-                  : AppPrimaryButton(label: 'Send OTP', onTap: _handleSendOtp),
+                  : AppPrimaryButton(
+                      label: 'Reset Password',
+                      onTap: _handleSendOtp,
+                    ),
 
               const SizedBox(height: 32),
             ],
