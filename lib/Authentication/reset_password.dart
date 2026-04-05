@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
+
 import 'shared_widgets.dart';
+import 'login.dart';
+
 
 /// Step 3 of Forgot Password: enter new password after OTP verification.
 /// Receives [email] and [otp] via route extra.
@@ -59,8 +61,15 @@ class _ResetPasswordState extends State<ResetPassword> {
       if (result['success'] == true) {
         _showSnack('Password reset successfully! Please log in.');
         await Future.delayed(const Duration(milliseconds: 800));
-        if (mounted) context.go('/');
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const Login()),
+            (route) => false,
+          );
+        }
       } else {
+
         _showSnack(result['message'] ?? 'Reset failed. Try again.');
       }
     } catch (e) {

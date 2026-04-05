@@ -11,6 +11,13 @@ const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 const stripePublishableKey = defineSecret("STRIPE_PUBLISHABLE_KEY_SECRET");
 
+const smtpUserSecret = defineSecret("SMTP_USER_SECRET");
+const smtpPassSecret = defineSecret("SMTP_PASS_SECRET");
+const smtpHostSecret = defineSecret("SMTP_HOST_SECRET");
+const smtpFromSecret = defineSecret("SMTP_FROM_SECRET");
+
+
+
 admin.initializeApp();
 
 const firestoreDbId = (process.env.FIRESTORE_DB_ID || "ffpvault").trim();
@@ -273,18 +280,20 @@ function hashOtp(email, otp, salt) {
 }
 
 function transporter() {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || user;
+  const host = smtpHostSecret.value();
+  const port = 587;
+  const user = smtpUserSecret.value();
+  const pass = smtpPassSecret.value();
+  const from = smtpFromSecret.value() || user;
+
 
   if (!host || !user || !pass || !from) {
     throw new HttpsError(
       "failed-precondition",
-      "SMTP env is missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM.",
+      "SMTP configuration is missing. Ensure secrets are set in Firebase.",
     );
   }
+
 
   return {
     from,
@@ -373,51 +382,69 @@ async function issueTwoFactorOtp({ uid, email, purpose }) {
   await sendOtpEmail(email, otp, purpose);
 }
 
-export const requestPasswordResetOtp = onCall(async (request) => {
-  const email = normalizeEmail(request.data?.email);
-  if (!validateEmail(email)) {
-    throw new HttpsError("invalid-argument", "Valid email is required.");
-  }
+export const requestPasswordResetOtp = onCall(
+  {secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret]},
+  async (request) => {
 
-  // Avoid leaking whether the account exists.
-  let userRecord = null;
+
   try {
-    userRecord = await admin.auth().getUserByEmail(email);
-  } catch (_) {
-    userRecord = null;
+    const email = normalizeEmail(request.data?.email);
+    if (!validateEmail(email)) {
+      throw new HttpsError("invalid-argument", "Valid email is required.");
+    }
+
+    // Avoid leaking whether the account exists.
+    let userRecord = null;
+    try {
+      userRecord = await admin.auth().getUserByEmail(email);
+    } catch (_) {
+      userRecord = null;
+    }
+
+    if (!userRecord) {
+      return {success: true, message: "OTP sent if account exists."};
+    }
+
+    const otp = generateOtp();
+    const salt = crypto.randomBytes(16).toString("hex");
+    const otpHash = hashOtp(email, otp, salt);
+    const expiresAt = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000),
+    );
+
+    const ref = db.collection(OTP_COLLECTION).doc(docIdForEmail(email));
+    await ref.set(
+      {
+        email,
+        uid: userRecord.uid,
+        otpHash,
+        salt,
+        expiresAt,
+        attempts: 0,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+    );
+
+    await sendOtpEmail(email, otp);
+    return {success: true, message: "OTP sent successfully."};
+  } catch (error) {
+    console.error("requestPasswordResetOtp failed:", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(
+      "internal",
+      `Failed to process forgot password: ${error.message || "Unknown error"}`,
+    );
   }
-
-  if (!userRecord) {
-    return { success: true, message: "OTP sent if account exists." };
-  }
-
-  const otp = generateOtp();
-  const salt = crypto.randomBytes(16).toString("hex");
-  const otpHash = hashOtp(email, otp, salt);
-  const expiresAt = admin.firestore.Timestamp.fromDate(
-    new Date(Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000),
-  );
-
-  const ref = db.collection(OTP_COLLECTION).doc(docIdForEmail(email));
-  await ref.set(
-    {
-      email,
-      uid: userRecord.uid,
-      otpHash,
-      salt,
-      expiresAt,
-      attempts: 0,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    },
-    { merge: true },
-  );
-
-  await sendOtpEmail(email, otp);
-  return { success: true, message: "OTP sent successfully." };
 });
 
-export const requestTwoFactorEnable = onCall(async (request) => {
+
+export const requestTwoFactorEnable = onCall(
+  {secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret]},
+  async (request) => {
+
+
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Login required.");
   }
@@ -492,7 +519,11 @@ export const verifyTwoFactorEnable = onCall(async (request) => {
   };
 });
 
-export const requestTwoFactorLogin = onCall(async (request) => {
+export const requestTwoFactorLogin = onCall(
+  {secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret]},
+  async (request) => {
+
+
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Login required.");
   }
@@ -566,91 +597,108 @@ export const verifyTwoFactorLogin = onCall(async (request) => {
 });
 
 export const verifyPasswordResetOtp = onCall(async (request) => {
-  const email = normalizeEmail(request.data?.email);
-  const otp = String(request.data?.otp || "").trim();
+  try {
+    const email = normalizeEmail(request.data?.email);
+    const otp = String(request.data?.otp || "").trim();
 
-  if (!validateEmail(email) || otp.length != 6) {
-    throw new HttpsError("invalid-argument", "Email and 6-digit OTP required.");
-  }
-
-  const { ref, data } = await getOtpState(email);
-  if (!data) {
-    throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
-  }
-  if (data.expiresAt?.toMillis?.() < Date.now()) {
-    await ref.delete();
-    throw new HttpsError(
-      "deadline-exceeded",
-      "OTP expired. Request a new OTP.",
-    );
-  }
-
-  const valid = hashOtp(email, otp, data.salt) === data.otpHash;
-  if (!valid) {
-    const attempts = Number(data.attempts || 0) + 1;
-    if (attempts >= 5) {
-      await ref.delete();
+    if (!validateEmail(email) || otp.length != 6) {
       throw new HttpsError(
-        "permission-denied",
-        "Too many attempts. Request OTP again.",
+        "invalid-argument",
+        "Email and 6-digit OTP required.",
       );
     }
+
+    const {ref, data} = await getOtpState(email);
+    if (!data) {
+      throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
+    }
+    if (data.expiresAt?.toMillis?.() < Date.now()) {
+      await ref.delete();
+      throw new HttpsError(
+        "deadline-exceeded",
+        "OTP expired. Request a new OTP.",
+      );
+    }
+
+    const valid = hashOtp(email, otp, data.salt) === data.otpHash;
+    if (!valid) {
+      const attempts = Number(data.attempts || 0) + 1;
+      if (attempts >= 5) {
+        await ref.delete();
+        throw new HttpsError(
+          "permission-denied",
+          "Too many attempts. Request OTP again.",
+        );
+      }
+      await ref.update({
+        attempts,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      throw new HttpsError("permission-denied", "Invalid OTP.");
+    }
+
     await ref.update({
-      attempts,
+      verified: true,
+      verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    throw new HttpsError("permission-denied", "Invalid OTP.");
+
+    return {success: true, message: "OTP verified."};
+  } catch (error) {
+    console.error("verifyPasswordResetOtp failed:", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", error.message || "Failed to verify OTP");
   }
-
-  await ref.update({
-    verified: true,
-    verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
-
-  return { success: true, message: "OTP verified." };
 });
+
 
 export const resetPasswordWithOtp = onCall(async (request) => {
-  const email = normalizeEmail(request.data?.email);
-  const otp = String(request.data?.otp || "").trim();
-  const newPassword = String(request.data?.newPassword || "");
+  try {
+    const email = normalizeEmail(request.data?.email);
+    const otp = String(request.data?.otp || "").trim();
+    const newPassword = String(request.data?.newPassword || "");
 
-  if (!validateEmail(email) || otp.length != 6 || newPassword.length < 6) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Email, 6-digit OTP, and new password (min 6) are required.",
-    );
-  }
+    if (!validateEmail(email) || otp.length != 6 || newPassword.length < 6) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Email, 6-digit OTP, and new password (min 6) are required.",
+      );
+    }
 
-  const { ref, data } = await getOtpState(email);
-  if (!data) {
-    throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
-  }
-  if (data.expiresAt?.toMillis?.() < Date.now()) {
+    const {ref, data} = await getOtpState(email);
+    if (!data) {
+      throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
+    }
+    if (data.expiresAt?.toMillis?.() < Date.now()) {
+      await ref.delete();
+      throw new HttpsError(
+        "deadline-exceeded",
+        "OTP expired. Request a new OTP.",
+      );
+    }
+
+    const valid = hashOtp(email, otp, data.salt) === data.otpHash;
+    if (!valid) {
+      throw new HttpsError("permission-denied", "Invalid OTP.");
+    }
+
+    let uid = data.uid;
+    if (!uid) {
+      const user = await admin.auth().getUserByEmail(email);
+      uid = user.uid;
+    }
+
+    await admin.auth().updateUser(uid, {password: newPassword});
     await ref.delete();
-    throw new HttpsError(
-      "deadline-exceeded",
-      "OTP expired. Request a new OTP.",
-    );
+
+    return {success: true, message: "Password reset successful."};
+  } catch (error) {
+    console.error("resetPasswordWithOtp failed:", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", error.message || "Failed to reset password");
   }
-
-  const valid = hashOtp(email, otp, data.salt) === data.otpHash;
-  if (!valid) {
-    throw new HttpsError("permission-denied", "Invalid OTP.");
-  }
-
-  let uid = data.uid;
-  if (!uid) {
-    const user = await admin.auth().getUserByEmail(email);
-    uid = user.uid;
-  }
-
-  await admin.auth().updateUser(uid, { password: newPassword });
-  await ref.delete();
-
-  return { success: true, message: "Password reset successful." };
 });
+
 
 export const getStripePublicConfig = onCall({secrets: [stripePublishableKey]}, async () => {
   return {
