@@ -209,18 +209,23 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                                 HousingCost.iconBgColorForCategory(
                                   cost.category,
                                 );
-                            // Find the display label for this category
                             final catInfo = HousingCost.displayCategories
                                 .firstWhere(
                                   (c) => c['id'] == cost.category,
                                   orElse: () => {'label': cost.category},
                                 );
 
+                            String formattedDate = '';
+                            if (cost.dueDate != null) {
+                              formattedDate = ' • Due ${DateFormat('MMM dd').format(cost.dueDate!)}';
+                            }
+                            final subtitleText = '${catInfo['label'] ?? cost.category}$formattedDate';
+
                             return HousingCostListItem(
                               iconPath: iconPath,
                               iconBgColor: iconBgColor,
                               title: cost.name,
-                              subtitle: catInfo['label'] ?? cost.category,
+                              subtitle: subtitleText,
                               amount: NumberFormat.simpleCurrency(
                                 decimalDigits: cost.amount % 1 == 0 ? 0 : 2,
                               ).format(cost.amount),

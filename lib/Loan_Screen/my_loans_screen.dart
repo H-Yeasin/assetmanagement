@@ -86,7 +86,17 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
   double get _totalMonthlyPayment {
     return _allLoans
         .where((l) => l.status == 'active')
-        .fold(0.0, (sum, l) => sum + l.monthlyPayment);
+        .fold(0.0, (sum, l) {
+      double adjustedPayment = l.monthlyPayment;
+      if (l.paymentFrequency == 'Bi-weekly') {
+        adjustedPayment = (l.monthlyPayment * 26) / 12;
+      } else if (l.paymentFrequency == 'Yearly') {
+        adjustedPayment = l.monthlyPayment / 12;
+      } else if (l.paymentFrequency == 'Weekly') {
+        adjustedPayment = (l.monthlyPayment * 52) / 12;
+      }
+      return sum + adjustedPayment;
+    });
   }
 
   double get _totalOutstanding {
@@ -542,7 +552,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                                                 ),
                                                 Text(
                                                   NumberFormat.simpleCurrency()
-                                                      .format(loan.totalAmount),
+                                                      .format(loan.monthlyPayment),
                                                   style: const TextStyle(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.w500,
@@ -609,12 +619,11 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                                 iconPath: iconPath,
                                 title: loan.name,
                                 subtitle: loan.lender ?? '',
-                                // Format amounts to look like $420,000 without decimal zeroes if whole.
                                 amount: NumberFormat.simpleCurrency(
-                                  decimalDigits: loan.totalAmount % 1 == 0
+                                  decimalDigits: loan.monthlyPayment % 1 == 0
                                       ? 0
                                       : 2,
-                                ).format(loan.totalAmount),
+                                ).format(loan.monthlyPayment),
                                 status: loan.autoPay
                                     ? 'Paid automatically'
                                     : 'Manual payment required',
