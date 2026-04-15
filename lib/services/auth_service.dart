@@ -188,8 +188,11 @@ class AuthService {
         'message': 'OTP sent to your email',
       };
     } on FirebaseFunctionsException catch (e) {
-      return _formatError((e.message ?? 'Error sending OTP'), 400);
+      final msg = e.message ?? 'Error sending OTP';
+      final detail = e.code != 'unknown' ? '[${e.code.toUpperCase()}] $msg' : msg;
+      return _formatError(detail, 400);
     } on FirebaseAuthException catch (e) {
+
       return _formatError(e.message ?? "Error sending OTP");
     } catch (e) {
       return _formatError(e.toString());
@@ -401,8 +404,11 @@ class AuthService {
         'message': 'Password reset successful',
       };
     } on FirebaseFunctionsException catch (e) {
-      return _formatError(e.message ?? "Error resetting password");
+      final msg = e.message ?? "Error resetting password";
+      final detail = e.code != 'unknown' ? '[${e.code.toUpperCase()}] $msg' : msg;
+      return _formatError(detail, 400);
     } on FirebaseAuthException catch (e) {
+
       return _formatError(e.message ?? "Error resetting password");
     } catch (e) {
       return _formatError(e.toString());
