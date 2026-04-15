@@ -86,17 +86,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
   double get _totalMonthlyPayment {
     return _allLoans
         .where((l) => l.status == 'active')
-        .fold(0.0, (sum, l) {
-      double adjustedPayment = l.monthlyPayment;
-      if (l.paymentFrequency == 'Bi-weekly') {
-        adjustedPayment = (l.monthlyPayment * 26) / 12;
-      } else if (l.paymentFrequency == 'Yearly') {
-        adjustedPayment = l.monthlyPayment / 12;
-      } else if (l.paymentFrequency == 'Weekly') {
-        adjustedPayment = (l.monthlyPayment * 52) / 12;
-      }
-      return sum + adjustedPayment;
-    });
+        .fold(0.0, (sum, l) => sum + l.monthlyPayment);
   }
 
   double get _totalOutstanding {

@@ -49,6 +49,11 @@ class HousingCost {
     if (value is Timestamp) return value.toDate();
     if (value is DateTime) return value;
     if (value is String) return DateTime.tryParse(value);
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    // Handle Map structure often found in server-side logs or certain SDK versions
+    if (value is Map && value.containsKey('_seconds')) {
+      return Timestamp(value['_seconds'] as int, value['_nanoseconds'] as int).toDate();
+    }
     return null;
   }
 

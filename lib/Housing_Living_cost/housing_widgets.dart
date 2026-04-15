@@ -100,11 +100,15 @@ class HousingCostListItem extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF888888),
+                      Expanded(
+                        child: Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF888888),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Container(

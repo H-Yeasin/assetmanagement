@@ -321,7 +321,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('Monthly Payment'),
+                  _buildLabel('Total Monthly Payment'),
                   _buildInputField(
                     controller: _monthlyPaymentController,
                     hint: '\$500',
@@ -515,7 +515,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildCategoryPicker(),
         const SizedBox(height: 24),
 
-        _buildLabel('Monthly Payment'),
+        _buildLabel('Total Monthly Payment'),
         _buildInputField(
           controller: _monthlyPaymentController,
           hint: '\$260',
@@ -710,7 +710,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         ),
         const SizedBox(height: 20),
 
-        _buildLabel('Annual Payments'),
+        _buildLabel('Total Annual Payments'),
         _buildInputField(
           controller: _annualPaymentController,
           hint: '\$2,400',
