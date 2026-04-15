@@ -15,8 +15,6 @@ class AddInsuranceScreen extends StatefulWidget {
   State<AddInsuranceScreen> createState() => _AddInsuranceScreenState();
 }
 
-
-
 class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   final InsuranceService _apiService = InsuranceService();
   final TextEditingController _nameController = TextEditingController();
