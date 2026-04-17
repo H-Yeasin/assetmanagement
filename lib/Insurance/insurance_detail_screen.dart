@@ -33,25 +33,22 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
   ];
 
   double _monthlyEquivalent() {
-    final freq = _policy.paymentFrequency?.toLowerCase() ?? '';
-    if (freq.contains('annually') || freq.contains('yearly')) {
-      return _policy.premium / 12;
-    }
-    if (freq.contains('quarterly')) {
-      return _policy.premium / 3;
-    }
-    return _policy.premium;
+    return _policy.monthlyEquivalent;
   }
 
   double _annualEquivalent() {
-    final freq = _policy.paymentFrequency?.toLowerCase() ?? '';
-    if (freq.contains('monthly')) {
-      return _policy.premium * 12;
+    return _policy.annualEquivalent;
+  }
+
+  String _paymentSummaryTitle() {
+    return _policy.isOneTime ? 'One-time Payment' : 'Annual Payment';
+  }
+
+  String _paymentSummarySubtitle() {
+    if (_policy.isOneTime) {
+      return 'Excluded from monthly payment totals';
     }
-    if (freq.contains('quarterly')) {
-      return _policy.premium * 4;
-    }
-    return _policy.premium;
+    return 'Monthly equivalent: \$${NumberFormat('#,##0.00').format(_monthlyEquivalent())}';
   }
 
   @override
@@ -266,7 +263,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
           children: [
             const SizedBox(height: 16),
 
-            // Annual Payment Card
+            // Payment Summary Card
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -285,9 +282,9 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Annual Payment',
-                    style: TextStyle(
+                  Text(
+                    _paymentSummaryTitle(),
+                    style: const TextStyle(
                       fontSize: 15,
                       color: Color(0xFF888888),
                       fontWeight: FontWeight.w500,
@@ -304,7 +301,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Monthly equivalent: \$${NumberFormat('#,##0.00').format(_monthlyEquivalent())}',
+                    _paymentSummarySubtitle(),
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF888888),

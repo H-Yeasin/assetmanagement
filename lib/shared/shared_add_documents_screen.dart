@@ -589,7 +589,7 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
                                   if (widget.module == 'housing') category = 'Housing / Living Costs';
                                   if (widget.module == 'loans') category = 'Loans';
                                   if (widget.module == 'insurance') category = 'Insurance';
-                                  context.go('/vault', extra: category);
+                                  context.push('/vault', extra: category);
                                 },
                               );
                             },

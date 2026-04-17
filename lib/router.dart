@@ -53,6 +53,8 @@ import 'package:ffp_vault/Insurance/models/insurance_model.dart';
 import 'package:ffp_vault/Authentication/forgot_password.dart';
 import 'package:ffp_vault/Authentication/verification_code.dart';
 import 'package:ffp_vault/Authentication/reset_password.dart';
+import 'package:ffp_vault/Authentication/login.dart';
+import 'package:ffp_vault/Authentication/sign_in.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -60,6 +62,14 @@ final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   routes: <RouteBase>[
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const Login(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => const SignIn(),
+    ),
     GoRoute(
       path: '/insurance-upcoming',
       builder: (context, state) => const InsuranceUpcomingActionsScreen(),

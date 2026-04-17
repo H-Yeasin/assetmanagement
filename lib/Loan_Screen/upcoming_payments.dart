@@ -24,6 +24,10 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
   DateTime _normalizeDay(DateTime date) =>
       DateTime(date.year, date.month, date.day);
 
+  bool _isFutureOrToday(DateTime date) {
+    return !_normalizeDay(date).isBefore(_normalizeDay(DateTime.now()));
+  }
+
   List<_PaymentListItem> _combineItems(
     List<dynamic> loanGroups,
     List<HousingCost> housingCosts,
@@ -36,11 +40,25 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
       if (date == null) continue;
       final groupItems = (group['items'] as List?) ?? const [];
       for (final item in groupItems) {
+        double amount = (item['monthlyPayment'] ?? 0).toDouble();
+        
+        // Convert to monthly equivalent for display if requested
+        final frequency = item['paymentFrequency']?.toString() ?? 'Monthly';
+        final category = item['category']?.toString() ?? '';
+        
+        if (category != 'mortgage') {
+          if (frequency == 'Weekly') {
+            amount = (amount * 52) / 12;
+          } else if (frequency == 'Bi-weekly') {
+            amount = (amount * 26) / 12;
+          }
+        }
+
         items.add(
           _PaymentListItem(
             date: date,
             title: item['name']?.toString() ?? 'Payment',
-            amount: (item['monthlyPayment'] ?? 0).toDouble(),
+            amount: amount,
             isPaid: item['autoPay'] == true,
           ),
         );
@@ -60,19 +78,21 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
     }
 
     for (final policy in policies) {
-      if (policy.renewalDate == null) continue;
+      if (policy.renewalDate == null || policy.isOneTime || !policy.isActive) {
+        continue;
+      }
       items.add(
         _PaymentListItem(
           date: policy.renewalDate!,
           title: policy.name,
           amount: policy.premium,
-          isPaid: policy.isAutoPay ?? true,
+          isPaid: policy.autoPayEnabledForStatus,
         ),
       );
     }
 
     items.sort((a, b) => a.date.compareTo(b.date));
-    return items;
+    return items.where((item) => _isFutureOrToday(item.date)).toList();
   }
 
   Set<DateTime> _manualDaysFromItems(List<_PaymentListItem> items) {
@@ -156,7 +176,7 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
               }
 
               return StreamBuilder<List<InsurancePolicy>>(
-                stream: _insuranceService.streamInsurances(),
+                stream: _insuranceService.streamInsurances(status: 'active'),
                 builder: (context, insuranceSnapshot) {
                   if (insuranceSnapshot.connectionState ==
                       ConnectionState.waiting) {
@@ -222,9 +242,7 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
                                 month: DateFormat('MMM').format(item.date),
                                 day: DateFormat('dd').format(item.date),
                                 title: item.title,
-                                amount: NumberFormat.simpleCurrency().format(
-                                  item.amount,
-                                ),
+                                amount: '\$${NumberFormat('#,##0.00').format(item.amount)}',
                                 status: item.isPaid
                                     ? 'Paid Automatically'
                                     : 'Manual Payment Required',

@@ -66,27 +66,10 @@ class AuthService {
 
       final user = userCredential.user;
       if (user != null) {
-        await _safeUpsertUserDoc(user);
-        final twoFactorResult = await requestTwoFactorLogin(email: email);
-        final twoFactorRequired =
-            (twoFactorResult['data']?['twoFactorRequired'] == true);
-        if (twoFactorRequired) {
-          return {
-            'statusCode': 403,
-            'success': false,
-            'message':
-                twoFactorResult['message'] ??
-                'Two-factor authentication required',
-            'data': {
-              'twoFactorRequired': true,
-              'email': twoFactorResult['data']?['email'] ?? email,
-            },
-          };
-        }
-        return _authSuccess(
+        return _completeLoginAfterAuth(
           user,
-          message: 'Login successful',
-          userName: await _safeResolveDisplayName(user),
+          fallbackEmail: email,
+          successMessage: 'Login successful',
         );
       }
       return _formatError("Login failed");
@@ -115,11 +98,10 @@ class AuthService {
       final user = userCredential.user;
       if (user == null) return _formatError('Google sign-in failed.');
 
-      await _safeUpsertUserDoc(user);
-      return _authSuccess(
+      return _completeLoginAfterAuth(
         user,
-        message: 'Google login successful',
-        userName: await _safeResolveDisplayName(user),
+        fallbackEmail: user.email ?? googleUser.email,
+        successMessage: 'Google login successful',
       );
     } on FirebaseAuthException catch (e) {
       return _formatError(e.message ?? 'Google sign-in failed.');
@@ -162,11 +144,10 @@ class AuthService {
         }
       }
 
-      await _safeUpsertUserDoc(user);
-      return _authSuccess(
+      return _completeLoginAfterAuth(
         user,
-        message: 'Apple login successful',
-        userName: await _safeResolveDisplayName(user),
+        fallbackEmail: user.email ?? '',
+        successMessage: 'Apple login successful',
       );
     } on FirebaseAuthException catch (e) {
       return _formatError(e.message ?? 'Apple sign-in failed.');
@@ -358,7 +339,7 @@ class AuthService {
         'twoFactorEnabled': false,
         'twoFactorEmail': '',
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
       return {
         'statusCode': 200,
@@ -471,6 +452,57 @@ class AuthService {
       final fallback = user.displayName?.trim() ?? '';
       return fallback.isNotEmpty ? fallback : 'User';
     }
+  }
+
+  static Future<Map<String, dynamic>> _completeLoginAfterAuth(
+    User user, {
+    required String fallbackEmail,
+    required String successMessage,
+  }) async {
+    try {
+      await _safeUpsertUserDoc(user);
+
+      final twoFactorResult = await requestTwoFactorLogin(
+        email: fallbackEmail.isNotEmpty ? fallbackEmail : (user.email ?? ''),
+      );
+      if (twoFactorResult['success'] != true) {
+        await _safeRollbackAuthState();
+        return twoFactorResult;
+      }
+
+      final data = twoFactorResult['data'] as Map<String, dynamic>?;
+      if (data?['twoFactorRequired'] == true) {
+        return {
+          'statusCode': 403,
+          'success': false,
+          'message':
+              twoFactorResult['message'] ??
+              'Two-factor authentication required',
+          'data': {
+            'twoFactorRequired': true,
+            'email': data?['email'] ?? fallbackEmail,
+          },
+        };
+      }
+
+      return _authSuccess(
+        user,
+        message: successMessage,
+        userName: await _safeResolveDisplayName(user),
+      );
+    } catch (e) {
+      await _safeRollbackAuthState();
+      return _formatError(e.toString());
+    }
+  }
+
+  static Future<void> _safeRollbackAuthState() async {
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {}
+    try {
+      await _auth.signOut();
+    } catch (_) {}
   }
 
   static Future<Map<String, dynamic>> _authSuccess(

@@ -145,6 +145,21 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
     }
   }
 
+  double _getMonthlyEquivalent() {
+    if (_currentLoan.monthlyPayment <= 0) return 0.0;
+    if (_currentLoan.category == 'mortgage') return _currentLoan.monthlyPayment;
+
+    switch (_currentLoan.paymentFrequency) {
+      case 'Weekly':
+        return (_currentLoan.monthlyPayment * 52) / 12;
+      case 'Bi-weekly':
+        return (_currentLoan.monthlyPayment * 26) / 12;
+      case 'Monthly':
+      default:
+        return _currentLoan.monthlyPayment;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -247,8 +262,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                       const SizedBox(height: 4),
                                       Text(
                                         NumberFormat.simpleCurrency(
-                                          decimalDigits: 0,
-                                        ).format(_currentLoan.monthlyPayment),
+                                          decimalDigits: 2,
+                                        ).format(_getMonthlyEquivalent()),
                                         style: const TextStyle(
                                           fontSize: 24,
                                           fontWeight: FontWeight.w700,
@@ -256,6 +271,17 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
+                                      if (_currentLoan.paymentFrequency != 'Monthly') ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '(${NumberFormat.simpleCurrency(decimalDigits: 2).format(_currentLoan.monthlyPayment)} ${_currentLoan.paymentFrequency})',
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: brandRed,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),

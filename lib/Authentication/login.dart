@@ -82,7 +82,16 @@ class _LoginState extends State<Login> {
         final data = result['data'] as Map<String, dynamic>?;
         if (data != null && data['twoFactorRequired'] == true) {
           final tfEmail = data['email'] as String? ?? email;
-          context.push('/two-factor-otp', extra: {'email': tfEmail, 'flow': 'login'});
+          await _startTwoFactorLogin(tfEmail);
+          if (!mounted) return;
+          context.push(
+            '/two-factor-otp',
+            extra: {
+              'email': tfEmail,
+              'flow': 'login',
+              'rememberMe': _rememberMe,
+            },
+          );
           return;
         }
         _showSnack(result['message'] ?? 'Login failed');
@@ -117,6 +126,24 @@ class _LoginState extends State<Login> {
         if (!mounted) return;
         context.go('/home');
       } else {
+        final data = result['data'] as Map<String, dynamic>?;
+        if (data != null && data['twoFactorRequired'] == true) {
+          final tfEmail =
+              data['email'] as String? ??
+              data['user']?['email'] as String? ??
+              '';
+          await _startTwoFactorLogin(tfEmail);
+          if (!mounted) return;
+          context.push(
+            '/two-factor-otp',
+            extra: {
+              'email': tfEmail,
+              'flow': 'login',
+              'rememberMe': _rememberMe,
+            },
+          );
+          return;
+        }
         _showSnack(result['message'] ?? 'Google login failed');
       }
     } catch (_) {
@@ -149,6 +176,24 @@ class _LoginState extends State<Login> {
         if (!mounted) return;
         context.go('/home');
       } else {
+        final data = result['data'] as Map<String, dynamic>?;
+        if (data != null && data['twoFactorRequired'] == true) {
+          final tfEmail =
+              data['email'] as String? ??
+              data['user']?['email'] as String? ??
+              '';
+          await _startTwoFactorLogin(tfEmail);
+          if (!mounted) return;
+          context.push(
+            '/two-factor-otp',
+            extra: {
+              'email': tfEmail,
+              'flow': 'login',
+              'rememberMe': _rememberMe,
+            },
+          );
+          return;
+        }
         _showSnack(result['message'] ?? 'Apple login failed');
       }
     } catch (_) {
@@ -156,6 +201,13 @@ class _LoginState extends State<Login> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _startTwoFactorLogin(String email) async {
+    await StorageService.setPendingTwoFactorLogin(
+      email: email,
+      persistLogin: _rememberMe,
+    );
   }
 
   void _showSnack(String msg) {

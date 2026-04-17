@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -14,6 +15,14 @@ class SubscriptionPlanScreen extends StatefulWidget {
 class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
   final SubscriptionService _subscriptionService = SubscriptionService();
   bool _isCancelling = false;
+
+  void _handleBackNavigation() {
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+    } else {
+      context.go('/home');
+    }
+  }
 
   Future<void> _cancelSubscription() async {
     if (_isCancelling) return;
@@ -74,11 +83,17 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
         final subscription = snapshot.data ?? SubscriptionState.inactive;
         final isActive = subscription.isActive;
 
-        return Scaffold(
-          backgroundColor: const Color(0xFFF5F5F5),
-          body: SafeArea(
-            child: Column(
-              children: [
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (didPop) return;
+            _handleBackNavigation();
+          },
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF5F5F5),
+            body: SafeArea(
+              child: Column(
+                children: [
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -88,13 +103,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                         const SizedBox(height: 16),
                         if (isActive)
                           GestureDetector(
-                            onTap: () {
-                              if (GoRouter.of(context).canPop()) {
-                                GoRouter.of(context).pop();
-                              } else {
-                                context.go('/home');
-                              }
-                            },
+                            onTap: _handleBackNavigation,
                             child: const Icon(
                               Icons.arrow_back,
                               color: Colors.black,
@@ -106,13 +115,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               GestureDetector(
-                                onTap: () {
-                                  if (GoRouter.of(context).canPop()) {
-                                    GoRouter.of(context).pop();
-                                  } else {
-                                    context.go('/home');
-                                  }
-                                },
+                                onTap: _handleBackNavigation,
                                 child: const Padding(
                                   padding: EdgeInsets.only(top: 4),
                                   child: Icon(
@@ -401,7 +404,9 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                       GestureDetector(
                         onTap: () => context.go('/home'),
                         child: Text(
-                          isActive ? 'Back to Profile' : 'Continue later',
+                          isActive
+                              ? 'Back to Profile'
+                              : (kDebugMode ? 'Skip for testing 🔓' : 'Continue later'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -424,7 +429,8 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                     ],
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         );

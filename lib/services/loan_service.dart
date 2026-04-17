@@ -115,7 +115,7 @@ class LoanService {
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
     final contentType = _getMimeType(file.path);
-    final ref = _storage.ref().child('vault/$_uid/$fileName');
+    final ref = _storage.ref().child('$module/$_uid/$fileName');
 
     final uploadTask = ref.putFile(
       file,

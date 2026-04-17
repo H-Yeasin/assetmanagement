@@ -73,18 +73,24 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     await _loadData();
   }
 
+  String _titleCase(String value) {
+    if (value.isEmpty) return value;
+    return value[0].toUpperCase() + value.substring(1).toLowerCase();
+  }
+
+  String _policySubtitle(InsurancePolicy policy) {
+    final baseSubtitle = policy.provider ?? _titleCase(policy.category);
+    if (policy.isActive) return baseSubtitle;
+    return '$baseSubtitle - ${_titleCase(policy.status)}';
+  }
+
   double _monthlyEquivalent(InsurancePolicy policy) {
-    final freq = policy.paymentFrequency?.toLowerCase() ?? '';
-    if (freq.contains('annually') || freq.contains('yearly')) {
-      return policy.premium / 12;
-    }
-    if (freq.contains('quarterly')) {
-      return policy.premium / 3;
-    }
-    return policy.premium;
+    return policy.monthlyEquivalent;
   }
 
   double _outstandingAmount(InsurancePolicy policy) {
+    if (!policy.isActive || policy.isOneTime) return 0;
+
     final totalPayments = policy.totalPayments ?? 0;
     final completedPayments = policy.paymentsCompleted ?? 0;
 
@@ -105,12 +111,15 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     return policy.premium;
   }
 
+  List<InsurancePolicy> get _activePolicies =>
+      _policies.where((policy) => policy.isActive).toList();
+
   double get _totalMonthlyPayment {
-    return _policies.fold(0.0, (sum, p) => sum + _monthlyEquivalent(p));
+    return _activePolicies.fold(0.0, (sum, p) => sum + _monthlyEquivalent(p));
   }
 
   double get _totalOutstanding {
-    return _policies.fold(0.0, (sum, p) => sum + _outstandingAmount(p));
+    return _activePolicies.fold(0.0, (sum, p) => sum + _outstandingAmount(p));
   }
 
   List<InsurancePolicy> get _filteredPolicies {
@@ -276,7 +285,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Column(
-                          children: _policies.isEmpty
+                          children: _upcomingPolicies.isEmpty
                               ? [
                                   const Padding(
                                     padding: EdgeInsets.symmetric(vertical: 20),
@@ -291,7 +300,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                                     ),
                                   ),
                                 ]
-                              : _policies.take(3).map((p) {
+                              : _upcomingPolicies.take(3).map((p) {
                                   final renewalDate =
                                       p.renewalDate ?? DateTime.now();
                                   return Padding(
@@ -302,16 +311,10 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                                       ).format(renewalDate),
                                       day: DateFormat('dd').format(renewalDate),
                                       title: p.name,
-                                      status:
-                                          p.paymentFrequency?.toLowerCase() ==
-                                              'manual'
-                                          ? 'Manual payment required'
-                                          : 'Paid automatically',
+                                      status: p.paymentStatusLabel,
                                       amount:
                                           '\$${NumberFormat('#,##0.00').format(p.premium)}',
-                                      isAutoPay:
-                                          p.paymentFrequency?.toLowerCase() !=
-                                          'manual',
+                                      isAutoPay: p.autoPayEnabledForStatus,
                                     ),
                                   );
                                 }).toList(),
@@ -422,11 +425,13 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                                         p.category,
                                       ),
                                   title: p.name,
-                                  subtitle: p.provider ?? p.category,
+                                  subtitle: _policySubtitle(p),
                                   amount:
-                                      '\$${NumberFormat('#,##0.0').format(p.premium)}',
-                                  frequency: p.paymentFrequency ?? 'Yearly',
-                                  isAutoPay: true,
+                                      '\$${NumberFormat('#,##0.00').format(p.premium)}',
+                                  frequency:
+                                      p.paymentFrequency ??
+                                      (p.isOneTime ? 'One-time' : 'Yearly'),
+                                  isAutoPay: p.autoPayEnabledForStatus,
                                   onTap: () async {
                                     await context.push(
                                       '/insurance-detail',

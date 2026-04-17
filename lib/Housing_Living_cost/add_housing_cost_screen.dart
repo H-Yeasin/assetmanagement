@@ -24,6 +24,7 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
   bool _reminderEnabled = true;
   String _reminderTiming = 'Same day';
   bool _isSaving = false;
+  bool _showAdditionalDetails = false;
   List<Map<String, dynamic>> _uploadedDocuments = [];
 
   final List<String> _reminderTimings = [
@@ -39,7 +40,7 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
       _isHousingCategory ? 'Housing/Living Costs' : 'Living Costs';
 
   String get _amountLabel =>
-      _isHousingCategory ? 'Monthly Housing Cost' : 'Amount';
+      _isHousingCategory ? 'Monthly Payment' : 'Payment Amount';
 
   DateTime? _parseDateText(String value) {
     if (value.trim().isEmpty) return null;
@@ -209,7 +210,7 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
                     const SizedBox(height: 8),
 
                     // ── Cost Name ──
-                    _buildLabel('Cost Name'),
+                    _buildLabel('Payment Name'),
                     _buildInputField(
                       controller: _nameController,
                       hint: _isHousingCategory
@@ -251,119 +252,154 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
                     const SizedBox(height: 20),
 
                     // ── Due Date ──
-                    _buildLabel('Due Date'),
+                    _buildLabel('Payment Date'),
                     _buildInputField(
                       controller: _dueDateController,
                       hint: 'mm/dd/yy',
                       isDate: true,
                     ),
-                    const SizedBox(height: 24),
-
-                    // ── Payment Reminders ──
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () => setState(
+                        () => _showAdditionalDetails = !_showAdditionalDetails,
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFDE7E9),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Image.asset(
-                              'assets/images/icon/remind.png',
-                              width: 20,
-                              height: 20,
-                              errorBuilder: (c, e, s) => const Icon(
-                                Icons.notifications,
-                                size: 20,
-                                color: Color(0xFFC61C36),
-                              ),
+                          const Text(
+                            'Additional Details',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111111),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Payment Reminders',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF111111),
-                                  ),
-                                ),
-                                Text(
-                                  '4 days before date',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(width: 6),
+                          const Text(
+                            '(Optional)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF888888),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFFEEEEEE),
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _reminderTiming,
-                                isDense: true,
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  size: 16,
-                                  color: Color(0xFF888888),
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF555555),
-                                ),
-                                items: _reminderTimings
-                                    .map(
-                                      (t) => DropdownMenuItem(
-                                        value: t,
-                                        child: Text(t),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (val) =>
-                                    setState(() => _reminderTiming = val!),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Switch(
-                            value: _reminderEnabled,
-                            onChanged: (v) =>
-                                setState(() => _reminderEnabled = v),
-                            activeThumbColor: Colors.white,
-                            activeTrackColor: const Color(0xFFC61C36),
-                            trackOutlineColor: WidgetStateProperty.all(
-                              Colors.transparent,
-                            ),
+                          const Spacer(),
+                          Icon(
+                            _showAdditionalDetails
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: const Color(0xFF111111),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+                    if (_showAdditionalDetails) ...[
+                      // ── Payment Reminders ──
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFDE7E9),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Image.asset(
+                                'assets/images/icon/remind.png',
+                                width: 20,
+                                height: 20,
+                                errorBuilder: (c, e, s) => const Icon(
+                                  Icons.notifications,
+                                  size: 20,
+                                  color: Color(0xFFC61C36),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Payment Reminders',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF111111),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Remind based on frequency',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xFFEEEEEE),
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _reminderTiming,
+                                  isDense: true,
+                                  icon: const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    size: 16,
+                                    color: Color(0xFF888888),
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF555555),
+                                  ),
+                                  items: _reminderTimings
+                                      .map(
+                                        (t) => DropdownMenuItem(
+                                          value: t,
+                                          child: Text(t),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (val) =>
+                                      setState(() => _reminderTiming = val!),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Switch(
+                              value: _reminderEnabled,
+                              onChanged: (v) =>
+                                  setState(() => _reminderEnabled = v),
+                              activeThumbColor: Colors.white,
+                              activeTrackColor: const Color(0xFFC61C36),
+                              trackOutlineColor: WidgetStateProperty.all(
+                                Colors.transparent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
 
-                    // ── Documents Section ──
-                    _buildAddDocumentsButton(),
-                    const SizedBox(height: 12),
+                      // ── Documents Section ──
+                      _buildAddDocumentsButton(),
+                    ],
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),

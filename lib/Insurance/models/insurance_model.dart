@@ -35,6 +35,7 @@ class InsurancePolicy {
   final bool? isAutoPay;
   final String? paymentDay;
   final String? personalInsuranceType;
+  final String status;
 
   InsurancePolicy({
     this.id,
@@ -64,6 +65,7 @@ class InsurancePolicy {
     this.isAutoPay,
     this.paymentDay,
     this.personalInsuranceType,
+    this.status = 'active',
   });
 
   factory InsurancePolicy.fromJson(Map<String, dynamic> json) {
@@ -120,7 +122,48 @@ class InsurancePolicy {
       paymentDay: json['paymentDay'] ?? extraData['paymentDay'],
       personalInsuranceType:
           json['personalInsuranceType'] ?? extraData['personalInsuranceType'],
+      status: (json['status'] ?? 'active').toString(),
     );
+  }
+
+  String get normalizedFrequency => (paymentFrequency ?? '').trim().toLowerCase();
+
+  String get normalizedStatus => status.trim().toLowerCase();
+
+  bool get isActive => normalizedStatus == 'active';
+
+  bool get isOneTime =>
+      normalizedFrequency.contains('one-time') || category.toLowerCase() == 'appliance';
+
+  double get monthlyEquivalent {
+    if (isOneTime) return 0;
+    if (normalizedFrequency.contains('annually') ||
+        normalizedFrequency.contains('yearly')) {
+      return premium / 12;
+    }
+    if (normalizedFrequency.contains('quarterly')) {
+      return premium / 3;
+    }
+    return premium;
+  }
+
+  double get annualEquivalent {
+    if (normalizedFrequency.contains('monthly')) {
+      return premium * 12;
+    }
+    if (normalizedFrequency.contains('quarterly')) {
+      return premium * 4;
+    }
+    return premium;
+  }
+
+  bool get autoPayEnabledForStatus => !isOneTime && (isAutoPay ?? true);
+
+  String get paymentStatusLabel {
+    if (isOneTime) return 'One-time payment';
+    return autoPayEnabledForStatus
+        ? 'Paid automatically'
+        : 'Manual payment required';
   }
 
   static DateTime? _parseDate(dynamic value) {
@@ -171,6 +214,7 @@ class InsurancePolicy {
           }
         }
       }).toList(),
+      'status': status,
     };
   }
 

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import '../Home_Dashboard/widgets.dart';
 import '../services/biometric_service.dart';
 import '../services/security_service.dart';
 import '../services/subscription_service.dart';
+import '../services/storage_service.dart';
 
 /// Tracks whether the vault session is unlocked for the current app session.
 class VaultAccessSession {
@@ -62,9 +64,16 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
 
       if (!mounted) return;
 
-      if (!subscription.isActive) {
-        // Not subscribed — redirect to subscription plan
-        GoRouter.of(context).go('/subscription-plan');
+      // BYPASS: If in debug mode or if a bypass flag is set, allow access
+      final bool bypassSubscription = kDebugMode; 
+
+      if (!subscription.isActive && !bypassSubscription) {
+        // Replace the gated vault route so back navigation returns to the
+        // previous stable screen instead of a half-initialized gate.
+        GoRouter.of(context).pushReplacement(
+          '/subscription-plan',
+          extra: {'openedFromVaultGate': true},
+        );
         return;
       }
 

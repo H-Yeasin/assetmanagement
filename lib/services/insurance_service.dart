@@ -19,7 +19,10 @@ class InsuranceService {
 
   // ── Insurance Policies ──────────────────────────────────────────────────────
 
-  Future<List<InsurancePolicy>> fetchInsurances({String? category}) async {
+  Future<List<InsurancePolicy>> fetchInsurances({
+    String? category,
+    String? status,
+  }) async {
     if (_uid == null) return [];
 
     Query query = _firestore
@@ -31,7 +34,7 @@ class InsuranceService {
     }
 
     final snapshot = await query.get();
-    return snapshot.docs
+    final policies = snapshot.docs
         .map(
           (doc) => InsurancePolicy.fromJson({
             ...doc.data() as Map<String, dynamic>,
@@ -39,9 +42,19 @@ class InsuranceService {
           }),
         )
         .toList();
+
+    if (status == null) return policies;
+
+    final normalizedStatus = status.toLowerCase();
+    return policies
+        .where((policy) => policy.normalizedStatus == normalizedStatus)
+        .toList();
   }
 
-  Stream<List<InsurancePolicy>> streamInsurances({String? category}) {
+  Stream<List<InsurancePolicy>> streamInsurances({
+    String? category,
+    String? status,
+  }) {
     if (_uid == null) return Stream.value([]);
 
     Query query = _firestore
@@ -52,16 +65,23 @@ class InsuranceService {
       query = query.where('category', isEqualTo: category);
     }
 
-    return query.snapshots().map(
-      (snapshot) => snapshot.docs
+    return query.snapshots().map((snapshot) {
+      final policies = snapshot.docs
           .map(
             (doc) => InsurancePolicy.fromJson({
               ...doc.data() as Map<String, dynamic>,
               'id': doc.id,
             }),
           )
-          .toList(),
-    );
+          .toList();
+
+      if (status == null) return policies;
+
+      final normalizedStatus = status.toLowerCase();
+      return policies
+          .where((policy) => policy.normalizedStatus == normalizedStatus)
+          .toList();
+    });
   }
 
   Future<InsurancePolicy> getInsurance(String id) async {
@@ -102,24 +122,32 @@ class InsuranceService {
   }) async {
     if (_uid == null) return [];
 
-    final snapshot = await _firestore
-        .collection('insurancePolicies')
-        .where('userId', isEqualTo: _uid)
-        .get();
+    final now = DateTime.now();
+    final effectiveFrom = DateTime(
+      (from ?? now).year,
+      (from ?? now).month,
+      (from ?? now).day,
+    );
+    final effectiveTo = to == null ? null : DateTime(to.year, to.month, to.day);
 
-    final policies =
-        snapshot.docs
-            .map(
-              (doc) => InsurancePolicy.fromJson({...doc.data(), 'id': doc.id}),
-            )
-            .where((p) {
-              final r = p.renewalDate;
-              if (r == null) return false;
-              if (from != null && r.isBefore(from)) return false;
-              if (to != null && r.isAfter(to)) return false;
-              return true;
-            })
-            .toList()
+    final policies = await fetchInsurances(status: 'active');
+    final upcomingPolicies =
+        policies.where((policy) {
+            final renewalDate = policy.renewalDate;
+            if (renewalDate == null || policy.isOneTime) return false;
+
+            final renewalDay = DateTime(
+              renewalDate.year,
+              renewalDate.month,
+              renewalDate.day,
+            );
+
+            if (renewalDay.isBefore(effectiveFrom)) return false;
+            if (effectiveTo != null && renewalDay.isAfter(effectiveTo)) {
+              return false;
+            }
+            return true;
+          }).toList()
           ..sort((a, b) {
             final aDate = a.renewalDate;
             final bDate = b.renewalDate;
@@ -129,7 +157,7 @@ class InsuranceService {
             return aDate.compareTo(bDate);
           });
 
-    return policies;
+    return upcomingPolicies;
   }
 
   // ── Documents ─────────────────────────────────────────────────────────────
@@ -147,7 +175,7 @@ class InsuranceService {
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
     final contentType = _getMimeType(file.path);
-    final ref = _storage.ref().child('vault/$_uid/$fileName');
+    final ref = _storage.ref().child('$module/$_uid/$fileName');
 
     final uploadTask = ref.putFile(
       file,

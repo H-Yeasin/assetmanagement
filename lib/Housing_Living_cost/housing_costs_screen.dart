@@ -226,9 +226,7 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                               iconBgColor: iconBgColor,
                               title: cost.name,
                               subtitle: subtitleText,
-                              amount: NumberFormat.simpleCurrency(
-                                decimalDigits: cost.amount % 1 == 0 ? 0 : 2,
-                              ).format(cost.amount),
+                              amount: '\$${NumberFormat('#,##0.00').format(cost.amount)}',
                               status: cost.autoPay
                                   ? 'Auto Payment'
                                   : 'Manual payment required',

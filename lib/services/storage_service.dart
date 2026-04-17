@@ -16,6 +16,8 @@ class StorageService {
   static const _kSessionPersistent = 'session_persistent';
   static const _kRememberMe = 'remember_me';
   static const _kRememberedEmail = 'remembered_email';
+  static const _kPendingTwoFactorEmail = 'pending_two_factor_email';
+  static const _kPendingTwoFactorPersist = 'pending_two_factor_persist';
   static const _kReminderNotificationsEnabled =
       'reminder_notifications_enabled';
 
@@ -40,6 +42,8 @@ class StorageService {
         value: persistLogin ? 'true' : 'false',
       ),
       if (avatar != null) _storage.write(key: _kUserAvatar, value: avatar),
+      _storage.delete(key: _kPendingTwoFactorEmail),
+      _storage.delete(key: _kPendingTwoFactorPersist),
     ]);
   }
 
@@ -87,6 +91,8 @@ class StorageService {
       _storage.delete(key: _kUserName),
       _storage.delete(key: _kUserAvatar),
       _storage.delete(key: _kSessionPersistent),
+      _storage.delete(key: _kPendingTwoFactorEmail),
+      _storage.delete(key: _kPendingTwoFactorPersist),
     ]);
   }
 
@@ -125,6 +131,47 @@ class StorageService {
 
   static Future<String?> getRememberedEmail() =>
       _storage.read(key: _kRememberedEmail);
+
+  // ── Pending 2FA login ─────────────────────────────────────────────────────
+  static Future<void> setPendingTwoFactorLogin({
+    required String email,
+    required bool persistLogin,
+  }) async {
+    await Future.wait([
+      _storage.write(key: _kPendingTwoFactorEmail, value: email.trim()),
+      _storage.write(
+        key: _kPendingTwoFactorPersist,
+        value: persistLogin ? 'true' : 'false',
+      ),
+      _storage.delete(key: _kAccessToken),
+      _storage.delete(key: _kRefreshToken),
+      _storage.delete(key: _kUserId),
+      _storage.delete(key: _kUserEmail),
+      _storage.delete(key: _kUserName),
+      _storage.delete(key: _kUserAvatar),
+      _storage.delete(key: _kSessionPersistent),
+    ]);
+  }
+
+  static Future<void> clearPendingTwoFactorLogin() async {
+    await Future.wait([
+      _storage.delete(key: _kPendingTwoFactorEmail),
+      _storage.delete(key: _kPendingTwoFactorPersist),
+    ]);
+  }
+
+  static Future<bool> hasPendingTwoFactorLogin() async {
+    final email = await _storage.read(key: _kPendingTwoFactorEmail);
+    return email != null && email.isNotEmpty;
+  }
+
+  static Future<String?> getPendingTwoFactorEmail() =>
+      _storage.read(key: _kPendingTwoFactorEmail);
+
+  static Future<bool> getPendingTwoFactorPersistLogin() async {
+    final val = await _storage.read(key: _kPendingTwoFactorPersist);
+    return val == 'true';
+  }
 
   // ── Reminder Notifications ────────────────────────────────────────────────
   static Future<void> setReminderNotificationsEnabled(bool enabled) =>

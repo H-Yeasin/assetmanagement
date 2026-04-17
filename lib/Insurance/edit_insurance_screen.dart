@@ -35,6 +35,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
 
   late String _paymentType;
   late String _coverageType;
+  late String _status;
   String? _personalInsuranceType;
   bool _isSaving = false;
   bool _isAutoPay = true;
@@ -42,6 +43,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   List<Map<String, dynamic>> _uploadedDocuments = [];
 
   final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Yearly'];
+  final List<String> _statusOptions = ['Active', 'Inactive', 'Archived'];
   final List<String> _personalTypes = [
     'Disability',
     'Travel',
@@ -67,6 +69,11 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       } catch (_) {}
     }
     return null;
+  }
+
+  String _titleCase(String value) {
+    if (value.isEmpty) return value;
+    return value[0].toUpperCase() + value.substring(1).toLowerCase();
   }
 
   @override
@@ -118,6 +125,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     _isAutoPay = widget.policy.isAutoPay ?? true;
     _paymentDay = widget.policy.paymentDay ?? 'Every 15th of the month';
     _coverageType = widget.policy.coverageType ?? 'Comprehensive';
+    _status = _titleCase(widget.policy.status);
     _personalInsuranceType = widget
         .policy
         .personalInsuranceType; // Assuming this field exists in model
@@ -175,6 +183,10 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       final renewalDate = _parseDateText(_dateController.text);
       final startDate = _parseDateText(_startDateController.text);
       final endDate = _parseDateText(_endDateController.text);
+      final selectedPaymentType = widget.policy.category == 'appliance'
+          ? 'One-time'
+          : _paymentType;
+      final normalizedStatus = _status.toLowerCase();
 
       final tempPolicy = InsurancePolicy(
         userId: widget.policy.userId,
@@ -183,7 +195,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
             : _nameController.text,
         category: widget.policy.category,
         premium: amount,
-        paymentFrequency: _paymentType,
+        paymentFrequency: selectedPaymentType,
         provider: _providerController.text,
         renewalDate: renewalDate,
         coverageNotes: _notesController.text,
@@ -201,16 +213,20 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         startDate: startDate,
         endDate: endDate,
         coverageType: _coverageType,
-        isAutoPay: _isAutoPay,
+        isAutoPay: widget.policy.category == 'appliance' ? false : _isAutoPay,
         paymentDay: _paymentDay,
         personalInsuranceType: _personalInsuranceType,
+        status: normalizedStatus,
         documents: _uploadedDocuments.map((d) => d['id']).toList(),
       );
 
       final packedUpdates = tempPolicy.toJson();
       await _apiService.updateInsurance(widget.policy.id!, packedUpdates);
 
-      if (_isAutoPay && renewalDate != null) {
+      if (_isAutoPay &&
+          renewalDate != null &&
+          normalizedStatus == 'active' &&
+          !selectedPaymentType.toLowerCase().contains('one-time')) {
         // Use the renewal date for the auto-pay reminder
         final pDate = renewalDate;
 
@@ -301,6 +317,14 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
               ..._buildWarrantyEditFields()
             else
               ..._buildDefaultEditFields(),
+            const SizedBox(height: 8),
+            _buildLabel('Status'),
+            _buildDropdownField(
+              _statusOptions,
+              _status,
+              'Active',
+              (v) => setState(() => _status = v ?? 'Active'),
+            ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _isSaving ? null : _updatePolicy,

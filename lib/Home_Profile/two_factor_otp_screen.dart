@@ -30,6 +30,7 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
 
   String _email = '';
   String _flow = 'enable'; // 'enable' | 'login'
+  bool _rememberMe = true;
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
     final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
     _email = extra?['email'] as String? ?? '';
     _flow = extra?['flow'] as String? ?? 'enable';
+    _rememberMe = extra?['rememberMe'] == true;
   }
 
   void _startTimer() {
@@ -155,6 +157,7 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
         userId: userId,
         email: _email,
         name: userName,
+        persistLogin: _rememberMe,
       );
       if (!mounted) return;
       context.go('/home');
@@ -162,6 +165,24 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
       setState(() => _isIncorrect = true);
       _showSnack(result['message'] ?? 'Invalid code. Please try again.');
     }
+  }
+
+  Future<void> _handleBackNavigation() async {
+    if (_flow != 'login') {
+      Navigator.pop(context);
+      return;
+    }
+
+    await AuthService.logout();
+    await StorageService.clearSession();
+
+    if (!mounted) return;
+
+    if (Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+      return;
+    }
+    context.go('/');
   }
 
   Future<void> _onResend() async {
@@ -271,16 +292,22 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (_isDialPadVisible) setState(() => _isDialPadVisible = false);
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop || _isLoading) return;
+        await _handleBackNavigation();
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
+      child: GestureDetector(
+        onTap: () {
+          if (_isDialPadVisible) setState(() => _isDialPadVisible = false);
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
               // Top bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -292,7 +319,7 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
                         size: 22,
                         color: brandRed,
                       ),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: _isLoading ? null : _handleBackNavigation,
                     ),
                   ],
                 ),
@@ -596,7 +623,8 @@ class _TwoFactorOtpScreenState extends State<TwoFactorOtpScreen> {
                     ],
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

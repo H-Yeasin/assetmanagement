@@ -143,9 +143,7 @@ class _CompletedLoansScreenState extends State<CompletedLoansScreen> {
                                   ),
                                 ),
                                 Text(
-                                  NumberFormat.simpleCurrency().format(
-                                    loan.totalAmount,
-                                  ),
+                                  '\$${NumberFormat('#,##0.00').format(loan.totalAmount)}',
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,

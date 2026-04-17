@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../Onbording_Screen/onbordin_screen.dart';
 import '../Authentication/welcome_screen.dart';
@@ -47,6 +49,31 @@ class _SplashScreenState extends State<SplashScreen>
         return;
       }
 
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+      final pendingTwoFactor = await StorageService.hasPendingTwoFactorLogin();
+      if (!mounted) return;
+
+      if (pendingTwoFactor) {
+        if (firebaseUser != null) {
+          final email = await StorageService.getPendingTwoFactorEmail() ?? '';
+          final rememberMe =
+              await StorageService.getPendingTwoFactorPersistLogin();
+          if (!mounted) return;
+          context.go(
+            '/two-factor-otp',
+            extra: {
+              'email': email,
+              'flow': 'login',
+              'rememberMe': rememberMe,
+            },
+          );
+          return;
+        }
+
+        await StorageService.clearPendingTwoFactorLogin();
+        if (!mounted) return;
+      }
+
       final loggedIn = await StorageService.isLoggedIn();
       if (!mounted) return;
 
@@ -54,6 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
         final keepLoggedIn = await StorageService.isSessionPersistent();
         if (!mounted) return;
         if (!keepLoggedIn) {
+          await AuthService.logout();
           await StorageService.clearSession();
           if (!mounted) return;
           Navigator.pushReplacement(
@@ -62,8 +90,24 @@ class _SplashScreenState extends State<SplashScreen>
           );
           return;
         }
+
+        if (firebaseUser == null) {
+          await StorageService.clearSession();
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+          );
+          return;
+        }
+
         context.go('/home');
       } else {
+        if (firebaseUser != null) {
+          await AuthService.logout();
+          await StorageService.clearSession();
+          if (!mounted) return;
+        }
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const WelcomeScreen()),

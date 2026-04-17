@@ -125,9 +125,7 @@ class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
                           month: DateFormat('MMM').format(date),
                           day: DateFormat('dd').format(date),
                           title: item['name'],
-                          amount: NumberFormat.simpleCurrency().format(
-                            item['monthlyPayment'],
-                          ),
+                          amount: '\$${NumberFormat('#,##0.00').format(item['monthlyPayment'])}',
                           status: item['autoPay']
                               ? 'Paid automatically'
                               : 'Manual payment required',

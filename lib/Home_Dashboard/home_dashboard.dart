@@ -50,6 +50,15 @@ class HomeDashboardScreen extends StatelessWidget {
     context.push('/upcoming-payments');
   }
 
+  String _getHousingSubtitle(List<HousingCost> costs) {
+    if (costs.isEmpty) return '0 active';
+    final upcoming = costs.where((c) => c.dueDate != null).toList();
+    if (upcoming.isEmpty) return '${costs.length} active';
+    upcoming.sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+    final next = upcoming.first;
+    return 'Next due ${DateFormat('MMM dd').format(next.dueDate!)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,7 +163,7 @@ class HomeDashboardScreen extends StatelessWidget {
                       final loadingText =
                           snapshot.connectionState == ConnectionState.waiting
                           ? '...'
-                          : '$count added';
+                          : _getHousingSubtitle(snapshot.data ?? []);
                       return CategoryCard(
                         iconPath: 'assets/images/icon/housing.png',
                         title: 'Housing / Living Costs',

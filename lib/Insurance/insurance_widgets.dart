@@ -373,6 +373,7 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
         isAutoPay: _isAutoPayment,
         paymentDay: widget.policy.paymentDay,
         personalInsuranceType: widget.policy.personalInsuranceType,
+        status: widget.policy.status,
         documents: widget.policy.documents,
       );
 
@@ -462,7 +463,7 @@ class _InsurancePaymentModalState extends State<InsurancePaymentModal> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  NumberFormat.simpleCurrency().format(widget.policy.premium),
+                  '\$${NumberFormat('#,##0.00').format(widget.policy.premium)}',
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,

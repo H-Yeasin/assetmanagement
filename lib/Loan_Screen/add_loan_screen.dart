@@ -23,7 +23,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
   bool _showAdditionalDetails = false;
 
   final TextEditingController _nameController = TextEditingController();
-  final List<String> _frequencies = ['Monthly', 'Bi-weekly', 'Yearly'];
+  final List<String> _frequencies = ['Weekly', 'Bi-weekly', 'Monthly'];
   final TextEditingController _monthlyPaymentController =
       TextEditingController();
   final TextEditingController _paymentDateController = TextEditingController();
@@ -92,6 +92,39 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
       } catch (_) {}
     }
     return null;
+  }
+
+  String get _paymentDateSummary {
+    final paymentDate = _parseDateText(_paymentDateController.text);
+    if (paymentDate == null) {
+      return 'Select payment date';
+    }
+
+    switch (_selectedFrequency) {
+      case 'Weekly':
+        return 'Every ${DateFormat('EEEE').format(paymentDate)}';
+      case 'Bi-weekly':
+        return 'Every 2 weeks on ${DateFormat('EEEE').format(paymentDate)}';
+      case 'Monthly':
+      default:
+        final day = paymentDate.day;
+        final suffix = _daySuffix(day);
+        return 'Every $day$suffix of the month';
+    }
+  }
+
+  String _daySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   }
 
   @override
@@ -237,7 +270,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('Total Monthly Payment'),
+                  _buildLabel(_selectedFrequency == 'Monthly' ? 'Monthly Payment' : 'Payment Amount (${_selectedFrequency})'),
                   _buildInputField(
                     controller: _monthlyPaymentController,
                     hint: '\$500',
@@ -271,7 +304,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('Payment Frequency'),
+                  _buildLabel('Schedule'),
                   _buildDropdownField(
                     _frequencies,
                     _selectedFrequency,
@@ -314,7 +347,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         if (_showAdditionalDetails) ...[
 
         // Total Amount
-        _buildLabel('Total Amount'),
+        _buildLabel('Original Amount'),
         _buildInputField(
           controller: _totalAmountController,
           hint: '\$15,000.00',
@@ -419,7 +452,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         _buildCategoryPicker(),
         const SizedBox(height: 24),
 
-        _buildLabel('Total Monthly Payment'),
+        _buildLabel('Monthly Payment'),
         _buildInputField(
           controller: _monthlyPaymentController,
           hint: '\$260',
@@ -443,7 +476,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         ),
         const SizedBox(height: 20),
 
-        _buildLabel('Total payments'),
+        _buildLabel('Payments'),
         _buildInputField(
           controller: _totalPaymentsController,
           hint: '60',
@@ -498,7 +531,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('Original Loan'),
+                  _buildLabel('Original Amount'),
                   _buildInputField(
                     controller: _totalAmountController,
                     hint: '15,00,000',
@@ -512,7 +545,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('Remaining Loan'),
+                  _buildLabel('Remaining Balance'),
                   _buildInputField(
                     controller: _remainingBalanceController,
                     hint: '15,00,000',
@@ -610,7 +643,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         ),
         const SizedBox(height: 20),
 
-        _buildLabel('Total Annual Payments'),
+        _buildLabel('Total Annual Payments (Sum of Year)'),
         _buildInputField(
           controller: _annualPaymentController,
           hint: '\$2,400',
@@ -638,7 +671,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel('Total Payments'),
+                  _buildLabel('Payments'),
                   _buildInputField(
                     controller: _totalPaymentsController,
                     hint: '60',
@@ -844,6 +877,12 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
           ),
           const SizedBox(height: 20),
           _buildLabel('Payment Date'),
+          _buildInputField(
+            controller: _paymentDateController,
+            hint: 'mm/dd/yy',
+            isDate: true,
+          ),
+          const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -852,12 +891,15 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children: [
                 Text(
-                  'Every 15th of the month',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                  _paymentDateSummary,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF888888),
+                  ),
                 ),
-                Icon(
+                const Icon(
                   Icons.calendar_today_outlined,
                   size: 20,
                   color: Color(0xFF888888),
@@ -1124,6 +1166,7 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
     bool isDate = false,
   }) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: isDate ? () => _selectDate(context, controller) : null,
       child: Container(
         decoration: BoxDecoration(
@@ -1133,7 +1176,8 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
         ),
         child: TextField(
           controller: controller,
-          enabled: !isDate,
+          readOnly: isDate,
+          onTap: isDate ? () => _selectDate(context, controller) : null,
           keyboardType: isNumber ? TextInputType.number : TextInputType.text,
           maxLines: maxLines,
           style: const TextStyle(fontSize: 15, color: Color(0xFF111111)),
@@ -1221,41 +1265,47 @@ class _AddLoanScreenState extends State<AddLoanScreen> {
     String hint,
     ValueChanged<String?> onChanged,
   ) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEBEBEB)),
+    return DropdownButtonFormField<String>(
+      initialValue: currentValue,
+      isExpanded: true,
+      icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF111111)),
+      style: const TextStyle(
+        color: Color(0xFF111111),
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: currentValue,
-          hint: Text(
-            hint,
-            style: const TextStyle(
-              color: Color(0xFF888888),
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF111111)),
-          style: const TextStyle(
-            color: Color(0xFF111111),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-          items: items.map((t) {
-            String label = t;
-            if (t == 'Bi-weekly') label = 'Bi-weekly (Every 2 weeks)';
-            if (t == 'Weekly') label = 'Weekly (Every week)';
-            return DropdownMenuItem(value: t, child: Text(label));
-          }).toList(),
-          onChanged: onChanged,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFEBEBEB)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFEBEBEB)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: brandRed),
         ),
       ),
+      hint: Text(
+        hint,
+        style: const TextStyle(
+          color: Color(0xFF888888),
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+      items: items.map((t) {
+        String label = t;
+        if (t == 'Bi-weekly') label = 'Bi-weekly (Every 2 weeks)';
+        if (t == 'Weekly') label = 'Weekly (Every week)';
+        return DropdownMenuItem<String>(value: t, child: Text(label));
+      }).toList(),
+      onChanged: onChanged,
     );
   }
 }

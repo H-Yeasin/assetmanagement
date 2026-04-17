@@ -70,15 +70,11 @@ class _SignInState extends State<SignIn> {
         final displayName = data['user']?['fullName'] as String? ?? name;
         final userEmail = data['user']?['email'] as String? ?? email;
         if (accessToken.isNotEmpty && userId.isNotEmpty) {
-          await StorageService.saveSession(
-            accessToken: accessToken,
-            refreshToken: refreshToken,
-            userId: userId,
-            email: userEmail,
-            name: displayName,
-          );
+          _showSnack('Registration completed. Please log in.');
+          await AuthService.logout();
+          await StorageService.clearSession();
           if (!mounted) return;
-          context.go('/home');
+          context.go('/login');
         } else {
           _showSnack('Registration completed. Please log in.');
         }
@@ -242,7 +238,7 @@ class _SignInState extends State<SignIn> {
                         ),
                       )
                     : AppPrimaryButton(
-                        label: 'Sign In',
+                        label: 'Sign Up',
                         onTap: _handleRegister,
                       ),
 

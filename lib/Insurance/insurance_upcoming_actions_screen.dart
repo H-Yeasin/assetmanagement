@@ -147,14 +147,10 @@ class _InsuranceUpcomingActionsScreenState
                             month: DateFormat('MMM').format(renewalDate),
                             day: DateFormat('dd').format(renewalDate),
                             title: p.name,
-                            status:
-                                p.paymentFrequency?.toLowerCase() == 'manual'
-                                ? 'Manual payment required'
-                                : 'Paid automatically',
+                            status: p.paymentStatusLabel,
                             amount:
                                 '\$${NumberFormat('#,##0.00').format(p.premium)}',
-                            isAutoPay:
-                                p.paymentFrequency?.toLowerCase() != 'manual',
+                            isAutoPay: p.autoPayEnabledForStatus,
                           ),
                         );
                       }),

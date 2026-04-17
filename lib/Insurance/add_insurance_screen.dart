@@ -21,6 +21,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   final TextEditingController _providerController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _renewalDateController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
   
@@ -67,6 +68,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
     _providerController.dispose();
     _amountController.dispose();
     _dateController.dispose();
+    _renewalDateController.dispose();
     _notesController.dispose();
     _addressController.dispose();
     _petNameController.dispose();
@@ -91,87 +93,163 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
     return null;
   }
 
+  String _text(TextEditingController controller) => controller.text.trim();
+
+  double _parsedAmount() {
+    return double.tryParse(
+          _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
+        ) ??
+        0.0;
+  }
+
+  List<String> get _frequencyOptions => _selectedCategory == 'Appliance'
+      ? const ['One-time']
+      : _paymentTypes;
+
+  String get _normalizedPaymentType =>
+      _selectedCategory == 'Appliance' ? 'One-time' : _paymentType;
+
+  String get _nameLabel => 'Name';
+
+  String get _nameHint {
+    switch (_selectedCategory) {
+      case 'Personal':
+        return 'Life insurance';
+      case 'Pet':
+        return 'Pet insurance name';
+      case 'Home':
+        return 'Home insurance name';
+      case 'Appliance':
+        return 'Warranty name';
+      case 'Auto':
+        return 'Auto insurance name';
+      case 'Other':
+        return 'Other insurance name';
+      default:
+        return 'Insurance name';
+    }
+  }
+
+  String get _amountLabel =>
+      _selectedCategory == 'Appliance' ? 'One-time Payment' : 'Payment';
+
+  String get _amountHint =>
+      _selectedCategory == 'Appliance' ? '\$0.00' : '\$100';
+
+  String get _frequencyLabel => 'Schedule';
+
+  String get _dateLabel => 'Payment Date';
+
+  String get _notesHint {
+    switch (_selectedCategory) {
+      case 'Pet':
+        return 'Add any notes about your pet insurance.';
+      case 'Auto':
+        return 'Add any notes about this auto insurance.';
+      case 'Appliance':
+        return 'Add any notes about this warranty.';
+      default:
+        return 'Add any notes about this insurance.';
+    }
+  }
+
+  String _paymentDayDescription(DateTime? date) {
+    if (date == null) return '';
+
+    if (_selectedCategory == 'Appliance') {
+      return DateFormat('MMM dd, yyyy').format(date);
+    }
+
+    switch (_normalizedPaymentType) {
+      case 'Monthly':
+        return 'Every ${date.day}${_daySuffix(date.day)} of the month';
+      case 'Quarterly':
+        return 'Quarterly on ${DateFormat('MMM dd').format(date)}';
+      case 'Yearly':
+        return 'Yearly on ${DateFormat('MMM dd').format(date)}';
+      case 'One-time':
+        return DateFormat('MMM dd, yyyy').format(date);
+      default:
+        return DateFormat('MMM dd, yyyy').format(date);
+    }
+  }
+
+  String _daySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
+  }
+
+  String? _validateRequiredFields() {
+    if (_text(_nameController).isEmpty) {
+      return 'Please enter the name';
+    }
+    // Amount and Date are now optional
+    return null;
+  }
+
   Future<void> _savePolicy() async {
-    // Validate based on category requirements from Figma
-    if ((_selectedCategory == 'Pet' &&
-            (_petNameController.text.isEmpty ||
-                _nameController.text.isEmpty)) ||
-        (_selectedCategory == 'Home' && _nameController.text.isEmpty) ||
-        (_selectedCategory == 'Appliance' && _nameController.text.isEmpty) ||
-        (_selectedCategory == 'Auto' && _nameController.text.isEmpty) ||
-        (_selectedCategory == 'Personal' && _nameController.text.isEmpty)) {
+    final validationError = _validateRequiredFields();
+    if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in the required fields')),
+        SnackBar(content: Text(validationError)),
       );
       return;
     }
 
     setState(() => _isSaving = true);
     try {
-      final amount =
-          double.tryParse(
-            _amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
-          ) ??
-          0.0;
-      final renewalDate = _parseDateText(_dateController.text);
+      final amount = _parsedAmount();
+      final paymentDate = _parseDateText(_dateController.text);
+      final renewalDate =
+          _parseDateText(_renewalDateController.text) ?? paymentDate;
       final startDate = _parseDateText(_startDateController.text);
       final endDate = _parseDateText(_endDateController.text);
 
-      // Dynamically map fields based on category
-      String policyName = _nameController.text;
-      String? petName;
-      String? applianceName;
-      String? address;
-
-      if (_selectedCategory == 'Pet') {
-        petName = _petNameController.text;
-      } else if (_selectedCategory == 'Appliance') {
-        applianceName = _nameController.text;
-        policyName =
-            'Warranty'; // Default name if Appliance name takes over main name field
-      } else if (_selectedCategory == 'Home') {
-        address = _addressController.text;
-        // The policy number field was used for policy name in home layout
-        if (_policyNumberController.text.isNotEmpty) {
-          policyName = _policyNumberController.text;
-        }
-      }
+      String policyName = _text(_nameController);
 
       final policy = InsurancePolicy(
         userId: '', // Set by backend
         name: policyName,
         category: _selectedCategory.toLowerCase(),
         premium: amount,
-        paymentFrequency: _paymentType,
-        provider: _providerController.text,
+        paymentFrequency: _normalizedPaymentType,
+        provider: _text(_providerController),
         renewalDate: renewalDate,
-        coverageNotes: _notesController.text,
-        petName: petName,
-        propertyAddress: address,
-        applianceName: applianceName,
+        coverageNotes: _text(_notesController),
+        petName: _selectedCategory == 'Pet' ? _text(_petNameController) : null,
+        propertyAddress: _selectedCategory == 'Home'
+            ? _text(_addressController)
+            : null,
+        applianceName: _selectedCategory == 'Appliance'
+            ? _text(_nameController)
+            : null,
         manufacturer: _selectedCategory == 'Appliance'
-            ? _manufacturerController.text
+            ? _text(_manufacturerController)
             : null,
-        policyNumber: _selectedCategory != 'Home'
-            ? _policyNumberController.text
-            : null,
+        policyNumber: _text(_policyNumberController),
         documents: _documentIds,
         vehicleModel: _selectedCategory == 'Auto'
-            ? _vehicleModelController.text
+            ? _text(_vehicleModelController)
             : null,
-        timeLeft: _selectedCategory == 'Auto' ? _timeLeftController.text : null,
+        timeLeft: _selectedCategory == 'Auto' ? _text(_timeLeftController) : null,
         paymentsCompleted: _selectedCategory == 'Auto'
-            ? int.tryParse(_paymentsCompletedController.text)
+            ? int.tryParse(_text(_paymentsCompletedController))
             : null,
         totalPayments: _selectedCategory == 'Auto'
-            ? int.tryParse(_totalPaymentsController.text)
+            ? int.tryParse(_text(_totalPaymentsController))
             : null,
-        startDate: startDate,
-        endDate: endDate,
-        coverageType: _selectedCategory == 'Auto' ? _coverageType : null,
-        isAutoPay: true, // Defaulting for now
-        paymentDay: 'Every 15th of the month', // Default for new policies
-        personalInsuranceType: _personalInsuranceType,
+        paymentDay: _paymentDayDescription(paymentDate),
+        personalInsuranceType: _selectedCategory == 'Personal' ? _personalInsuranceType : null,
+        status: 'active',
       );
 
       final createdPolicy = await _apiService.createInsurance(policy);
@@ -216,83 +294,17 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
       case 'Auto':
         return 'Add Auto Insurance';
       default:
-        return 'Add New Policy'; // Personal / Other
+        return _selectedCategory == 'Other'
+            ? 'Add Other Insurance'
+            : 'Add New Policy';
     }
   }
 
   String get _appBarRightAction {
-    return (_selectedCategory == 'Personal' ||
-            _selectedCategory == 'Other' ||
-            _selectedCategory == 'Auto')
-        ? 'Cancel'
-        : 'Save';
+    return 'Cancel';
   }
 
   Widget _buildCategorySelectorOrHeader() {
-    // If it's a specific category with a sub-layout, show the badge header
-    if (_selectedCategory != 'Personal' && _selectedCategory != 'Other') {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'SELECTED CATEGORY',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF555555),
-                letterSpacing: 0.5,
-              ),
-            ),
-            GestureDetector(
-              onTap: () => setState(
-                () => _selectedCategory = 'Personal',
-              ), // Ability to go back to selection
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: brandRed,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_selectedCategory != 'Other') ...[
-                      Image.asset(
-                        InsurancePolicy.categoryIcon(_selectedCategory),
-                        width: 14,
-                        height: 14,
-                        color: Colors.white,
-                        errorBuilder: (c, e, s) => const Icon(
-                          Icons.directions_car,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      _selectedCategory,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Default: Show the selector list
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -314,7 +326,8 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
               return GestureDetector(
                 onTap: () => setState(() {
                   _selectedCategory = cat;
-                  _paymentType = 'Monthly'; // Reset defaults
+                  _paymentType = cat == 'Appliance' ? 'One-time' : 'Monthly';
+                  _showAdditionalDetails = false;
                 }),
                 child: Container(
                   margin: const EdgeInsets.only(right: 12),
@@ -463,52 +476,53 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   }
 
   List<Widget> _buildDynamicFields() {
-    switch (_selectedCategory) {
-      case 'Auto':
-        return _buildAutoFields();
-      case 'Personal':
-        return _buildPersonalFields();
-      case 'Pet':
-        return _buildPetFields();
-      case 'Home':
-        return _buildHomeFields();
-      case 'Appliance':
-        return _buildWarrantyFields();
-      case 'Other':
-      default:
-        // Default to Personal layout if generic/other
-        return _buildPersonalFields();
-    }
-  }
-
-  List<Widget> _buildAutoFields() {
     return [
-      _buildLabel('Vehicle'),
-      _buildTextField(_nameController, 'Name'),
-
-      _buildLabel('Payment'),
+      const Text(
+        'Required',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF111111),
+        ),
+      ),
+      const SizedBox(height: 16),
+      _buildLabel(_nameLabel),
+      _buildTextField(_nameController, _nameHint),
       Row(
         children: [
-          Expanded(child: _buildTextField(_amountController, 'Amount')),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(_amountLabel),
+                _buildTextField(_amountController, _amountHint),
+              ],
+            ),
+          ),
           const SizedBox(width: 16),
           Expanded(
-            child: _buildDropdownField(
-              _paymentTypes,
-              _paymentType,
-              'Yearly',
-              (v) => setState(() => _paymentType = v!),
-              isRed: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(_frequencyLabel),
+                _buildDropdownField(
+                  _frequencyOptions,
+                  _normalizedPaymentType,
+                  _selectedCategory == 'Appliance' ? 'One-time' : 'Monthly',
+                  (v) => setState(() => _paymentType = v!),
+                  isRed: true,
+                ),
+              ],
             ),
           ),
         ],
       ),
-
-      _buildLabel('Renewal Date'),
+      _buildLabel(_dateLabel),
       _buildDateField(_dateController, 'mm/dd/yy'),
-
-      const SizedBox(height: 12),
+      const SizedBox(height: 8),
       GestureDetector(
-        onTap: () => setState(() => _showAdditionalDetails = !_showAdditionalDetails),
+        onTap: () =>
+            setState(() => _showAdditionalDetails = !_showAdditionalDetails),
         child: Row(
           children: [
             const Text(
@@ -530,433 +544,207 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
             ),
             const Spacer(),
             Icon(
-              _showAdditionalDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              _showAdditionalDetails
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
               color: const Color(0xFF111111),
             ),
           ],
         ),
       ),
       const SizedBox(height: 20),
-      if (_showAdditionalDetails) ...[
+      if (_showAdditionalDetails) ..._buildAdditionalDetailsFields(),
+    ];
+  }
 
-      _buildLabel('Time Left'),
-      _buildTextField(_timeLeftController, 'How Many Years'),
+  List<Widget> _buildAdditionalDetailsFields() {
+    final widgets = <Widget>[];
 
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Payment completed'),
-                _buildTextField(
-                  _paymentsCompletedController,
-                  'Completed payments',
+    switch (_selectedCategory) {
+      case 'Personal':
+        widgets.addAll([
+          _buildLabel('Provider'),
+          _buildTextField(_providerController, 'Provider name'),
+          _buildLabel('Renewal Date'),
+          _buildDateField(_renewalDateController, 'mm/dd/yy'),
+          _buildLabel('Insurance Type'),
+          _buildDropdownField(
+            _personalTypes,
+            _personalInsuranceType,
+            'Select type',
+            (v) => setState(() => _personalInsuranceType = v),
+          ),
+        ]);
+        break;
+      case 'Pet':
+        widgets.addAll([
+          _buildLabel('Pet Name'),
+          _buildTextField(_petNameController, 'Insured pet name'),
+        ]);
+        break;
+      case 'Home':
+        widgets.addAll([
+          _buildLabel('Address'),
+          _buildTextField(_addressController, 'Property address'),
+          _buildLabel('Provider'),
+          _buildTextField(_providerController, 'Provider name'),
+          _buildLabel('Policy Number'),
+          _buildTextField(_policyNumberController, 'Policy number'),
+        ]);
+        break;
+      case 'Appliance':
+        widgets.addAll([
+          _buildLabel('Manufacturer'),
+          _buildTextField(_manufacturerController, 'Manufacturer'),
+          _buildLabel('Store / Provider'),
+          _buildTextField(_providerController, 'Store or provider'),
+        ]);
+        break;
+      case 'Auto':
+        widgets.addAll([
+          _buildLabel('Vehicle Model'),
+          _buildTextField(_vehicleModelController, 'Vehicle model'),
+          _buildLabel('Renewal Date'),
+          _buildDateField(_renewalDateController, 'mm/dd/yy'),
+          _buildLabel('Time Left'),
+          _buildTextField(_timeLeftController, 'How many years'),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Payments Completed'),
+                    _buildTextField(
+                      _paymentsCompletedController,
+                      'Completed payments',
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Total Payments'),
+                    _buildTextField(_totalPaymentsController, 'Total payments'),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Start Date'),
+                    _buildDateField(_startDateController, 'mm/dd/yy'),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('End Date'),
+                    _buildDateField(_endDateController, 'mm/dd/yy'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          _buildLabel('Coverage Type'),
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            height: 48,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEBEBEB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
               children: [
-                _buildLabel('Total payments'),
-                _buildTextField(_totalPaymentsController, 'Total payments'),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Start Date'),
-                _buildDateField(_startDateController, 'mm/dd/yy'),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('End Date'),
-                _buildDateField(_endDateController, 'mm/dd/yy'),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      _buildLabel('Vehicle Model'),
-      _buildTextField(_vehicleModelController, 'Write Vehicle Model'),
-
-      _buildLabel('Provider'),
-      _buildTextField(_providerController, 'Provider name'),
-
-      _buildLabel('Policy Number'),
-      _buildTextField(_policyNumberController, 'e.g.,HMI-8888'),
-
-      _buildLabel('Coverage Type'),
-      Container(
-        height: 48,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEBEBEB),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _coverageType = 'Comprehensive'),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _coverageType == 'Comprehensive'
-                        ? Colors.white
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: _coverageType == 'Comprehensive'
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Comprehensive',
-                      style: TextStyle(
-                        color: const Color(0xFF111111),
-                        fontSize: 13,
-                        fontWeight: _coverageType == 'Comprehensive'
-                            ? FontWeight.w600
-                            : FontWeight.w500,
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () =>
+                        setState(() => _coverageType = 'Comprehensive'),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _coverageType == 'Comprehensive'
+                            ? Colors.white
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Comprehensive',
+                          style: TextStyle(
+                            color: const Color(0xFF111111),
+                            fontSize: 13,
+                            fontWeight: _coverageType == 'Comprehensive'
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _coverageType = 'Third-party'),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _coverageType == 'Third-party'
-                        ? Colors.white
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: _coverageType == 'Third-party'
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Third-party',
-                      style: TextStyle(
-                        color: const Color(0xFF555555),
-                        fontSize: 13,
-                        fontWeight: _coverageType == 'Third-party'
-                            ? FontWeight.w600
-                            : FontWeight.w500,
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _coverageType = 'Third-party'),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _coverageType == 'Third-party'
+                            ? Colors.white
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Third-party',
+                          style: TextStyle(
+                            color: const Color(0xFF555555),
+                            fontSize: 13,
+                            fontWeight: _coverageType == 'Third-party'
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 24),
-      ],
+          ),
+          _buildLabel('Provider'),
+          _buildTextField(_providerController, 'Provider name'),
+          _buildLabel('Policy Number'),
+          _buildTextField(_policyNumberController, 'Policy number'),
+        ]);
+        break;
+      case 'Other':
+        widgets.addAll([
+          _buildLabel('Provider'),
+          _buildTextField(_providerController, 'Provider name'),
+        ]);
+      default:
+        break;
+    }
 
-      _buildLabel('Coverage Notes'),
-      _buildTextField(
-        _notesController,
-        'Planning to pay off early if bonus comes through in June. Need to check if there\'s any prepayment penalty in the agreement.',
-        maxLines: 4,
-      ),
-
+    widgets.addAll([
+      _buildLabel('Notes'),
+      _buildTextField(_notesController, _notesHint, maxLines: 4),
       const SizedBox(height: 8),
       _buildAddDocumentsButton(),
-    ];
-  }
+    ]);
 
-  List<Widget> _buildPersonalFields() {
-    return [
-      _buildLabel('Select Insurance Type'),
-      _buildDropdownField(
-        _personalTypes,
-        _personalInsuranceType,
-        'Select type',
-        (v) => setState(() => _personalInsuranceType = v),
-      ),
-
-      _buildLabel('Policy Name'),
-      _buildTextField(_nameController, 'Auto Insurance'),
-
-      _buildLabel('Premium'),
-      _buildTextField(_amountController, '\$100'),
-
-      _buildLabel('Insurance Provider'),
-      _buildTextField(_providerController, 'Provider Name'),
-
-      _buildLabel('Renewal Date'),
-      _buildDateField(_dateController, 'mm/dd/yy'),
-
-      _buildLabel('Coverage Notes'),
-      _buildTextField(_notesController, 'Any additional notes...', maxLines: 4),
-
-      const SizedBox(height: 8),
-      _buildAddDocumentsButton(),
-    ];
-  }
-
-  List<Widget> _buildPetFields() {
-    return [
-      const Text(
-        'Pet Details',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF111111),
-        ),
-      ),
-      const SizedBox(height: 24),
-
-      _buildLabel('Pet Name'),
-      _buildTextField(_petNameController, 'Insured Pet Name'),
-
-      _buildLabel('Policy Name'),
-      _buildTextField(_nameController, 'Name of Policy'),
-
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Start Date'),
-                _buildDateField(_startDateController, 'mm/dd/yy'),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Renewal Date'),
-                _buildDateField(_dateController, 'mm/dd/yyyy'),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      _buildLabel('Provider'),
-      _buildTextField(_providerController, 'Insurance Co.'),
-
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Payment'),
-                _buildTextField(_amountController, '\$0.00'),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Type'),
-                _buildDropdownField(
-                  _paymentTypes,
-                  _paymentType,
-                  'Monthly',
-                  (v) => setState(() => _paymentType = v!),
-                  isRed: true,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      _buildLabel('Coverage Notes'),
-      _buildTextField(
-        _notesController,
-        'Planning to pay off early if bonus comes through in June. Need to check if there\'s any prepayment penalty in the agreement.',
-        maxLines: 4,
-      ),
-
-      const SizedBox(height: 8),
-      _buildAddDocumentsButton(),
-    ];
-  }
-
-  List<Widget> _buildHomeFields() {
-    return [
-      const Text(
-        'Policy Details',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF111111),
-        ),
-      ),
-      const SizedBox(height: 24),
-
-      _buildLabel('Property Name'),
-      _buildTextField(_nameController, '124 Rain Avenue, Seattle, WA7896'),
-
-      _buildLabel('Property Address'),
-      _buildTextField(_addressController, '124 Rain Avenue, Seattle, WA7896'),
-
-      _buildLabel('Provider'),
-      _buildTextField(_providerController, 'Insurance Co.'),
-
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Policy name'),
-                _buildTextField(_policyNumberController, 'HMI-8888'),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Renewal Date'),
-                _buildDateField(_dateController, 'mm/dd/yyyy'),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Payment'),
-                _buildTextField(_amountController, '\$0.00'),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Type'),
-                _buildDropdownField(
-                  _paymentTypes,
-                  _paymentType,
-                  'Monthly',
-                  (v) => setState(() => _paymentType = v!),
-                  isRed: true,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      _buildLabel('Coverage Notes'),
-      _buildTextField(
-        _notesController,
-        'Planning to pay off early if bonus comes through in June. Need to check if there\'s any prepayment penalty in the agreement.',
-        maxLines: 4,
-      ),
-
-      const SizedBox(height: 8),
-      _buildAddDocumentsButton(),
-    ];
-  }
-
-  List<Widget> _buildWarrantyFields() {
-    return [
-      const Text(
-        'Policy Details',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF111111),
-        ),
-      ),
-      const SizedBox(height: 24),
-
-      _buildLabel('Appliance Name'),
-      _buildTextField(_nameController, 'Washing Machine'),
-
-      _buildLabel('Manufacturer'),
-      _buildTextField(_manufacturerController, 'Bosch'),
-
-      _buildLabel('Store/Provider'),
-      _buildTextField(_providerController, 'Best Buy'),
-
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Warranty End Date'),
-                _buildDateField(_dateController, 'mm/dd/yyyy'),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel('Original Price'),
-                _buildTextField(_amountController, '\$ 0.00'),
-              ],
-            ),
-          ),
-        ],
-      ),
-
-      _buildLabel('Coverage Notes'),
-      _buildTextField(
-        _notesController,
-        'Planning to pay off early if bonus comes through in June. Need to check if there\'s any prepayment penalty in the agreement.',
-        maxLines: 4,
-      ),
-
-      const SizedBox(height: 8),
-      _buildAddDocumentsButton(),
-    ];
+    return widgets;
   }
 
   Widget _buildDropdownField(

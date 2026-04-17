@@ -66,6 +66,23 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
     return _allLoans;
   }
 
+  double _getMonthlyEquivalent(Loan loan) {
+    if (loan.monthlyPayment <= 0) return 0.0;
+    
+    // If it's a mortgage, the field already represents Monthly equivalent derived from Annual
+    if (loan.category == 'mortgage') return loan.monthlyPayment;
+    
+    switch (loan.paymentFrequency) {
+      case 'Weekly':
+        return (loan.monthlyPayment * 52) / 12;
+      case 'Bi-weekly':
+        return (loan.monthlyPayment * 26) / 12;
+      case 'Monthly':
+      default:
+        return loan.monthlyPayment;
+    }
+  }
+
   double _estimatedRemainingBalance(Loan loan) {
     if (loan.remainingBalance > 0) {
       return loan.remainingBalance;
@@ -73,6 +90,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
 
     final remainingPayments = loan.totalPayments - loan.completedPayments;
     if (remainingPayments > 0 && loan.monthlyPayment > 0) {
+      // For remaining balance, we multiply remaining periodic payments by periodic amount
       final projected = remainingPayments * loan.monthlyPayment;
       if (loan.totalAmount > 0) {
         return projected > loan.totalAmount ? loan.totalAmount : projected;
@@ -86,7 +104,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
   double get _totalMonthlyPayment {
     return _allLoans
         .where((l) => l.status == 'active')
-        .fold(0.0, (sum, l) => sum + l.monthlyPayment);
+        .fold(0.0, (sum, l) => sum + _getMonthlyEquivalent(l));
   }
 
   double get _totalOutstanding {
@@ -218,10 +236,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              // Format without currency symbol
-                              NumberFormat(
-                                '#,##0.00',
-                              ).format(_totalMonthlyPayment),
+                              '\$${NumberFormat('#,##0.00').format(_totalMonthlyPayment)}',
                               style: const TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w700,
@@ -231,7 +246,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Total Outstanding: ${NumberFormat.simpleCurrency().format(_totalOutstanding)}',
+                              'Total Outstanding: \$${NumberFormat('#,##0.00').format(_totalOutstanding)}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -338,9 +353,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                                 month: DateFormat('MMM').format(date),
                                 day: DateFormat('dd').format(date),
                                 title: item['name'],
-                                amount: NumberFormat.simpleCurrency().format(
-                                  item['monthlyPayment'],
-                                ),
+                                amount: '\$${NumberFormat('#,##0.00').format(item['monthlyPayment'])}',
                                 status: item['autoPay']
                                     ? 'Paid automatically'
                                     : 'Manual payment required',
@@ -541,8 +554,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                                                   ),
                                                 ),
                                                 Text(
-                                                  NumberFormat.simpleCurrency()
-                                                      .format(loan.monthlyPayment),
+                                                  '\$${NumberFormat('#,##0.00').format(loan.monthlyPayment)}',
                                                   style: const TextStyle(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.w500,
@@ -610,10 +622,8 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                                 title: loan.name,
                                 subtitle: loan.lender ?? '',
                                 amount: NumberFormat.simpleCurrency(
-                                  decimalDigits: loan.monthlyPayment % 1 == 0
-                                      ? 0
-                                      : 2,
-                                ).format(loan.monthlyPayment),
+                                  decimalDigits: 2,
+                                ).format(_getMonthlyEquivalent(loan)),
                                 status: loan.autoPay
                                     ? 'Paid automatically'
                                     : 'Manual payment required',
