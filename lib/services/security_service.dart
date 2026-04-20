@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Handles all on-device security: PIN hashing/verification and biometric flag.
@@ -17,31 +18,45 @@ class SecurityService {
 
   /// Hash the raw PIN using SHA-256 and store it securely.
   static Future<void> setPin(String pin) async {
+    final pinKey = _scopedKey(_kPin);
+    final pinEnabledKey = _scopedKey(_kPinEnabled);
+    if (pinKey == null || pinEnabledKey == null) return;
+
     final hash = _hashPin(pin);
     await Future.wait([
-      _storage.write(key: _kPin, value: hash),
-      _storage.write(key: _kPinEnabled, value: 'true'),
+      _storage.write(key: pinKey, value: hash),
+      _storage.write(key: pinEnabledKey, value: 'true'),
     ]);
   }
 
   /// Returns true if the supplied [pin] matches the stored hash.
   static Future<bool> verifyPin(String pin) async {
-    final stored = await _storage.read(key: _kPin);
+    final pinKey = _scopedKey(_kPin);
+    if (pinKey == null) return false;
+
+    final stored = await _storage.read(key: pinKey);
     if (stored == null) return false;
     return _hashPin(pin) == stored;
   }
 
   /// Returns true if a PIN has been set by the user.
   static Future<bool> isPinSet() async {
-    final val = await _storage.read(key: _kPinEnabled);
+    final pinEnabledKey = _scopedKey(_kPinEnabled);
+    if (pinEnabledKey == null) return false;
+
+    final val = await _storage.read(key: pinEnabledKey);
     return val == 'true';
   }
 
   /// Removes the stored PIN and disables PIN protection.
   static Future<void> clearPin() async {
+    final pinKey = _scopedKey(_kPin);
+    final pinEnabledKey = _scopedKey(_kPinEnabled);
+    if (pinKey == null || pinEnabledKey == null) return;
+
     await Future.wait([
-      _storage.delete(key: _kPin),
-      _storage.write(key: _kPinEnabled, value: 'false'),
+      _storage.delete(key: pinKey),
+      _storage.write(key: pinEnabledKey, value: 'false'),
     ]);
   }
 
@@ -49,15 +64,18 @@ class SecurityService {
 
   /// Persists whether biometric unlock is enabled.
   static Future<void> setBiometricEnabled(bool enabled) async {
-    await _storage.write(
-      key: _kBiometricEnabled,
-      value: enabled ? 'true' : 'false',
-    );
+    final biometricKey = _scopedKey(_kBiometricEnabled);
+    if (biometricKey == null) return;
+
+    await _storage.write(key: biometricKey, value: enabled ? 'true' : 'false');
   }
 
   /// Returns true if biometric unlock has been enabled by the user.
   static Future<bool> isBiometricEnabled() async {
-    final val = await _storage.read(key: _kBiometricEnabled);
+    final biometricKey = _scopedKey(_kBiometricEnabled);
+    if (biometricKey == null) return false;
+
+    final val = await _storage.read(key: biometricKey);
     return val == 'true';
   }
 
@@ -84,5 +102,11 @@ class SecurityService {
   static String _hashPin(String pin) {
     final bytes = utf8.encode(pin);
     return sha256.convert(bytes).toString();
+  }
+
+  static String? _scopedKey(String baseKey) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) return null;
+    return '${baseKey}_$uid';
   }
 }
