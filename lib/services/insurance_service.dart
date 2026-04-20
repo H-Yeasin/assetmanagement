@@ -133,29 +133,28 @@ class InsuranceService {
     final policies = await fetchInsurances(status: 'active');
     final upcomingPolicies =
         policies.where((policy) {
-            final renewalDate = policy.renewalDate;
-            if (renewalDate == null || policy.isOneTime) return false;
+          final renewalDate = policy.renewalDate;
+          if (renewalDate == null) return false;
 
-            final renewalDay = DateTime(
-              renewalDate.year,
-              renewalDate.month,
-              renewalDate.day,
-            );
+          final renewalDay = DateTime(
+            renewalDate.year,
+            renewalDate.month,
+            renewalDate.day,
+          );
 
-            if (renewalDay.isBefore(effectiveFrom)) return false;
-            if (effectiveTo != null && renewalDay.isAfter(effectiveTo)) {
-              return false;
-            }
-            return true;
-          }).toList()
-          ..sort((a, b) {
-            final aDate = a.renewalDate;
-            final bDate = b.renewalDate;
-            if (aDate == null && bDate == null) return 0;
-            if (aDate == null) return 1;
-            if (bDate == null) return -1;
-            return aDate.compareTo(bDate);
-          });
+          if (renewalDay.isBefore(effectiveFrom)) return false;
+          if (effectiveTo != null && renewalDay.isAfter(effectiveTo)) {
+            return false;
+          }
+          return true;
+        }).toList()..sort((a, b) {
+          final aDate = a.renewalDate;
+          final bDate = b.renewalDate;
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+          return aDate.compareTo(bDate);
+        });
 
     return upcomingPolicies;
   }
@@ -203,8 +202,7 @@ class InsuranceService {
 
     final docRef = await _firestore.collection('documents').add(docData);
 
-
-/*
+    /*
     if (relatedType == 'insurance' && relatedId != null) {
       final Map<String, Object> updateData = <String, Object>{
         'documents': FieldValue.arrayUnion(<String>[docRef.id]),

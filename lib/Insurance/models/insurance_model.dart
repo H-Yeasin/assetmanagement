@@ -126,14 +126,16 @@ class InsurancePolicy {
     );
   }
 
-  String get normalizedFrequency => (paymentFrequency ?? '').trim().toLowerCase();
+  String get normalizedFrequency =>
+      (paymentFrequency ?? '').trim().toLowerCase();
 
   String get normalizedStatus => status.trim().toLowerCase();
 
   bool get isActive => normalizedStatus == 'active';
 
   bool get isOneTime =>
-      normalizedFrequency.contains('one-time') || category.toLowerCase() == 'appliance';
+      normalizedFrequency.contains('one-time') ||
+      category.toLowerCase() == 'appliance';
 
   double get monthlyEquivalent {
     if (isOneTime) return 0;
@@ -160,7 +162,11 @@ class InsurancePolicy {
   bool get autoPayEnabledForStatus => !isOneTime && (isAutoPay ?? true);
 
   String get paymentStatusLabel {
-    if (isOneTime) return 'One-time payment';
+    if (isOneTime) {
+      return category.toLowerCase() == 'appliance'
+          ? 'Warranty expiry'
+          : 'One-time payment';
+    }
     return autoPayEnabledForStatus
         ? 'Paid automatically'
         : 'Manual payment required';

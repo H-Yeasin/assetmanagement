@@ -41,7 +41,12 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
   }
 
   String _paymentSummaryTitle() {
-    return _policy.isOneTime ? 'One-time Payment' : 'Annual Payment';
+    if (_policy.isOneTime) {
+      return _policy.category == 'appliance'
+          ? 'One-time Warranty Cost'
+          : 'One-time Payment';
+    }
+    return 'Annual Payment';
   }
 
   String _paymentSummarySubtitle() {
@@ -90,9 +95,13 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
       final existing = await _apiService.createReminder(
         itemId: _policy.id!,
         itemType: 'insurance',
-        title: 'Insurance Renewal: ${_policy.name}',
+        title: _policy.isOneTime
+            ? 'Warranty Expiry: ${_policy.name}'
+            : 'Insurance Renewal: ${_policy.name}',
         remindAt: baseDate,
-        note: 'Automatic renewal reminder for your insurance policy.',
+        note: _policy.isOneTime
+            ? 'Reminder for your warranty expiry.'
+            : 'Automatic renewal reminder for your insurance policy.',
       );
       await _apiService.updateReminderNotificationEnabled(
         existing['id'].toString(),
@@ -122,9 +131,13 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
     final reminder = await _apiService.createReminder(
       itemId: _policy.id!,
       itemType: 'insurance',
-      title: 'Insurance Renewal: ${_policy.name}',
+      title: _policy.isOneTime
+          ? 'Warranty Expiry: ${_policy.name}'
+          : 'Insurance Renewal: ${_policy.name}',
       remindAt: scheduledDate,
-      note: 'Automatic renewal reminder for your insurance policy.',
+      note: _policy.isOneTime
+          ? 'Reminder for your warranty expiry.'
+          : 'Automatic renewal reminder for your insurance policy.',
     );
 
     await _apiService.updateReminderNotificationEnabled(
@@ -313,25 +326,32 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
             ),
 
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionBox(
-                    label: 'Pay',
-                    iconPath: 'assets/images/insurance/pay.png',
-                    onTap: _showPaymentModal,
+            if (_policy.isOneTime)
+              _ActionBox(
+                label: 'Remind',
+                iconPath: 'assets/images/insurance/remind.png',
+                onTap: _showReminderModal,
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: _ActionBox(
+                      label: 'Pay',
+                      iconPath: 'assets/images/insurance/pay.png',
+                      onTap: _showPaymentModal,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _ActionBox(
-                    label: 'Remind',
-                    iconPath: 'assets/images/insurance/remind.png',
-                    onTap: _showReminderModal,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _ActionBox(
+                      label: 'Remind',
+                      iconPath: 'assets/images/insurance/remind.png',
+                      onTap: _showReminderModal,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
             const SizedBox(height: 24),
             // Additional Details Button
@@ -419,7 +439,9 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
             ),
             const SizedBox(height: 16),
             StreamBuilder<int>(
-              stream: _apiService.streamDocumentsCountForRelated(_policy.id ?? ''),
+              stream: _apiService.streamDocumentsCountForRelated(
+                _policy.id ?? '',
+              ),
               builder: (context, snapshot) {
                 final count = snapshot.data ?? 0;
                 return Container(

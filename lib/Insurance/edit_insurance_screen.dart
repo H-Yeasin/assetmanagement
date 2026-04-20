@@ -223,19 +223,26 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       final packedUpdates = tempPolicy.toJson();
       await _apiService.updateInsurance(widget.policy.id!, packedUpdates);
 
-      if (_isAutoPay &&
-          renewalDate != null &&
+      if (renewalDate != null &&
           normalizedStatus == 'active' &&
-          !selectedPaymentType.toLowerCase().contains('one-time')) {
+          (_isAutoPay ||
+              selectedPaymentType.toLowerCase().contains('one-time'))) {
         // Use the renewal date for the auto-pay reminder
         final pDate = renewalDate;
+        final isWarranty = selectedPaymentType.toLowerCase().contains(
+          'one-time',
+        );
 
         await _apiService.createReminder(
           itemId: widget.policy.id!,
           itemType: 'insurance',
-          title: 'Insurance Renewal: ${_nameController.text}',
+          title: isWarranty
+              ? 'Warranty Expiry: ${_nameController.text}'
+              : 'Insurance Renewal: ${_nameController.text}',
           remindAt: pDate,
-          note: 'Automatic renewal reminder for your insurance policy.',
+          note: isWarranty
+              ? 'Reminder for your warranty expiry.'
+              : 'Automatic renewal reminder for your insurance policy.',
         );
       }
 

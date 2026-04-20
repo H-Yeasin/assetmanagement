@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'dart:ui';
 import '../Home_Dashboard/widgets.dart';
 import 'models/loan_model.dart';
+import 'utils/loan_calculations.dart';
 import '../services/loan_service.dart';
 import '../services/notification_service.dart';
 
@@ -218,42 +219,76 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
   Future<void> _recordPayment() async {
     setState(() => _isProcessing = true);
     try {
+      final enteredAmount =
+          double.tryParse(
+            _amountController.text.replaceAll(RegExp(r'[^\d.]'), ''),
+          ) ??
+          widget.loan.monthlyPayment;
       final completedP = widget.loan.completedPayments + 1;
       final existingRemaining = widget.loan.remainingBalance > 0
           ? widget.loan.remainingBalance
           : (widget.loan.totalAmount > 0
                 ? widget.loan.totalAmount -
-                      (widget.loan.completedPayments * widget.loan.monthlyPayment)
-                : widget.loan.monthlyPayment);
-      final remaining = existingRemaining - widget.loan.monthlyPayment;
+                      (widget.loan.completedPayments *
+                          widget.loan.monthlyPayment)
+                : enteredAmount);
+      final remaining = existingRemaining - enteredAmount;
 
       int totalP = widget.loan.totalPayments;
-      if (totalP == 0 && widget.loan.monthlyPayment > 0 && widget.loan.totalAmount > 0) {
-        totalP = (widget.loan.totalAmount / widget.loan.monthlyPayment).ceil();
-      }
+      totalP = LoanCalculations.estimatedTotalPayments(
+        totalAmount: widget.loan.totalAmount,
+        paymentAmount: widget.loan.monthlyPayment,
+        enteredTotalPayments: totalP,
+      );
 
       final isCompleted = totalP > 0 && completedP >= totalP;
-      
+      final currentDueDate = LoanCalculations.nextDueDate(
+        widget.loan.paymentDate,
+        widget.loan.paymentFrequency,
+      );
+      final nextDueDate = LoanCalculations.nextDueDateAfter(
+        currentDueDate,
+        widget.loan.paymentFrequency,
+      );
+
       final Map<String, dynamic> updates = {
         'completedPayments': completedP,
         'remainingBalance': remaining > 0 ? remaining : 0,
         'autoPay': _isAutoPayment,
       };
-      
+      if (!isCompleted) {
+        updates['paymentDate'] = nextDueDate.toIso8601String();
+      }
+
       if (totalP > 0) {
-         updates['totalPayments'] = totalP;
+        updates['totalPayments'] = totalP;
       }
 
       if (isCompleted) {
         updates['status'] = 'completed';
-        updates['completedAt'] = null; // We will use LoanService.markCompleted instead if needed, or directly update here. The api uses updateLoan. 
+        updates['completedAt'] =
+            null; // We will use LoanService.markCompleted instead if needed, or directly update here. The api uses updateLoan.
         // to use serverTimestamp we can't easily here without importing cloud_firestore, so let's import it or just use Timestamp.now()
       }
-      
+
       await _loanService.updateLoan(widget.loan.id!, updates);
-      
+
       if (isCompleted) {
-         await _loanService.markCompleted(widget.loan.id!);
+        await _loanService.markCompleted(widget.loan.id!);
+      } else if (widget.loan.id != null) {
+        final reminder = await _loanService.createReminder(
+          itemType: 'loan',
+          itemId: widget.loan.id!,
+          remindAt: nextDueDate,
+          title: 'Loan Payment Reminder: ${widget.loan.name}',
+          note: 'Reminder for your loan upcoming payment.',
+        );
+        await NotificationService.scheduleReminder(
+          id: NotificationService.getNotificationId(reminder['id']),
+          title: reminder['title'] ?? 'Loan Reminder',
+          body: reminder['note'] ?? 'Upcoming loan payment.',
+          scheduledDate: nextDueDate,
+        );
       }
 
       if (mounted) {
@@ -452,7 +487,7 @@ class _SetupPaymentModalState extends State<SetupPaymentModal> {
                         ),
                       ),
                       Text(
-                        'Pay automatic every month',
+                        'Pay automatically on schedule',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade500,

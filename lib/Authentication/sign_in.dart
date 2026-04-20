@@ -65,10 +65,7 @@ class _SignInState extends State<SignIn> {
       if (result['success'] == true) {
         final data = result['data'] as Map<String, dynamic>? ?? {};
         final accessToken = data['accessToken'] as String? ?? '';
-        final refreshToken = data['refreshToken'] as String? ?? '';
         final userId = data['_id'] as String? ?? '';
-        final displayName = data['user']?['fullName'] as String? ?? name;
-        final userEmail = data['user']?['email'] as String? ?? email;
         if (accessToken.isNotEmpty && userId.isNotEmpty) {
           _showSnack('Registration completed. Please log in.');
           await AuthService.logout();
@@ -251,7 +248,10 @@ class _SignInState extends State<SignIn> {
                     const Flexible(
                       child: Text(
                         'Already have an account? ',
-                        style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF1E1E1E),
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

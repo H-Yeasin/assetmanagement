@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'models/loan_model.dart';
+import 'utils/loan_calculations.dart';
 import '../Home_Dashboard/widgets.dart';
 
 class AdditionalDetailsScreen extends StatelessWidget {
@@ -9,20 +10,7 @@ class AdditionalDetailsScreen extends StatelessWidget {
   const AdditionalDetailsScreen({super.key, required this.loan});
 
   double _estimatedRemainingBalance() {
-    if (loan.remainingBalance > 0) {
-      return loan.remainingBalance;
-    }
-
-    final remainingPayments = loan.totalPayments - loan.completedPayments;
-    if (remainingPayments > 0 && loan.monthlyPayment > 0) {
-      final projected = remainingPayments * loan.monthlyPayment;
-      if (loan.totalAmount > 0) {
-        return projected > loan.totalAmount ? loan.totalAmount : projected;
-      }
-      return projected;
-    }
-
-    return loan.totalAmount > 0 ? loan.totalAmount : 0.0;
+    return LoanCalculations.estimatedRemainingBalance(loan);
   }
 
   String _interestText() {

@@ -1,22 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 
 import '../Home_Dashboard/widgets.dart';
 import '../services/biometric_service.dart';
 import '../services/security_service.dart';
 import '../services/subscription_service.dart';
-import '../services/storage_service.dart';
 
 /// Tracks whether the vault session is unlocked for the current app session.
 class VaultAccessSession {
   static bool _isUnlocked = false;
+  static String? _unlockedUserId;
 
   static bool get isUnlocked => _isUnlocked;
 
-  static void unlock() => _isUnlocked = true;
+  static bool isUnlockedFor(String? userId) {
+    return userId != null && _isUnlocked && _unlockedUserId == userId;
+  }
 
-  static void reset() => _isUnlocked = false;
+  static void unlock({String? userId}) {
+    final uid = userId ?? FirebaseAuth.instance.currentUser?.uid;
+    _isUnlocked = uid != null;
+    _unlockedUserId = uid;
+  }
+
+  static void reset() {
+    _isUnlocked = false;
+    _unlockedUserId = null;
+  }
 }
 
 /// A single gate widget that checks BOTH subscription status and vault auth
@@ -41,15 +52,9 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
   @override
   void initState() {
     super.initState();
-    if (VaultAccessSession.isUnlocked) {
-      _authorized = true;
-      _checking = false;
-      _started = true;
-    } else {
-      Future.microtask(() {
-        if (mounted && !_started) _runGate();
-      });
-    }
+    Future.microtask(() {
+      if (mounted && !_started) _runGate();
+    });
   }
 
   Future<void> _runGate() async {
@@ -64,16 +69,23 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
 
       if (!mounted) return;
 
-      // BYPASS: If in debug mode or if a bypass flag is set, allow access
-      final bool bypassSubscription = kDebugMode; 
-
-      if (!subscription.isActive && !bypassSubscription) {
+      if (!subscription.isActive) {
+        VaultAccessSession.reset();
         // Replace the gated vault route so back navigation returns to the
         // previous stable screen instead of a half-initialized gate.
         GoRouter.of(context).pushReplacement(
           '/subscription-plan',
           extra: {'openedFromVaultGate': true},
         );
+        return;
+      }
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (VaultAccessSession.isUnlockedFor(uid)) {
+        setState(() {
+          _authorized = true;
+          _checking = false;
+        });
         return;
       }
 
@@ -85,8 +97,13 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
 
       // No lock — grant access
       if (!biometricEnabled && !pinEnabled) {
-        VaultAccessSession.unlock();
-        if (mounted) setState(() { _authorized = true; _checking = false; });
+        VaultAccessSession.unlock(userId: uid);
+        if (mounted) {
+          setState(() {
+            _authorized = true;
+            _checking = false;
+          });
+        }
         return;
       }
 
@@ -99,8 +116,11 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
           );
           if (!mounted) return;
           if (success) {
-            VaultAccessSession.unlock();
-            setState(() { _authorized = true; _checking = false; });
+            VaultAccessSession.unlock(userId: uid);
+            setState(() {
+              _authorized = true;
+              _checking = false;
+            });
             return;
           }
           _goHome();
@@ -115,7 +135,10 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
         if (!mounted) return;
         if (result == true) {
           VaultAccessSession.unlock();
-          setState(() { _authorized = true; _checking = false; });
+          setState(() {
+            _authorized = true;
+            _checking = false;
+          });
           return;
         }
         // PIN cancelled → go home

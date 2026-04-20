@@ -4,6 +4,7 @@ import 'loan_widgets.dart';
 import 'add_documents_screen.dart';
 import 'edit_loan_screen.dart';
 import 'models/loan_model.dart';
+import 'utils/loan_calculations.dart';
 import '../services/loan_service.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
@@ -115,7 +116,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   double _paymentProgress() {
     if (_currentLoan.status == 'completed') return 1.0;
     if (_currentLoan.totalPayments <= 0) return 0.0;
-    final progress = _currentLoan.completedPayments / _currentLoan.totalPayments;
+    final progress =
+        _currentLoan.completedPayments / _currentLoan.totalPayments;
     if (progress < 0) return 0.0;
     if (progress > 1) return 1.0;
     return progress;
@@ -146,18 +148,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   }
 
   double _getMonthlyEquivalent() {
-    if (_currentLoan.monthlyPayment <= 0) return 0.0;
-    if (_currentLoan.category == 'mortgage') return _currentLoan.monthlyPayment;
-
-    switch (_currentLoan.paymentFrequency) {
-      case 'Weekly':
-        return (_currentLoan.monthlyPayment * 52) / 12;
-      case 'Bi-weekly':
-        return (_currentLoan.monthlyPayment * 26) / 12;
-      case 'Monthly':
-      default:
-        return _currentLoan.monthlyPayment;
-    }
+    return LoanCalculations.monthlyEquivalent(_currentLoan);
   }
 
   @override
@@ -271,7 +262,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      if (_currentLoan.paymentFrequency != 'Monthly') ...[
+                                      if (_currentLoan.paymentFrequency !=
+                                          'Monthly') ...[
                                         const SizedBox(height: 2),
                                         Text(
                                           '(${NumberFormat.simpleCurrency(decimalDigits: 2).format(_currentLoan.monthlyPayment)} ${_currentLoan.paymentFrequency})',
@@ -389,7 +381,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                           children: [
                             Expanded(
                               child: _ActionButton(
-                                iconPath: 'assets/images/icon/setup_payment.png',
+                                iconPath:
+                                    'assets/images/icon/setup_payment.png',
                                 label: 'Pay',
                                 onTap: () {
                                   showDialog(
@@ -419,7 +412,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                               width: 343, // Fixed (343px)
                                               child: SetupPaymentModal(
                                                 loan: _currentLoan,
-                                                onPaymentConfirmed: _refreshLoan,
+                                                onPaymentConfirmed:
+                                                    _refreshLoan,
                                               ),
                                             ),
                                           ),
@@ -618,7 +612,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         '$count ${count == 1 ? 'Document' : 'Documents'}',

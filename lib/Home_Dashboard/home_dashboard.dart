@@ -157,9 +157,6 @@ class HomeDashboardScreen extends StatelessWidget {
                   StreamBuilder<List<HousingCost>>(
                     stream: _housingService.streamHousingCosts(),
                     builder: (context, snapshot) {
-                      final count = snapshot.hasData
-                          ? snapshot.data!.length
-                          : 0;
                       final loadingText =
                           snapshot.connectionState == ConnectionState.waiting
                           ? '...'

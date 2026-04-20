@@ -736,17 +736,20 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
       final result = await InsuranceService().createReminder(
         itemId: widget.policy.id!,
         itemType: 'insurance',
-        title: 'Insurance Renewal: ${widget.policy.name}',
+        title: widget.policy.isOneTime
+            ? 'Warranty Expiry: ${widget.policy.name}'
+            : 'Insurance Renewal: ${widget.policy.name}',
         remindAt: remindAt,
-        note:
-            'Reminder for ${widget.policy.provider} policy ${widget.policy.policyNumber ?? ""}',
+        note: widget.policy.isOneTime
+            ? 'Reminder for your warranty expiry.'
+            : 'Reminder for ${widget.policy.provider} policy ${widget.policy.policyNumber ?? ""}',
       );
 
       // Schedule local notification
       await NotificationService.scheduleReminder(
         id: NotificationService.getNotificationId(result['id']),
         title: result['title'] ?? 'Insurance Reminder',
-        body: result['note'] ?? 'Upcoming insurance renewal.',
+        body: result['note'] ?? 'Upcoming insurance action.',
         scheduledDate: remindAt,
       );
 

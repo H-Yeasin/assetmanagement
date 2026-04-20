@@ -9,25 +9,11 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
   const InsuranceAdditionalDetailsScreen({super.key, required this.policy});
 
   double _monthlyEquivalent() {
-    final freq = policy.paymentFrequency?.toLowerCase() ?? '';
-    if (freq.contains('annually') || freq.contains('yearly')) {
-      return policy.premium / 12;
-    }
-    if (freq.contains('quarterly')) {
-      return policy.premium / 3;
-    }
-    return policy.premium;
+    return policy.monthlyEquivalent;
   }
 
   double _annualEquivalent() {
-    final freq = policy.paymentFrequency?.toLowerCase() ?? '';
-    if (freq.contains('monthly')) {
-      return policy.premium * 12;
-    }
-    if (freq.contains('quarterly')) {
-      return policy.premium * 4;
-    }
-    return policy.premium;
+    return policy.annualEquivalent;
   }
 
   String _frequencyLabel() {
@@ -169,7 +155,8 @@ class InsuranceAdditionalDetailsScreen extends StatelessWidget {
                   'assets/images/insurance/timeleft,totalpayment,paymentdone,policynumber.png',
               bgColor: const Color(0xFFF1F8F1),
               label: 'Total Payment',
-              value: policy.totalPayments?.toString() ??
+              value:
+                  policy.totalPayments?.toString() ??
                   '\$${NumberFormat('#,##0.00').format(_annualEquivalent())}',
             ),
           ),

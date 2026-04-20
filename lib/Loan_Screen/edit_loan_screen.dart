@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import 'add_documents_screen.dart';
 import 'models/loan_model.dart';
+import 'utils/loan_calculations.dart';
 import '../services/loan_service.dart';
 import '../services/notification_service.dart';
 import 'package:intl/intl.dart';
@@ -21,10 +22,11 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
   late String _selectedCategory;
   late String _selectedAmortization;
   late String _selectedFrequency;
-  final List<String> _frequencies = ['Monthly', 'Bi-weekly', 'Yearly'];
+  final List<String> _frequencies = ['Weekly', 'Bi-weekly', 'Monthly'];
   late List<Map<String, dynamic>> _documents;
   final LoanService _loanService = LoanService();
   bool _isSaving = false;
+  bool _showAdditionalDetails = false;
 
   late TextEditingController _nameController;
   late TextEditingController _monthlyPaymentController;
@@ -321,7 +323,11 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel(_selectedFrequency == 'Monthly' ? 'Monthly Payment' : 'Payment Amount (${_selectedFrequency})'),
+                  _buildLabel(
+                    _selectedFrequency == 'Monthly'
+                        ? 'Monthly Payment'
+                        : 'Payment Amount ($_selectedFrequency)',
+                  ),
                   _buildInputField(
                     controller: _monthlyPaymentController,
                     hint: '\$500',
@@ -372,136 +378,152 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildAutoPayToggle(),
 
         const SizedBox(height: 32),
-        const Text(
-          'Additional Details',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF111111),
+        GestureDetector(
+          onTap: () =>
+              setState(() => _showAdditionalDetails = !_showAdditionalDetails),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Additional Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
+              ),
+              Icon(
+                _showAdditionalDetails
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                color: const Color(0xFF111111),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 20),
+        if (_showAdditionalDetails) ...[
+          _buildLabel('Total Amount'),
+          _buildInputField(
+            controller: _totalAmountController,
+            hint: '\$15,000.00',
+            isNumber: true,
+          ),
 
-        _buildLabel('Total Amount'),
-        _buildInputField(
-          controller: _totalAmountController,
-          hint: '\$15,000.00',
-          isNumber: true,
-        ),
+          const SizedBox(height: 20),
 
-        const SizedBox(height: 20),
-
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Interest Rate (%)'),
-                  _buildInputField(
-                    controller: _interestRateController,
-                    hint: '4.5',
-                    isNumber: true,
-                  ),
-                ],
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Interest Rate (%)'),
+                    _buildInputField(
+                      controller: _interestRateController,
+                      hint: '4.5',
+                      isNumber: true,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Lending Bank'),
-                  _buildInputField(
-                    controller: _lenderController,
-                    hint: 'e.g. Citi Bank',
-                  ),
-                ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Lending Bank'),
+                    _buildInputField(
+                      controller: _lenderController,
+                      hint: 'e.g. Citi Bank',
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Start Date'),
-                  _buildInputField(
-                    controller: _startDateController,
-                    hint: 'mm/dd/yy',
-                    isDate: true,
-                  ),
-                ],
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Start Date'),
+                    _buildInputField(
+                      controller: _startDateController,
+                      hint: 'mm/dd/yy',
+                      isDate: true,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('End Date'),
-                  _buildInputField(
-                    controller: _endDateController,
-                    hint: 'mm/dd/yy',
-                    isDate: true,
-                  ),
-                ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('End Date'),
+                    _buildInputField(
+                      controller: _endDateController,
+                      hint: 'mm/dd/yy',
+                      isDate: true,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Completed Payments'),
-                  _buildInputField(
-                    controller: _completedPaymentsController,
-                    hint: '10',
-                    isNumber: true,
-                  ),
-                ],
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Completed Payments'),
+                    _buildInputField(
+                      controller: _completedPaymentsController,
+                      hint: '10',
+                      isNumber: true,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Total Payments'),
-                  _buildInputField(
-                    controller: _totalPaymentsController,
-                    hint: '60',
-                    isNumber: true,
-                  ),
-                ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Total Payments'),
+                    _buildInputField(
+                      controller: _totalPaymentsController,
+                      hint: '60',
+                      isNumber: true,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        const SizedBox(height: 24),
-        _buildAddDocumentsButton(),
-        const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          _buildAddDocumentsButton(),
+          const SizedBox(height: 20),
 
-        _buildLabel('Notes'),
-        _buildInputField(
-          controller: _notesController,
-          hint: 'Optional notes...',
-          maxLines: 3,
-        ),
+          _buildLabel('Notes'),
+          _buildInputField(
+            controller: _notesController,
+            hint: 'Optional notes...',
+            maxLines: 3,
+          ),
 
-        const SizedBox(height: 40),
+          const SizedBox(height: 40),
+        ],
       ],
     );
   }
@@ -515,7 +537,15 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildCategoryPicker(),
         const SizedBox(height: 24),
 
-        _buildLabel(_selectedFrequency == 'Monthly' ? 'Monthly Payment' : 'Payment Amount (${_selectedFrequency})'),
+        _buildLabel('Vehicle'),
+        _buildInputField(controller: _nameController, hint: 'Toyota Corolla'),
+        const SizedBox(height: 20),
+
+        _buildLabel(
+          _selectedFrequency == 'Monthly'
+              ? 'Monthly Payment'
+              : 'Payment Amount ($_selectedFrequency)',
+        ),
         _buildInputField(
           controller: _monthlyPaymentController,
           hint: '\$260',
@@ -523,64 +553,6 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         ),
         const SizedBox(height: 20),
 
-        _buildLabel('Time Left (months)'),
-        _buildInputField(
-          controller: _timeLeftController,
-          hint: '18',
-          isNumber: true,
-        ),
-        const SizedBox(height: 20),
-
-        _buildLabel('Payment completed'),
-        _buildInputField(
-          controller: _completedPaymentsController,
-          hint: '12',
-          isNumber: true,
-        ),
-        const SizedBox(height: 20),
-
-        _buildLabel('Total payments'),
-        _buildInputField(
-          controller: _totalPaymentsController,
-          hint: '60',
-          isNumber: true,
-        ),
-        const SizedBox(height: 20),
-
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Start Date'),
-                  _buildInputField(
-                    controller: _startDateController,
-                    hint: '12 April 2025',
-                    isDate: true,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('End Date'),
-                  _buildInputField(
-                    controller: _endDateController,
-                    hint: '12 Oct 2026',
-                    isDate: true,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        const SizedBox(height: 20),
         _buildLabel('Payment Date'),
         _buildInputField(
           controller: _paymentDateController,
@@ -598,60 +570,138 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         ),
         const SizedBox(height: 20),
 
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Original Loan'),
-                  _buildInputField(
-                    controller: _totalAmountController,
-                    hint: '15,00,000',
-                    isNumber: true,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Remaining Loan'),
-                  _buildInputField(
-                    controller: _remainingBalanceController,
-                    hint: '15,00,000',
-                    isNumber: true,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        _buildLabel('Vehicle'),
-        _buildInputField(controller: _nameController, hint: 'Toyota Corolla'),
-        const SizedBox(height: 20),
-
-        const SizedBox(height: 20),
-
-        _buildLabel('Interest rate'),
-        _buildInputField(
-          controller: _interestRateController,
-          hint: '4.5%',
-          isNumber: true,
-        ),
-        const SizedBox(height: 24),
-
-        _buildAddDocumentsButton(),
-        const SizedBox(height: 20),
-
-        _buildRemindersSection(),
+        _buildAutoPayToggle(),
         const SizedBox(height: 32),
 
-        // _buildSaveButton(), // This button is not defined in the original code, removed.
+        GestureDetector(
+          onTap: () =>
+              setState(() => _showAdditionalDetails = !_showAdditionalDetails),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Additional Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
+              ),
+              Icon(
+                _showAdditionalDetails
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                color: const Color(0xFF111111),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (_showAdditionalDetails) ...[
+          _buildLabel('Time Left (months)'),
+          _buildInputField(
+            controller: _timeLeftController,
+            hint: '18',
+            isNumber: true,
+          ),
+          const SizedBox(height: 20),
+
+          _buildLabel('Payment completed'),
+          _buildInputField(
+            controller: _completedPaymentsController,
+            hint: '12',
+            isNumber: true,
+          ),
+          const SizedBox(height: 20),
+
+          _buildLabel('Total payments'),
+          _buildInputField(
+            controller: _totalPaymentsController,
+            hint: '60',
+            isNumber: true,
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Start Date'),
+                    _buildInputField(
+                      controller: _startDateController,
+                      hint: 'mm/dd/yy',
+                      isDate: true,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('End Date'),
+                    _buildInputField(
+                      controller: _endDateController,
+                      hint: 'mm/dd/yy',
+                      isDate: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Original Loan'),
+                    _buildInputField(
+                      controller: _totalAmountController,
+                      hint: '15,00,000',
+                      isNumber: true,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Remaining Loan'),
+                    _buildInputField(
+                      controller: _remainingBalanceController,
+                      hint: '15,00,000',
+                      isNumber: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          _buildLabel('Interest rate'),
+          _buildInputField(
+            controller: _interestRateController,
+            hint: '4.5%',
+            isNumber: true,
+          ),
+          const SizedBox(height: 24),
+
+          _buildAddDocumentsButton(),
+          const SizedBox(height: 20),
+
+          _buildRemindersSection(),
+          const SizedBox(height: 32),
+        ],
         const SizedBox(height: 40),
       ],
     );
@@ -670,46 +720,6 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildInputField(controller: _nameController, hint: 'Name'),
         const SizedBox(height: 20),
 
-        _buildLabel('Property Address'),
-        _buildInputField(
-          controller: _propertyAddressController,
-          hint: 'Property Address',
-        ),
-        const SizedBox(height: 20),
-
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Mortgage Start Date'),
-                  _buildInputField(
-                    controller: _startDateController,
-                    hint: 'mm/dd/yy',
-                    isDate: true,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Renewal Date'),
-                  _buildInputField(
-                    controller: _endDateController,
-                    hint: 'mm/dd/yy',
-                    isDate: true,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
         _buildLabel('Total Annual Payments'),
         _buildInputField(
           controller: _annualPaymentController,
@@ -718,40 +728,6 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         ),
         const SizedBox(height: 20),
 
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Completed Payments'),
-                  _buildInputField(
-                    controller: _completedPaymentsController,
-                    hint: '24',
-                    isNumber: true,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Total Payments'),
-                  _buildInputField(
-                    controller: _totalPaymentsController,
-                    hint: '60',
-                    isNumber: true,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        const SizedBox(height: 20),
         _buildLabel('Payment Date'),
         _buildInputField(
           controller: _paymentDateController,
@@ -760,64 +736,156 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         ),
         const SizedBox(height: 20),
 
-        _buildLabel('Payment Frequency'),
-        _buildDropdownField(
-          _frequencies,
-          _selectedFrequency,
-          'Monthly',
-          (v) => setState(() => _selectedFrequency = v!),
-        ),
-        const SizedBox(height: 20),
+        _buildAutoPayToggle(),
+        const SizedBox(height: 32),
 
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Apartment name'),
-                  _buildInputField(
-                    controller: _apartmentNameController,
-                    hint: 'Apartment name',
-                  ),
-                ],
+        GestureDetector(
+          onTap: () =>
+              setState(() => _showAdditionalDetails = !_showAdditionalDetails),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Additional Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111111),
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Lending Bank'),
-                  _buildInputField(
-                    controller: _lenderController,
-                    hint: 'Bank name',
-                  ),
-                ],
+              Icon(
+                _showAdditionalDetails
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                color: const Color(0xFF111111),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        _buildLabel('Amortization Period'),
-        _buildAmortizationPicker(),
-        const SizedBox(height: 24),
-
-        _buildAddDocumentsButton(isMortgage: true),
-        const SizedBox(height: 24),
-
-        const Text(
-          'Reminders',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF111111),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
-        _buildRemindersSection(),
+        const SizedBox(height: 20),
+        if (_showAdditionalDetails) ...[
+          _buildLabel('Property Address'),
+          _buildInputField(
+            controller: _propertyAddressController,
+            hint: 'Property Address',
+          ),
+          const SizedBox(height: 20),
 
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Mortgage Start Date'),
+                    _buildInputField(
+                      controller: _startDateController,
+                      hint: 'mm/dd/yy',
+                      isDate: true,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Renewal Date'),
+                    _buildInputField(
+                      controller: _endDateController,
+                      hint: 'mm/dd/yy',
+                      isDate: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Completed Payments'),
+                    _buildInputField(
+                      controller: _completedPaymentsController,
+                      hint: '24',
+                      isNumber: true,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Total Payments'),
+                    _buildInputField(
+                      controller: _totalPaymentsController,
+                      hint: '60',
+                      isNumber: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Apartment name'),
+                    _buildInputField(
+                      controller: _apartmentNameController,
+                      hint: 'Apartment name',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Lending Bank'),
+                    _buildInputField(
+                      controller: _lenderController,
+                      hint: 'Bank name',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          _buildLabel('Amortization Period'),
+          _buildAmortizationPicker(),
+          const SizedBox(height: 24),
+
+          _buildAddDocumentsButton(isMortgage: true),
+          const SizedBox(height: 24),
+
+          const Text(
+            'Reminders',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111111),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildRemindersSection(),
+        ],
         const SizedBox(height: 40),
       ],
     );
@@ -916,7 +984,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'Pay automatic every month',
+                      'Pay automatically on schedule',
                       style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
                     ),
                   ],
@@ -1013,7 +1081,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  'Pay automatically every month',
+                  'Pay automatically on schedule',
                   style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
                 ),
               ],
@@ -1064,8 +1132,17 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         '',
       );
       final totalAmount = double.tryParse(totalStr) ?? 0.0;
+      final remainingStr = _remainingBalanceController.text.replaceAll(
+        RegExp(r'[^\d.]'),
+        '',
+      );
+      final remainingValue = double.tryParse(remainingStr) ?? 0.0;
 
-      final totalP = int.tryParse(_totalPaymentsController.text) ?? 1;
+      final totalP = LoanCalculations.estimatedTotalPayments(
+        totalAmount: totalAmount,
+        paymentAmount: monthly,
+        enteredTotalPayments: int.tryParse(_totalPaymentsController.text) ?? 0,
+      );
       final completedP = int.tryParse(_completedPaymentsController.text) ?? 0;
 
       final remaining = isMortgage
@@ -1095,9 +1172,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
           _startDateController.text,
         )?.toIso8601String(),
         'endDate': _parseDateText(_endDateController.text)?.toIso8601String(),
-        'remainingBalance': isCarLoan
-            ? (double.tryParse(_remainingBalanceController.text) ?? 0.0)
-            : remaining,
+        'remainingBalance': isCarLoan ? remainingValue : remaining,
         'lender': _lenderController.text,
         'notes': _notesController.text,
         'propertyAddress': isMortgage ? _propertyAddressController.text : null,

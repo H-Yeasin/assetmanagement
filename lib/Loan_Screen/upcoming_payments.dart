@@ -40,19 +40,9 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
       if (date == null) continue;
       final groupItems = (group['items'] as List?) ?? const [];
       for (final item in groupItems) {
-        double amount = (item['monthlyPayment'] ?? 0).toDouble();
-        
-        // Convert to monthly equivalent for display if requested
-        final frequency = item['paymentFrequency']?.toString() ?? 'Monthly';
-        final category = item['category']?.toString() ?? '';
-        
-        if (category != 'mortgage') {
-          if (frequency == 'Weekly') {
-            amount = (amount * 52) / 12;
-          } else if (frequency == 'Bi-weekly') {
-            amount = (amount * 26) / 12;
-          }
-        }
+        final amount =
+            ((item['paymentAmount'] ?? item['monthlyPayment'] ?? 0) as num)
+                .toDouble();
 
         items.add(
           _PaymentListItem(
@@ -242,7 +232,8 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
                                 month: DateFormat('MMM').format(item.date),
                                 day: DateFormat('dd').format(item.date),
                                 title: item.title,
-                                amount: '\$${NumberFormat('#,##0.00').format(item.amount)}',
+                                amount:
+                                    '\$${NumberFormat('#,##0.00').format(item.amount)}',
                                 status: item.isPaid
                                     ? 'Paid Automatically'
                                     : 'Manual Payment Required',

@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import '../Loan_Screen/models/loan_model.dart';
 import '../Loan_Screen/models/document_model.dart';
+import '../Loan_Screen/utils/loan_calculations.dart';
 
 class LoanService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
@@ -246,8 +247,9 @@ class LoanService {
   ) async {
     final WriteBatch batch = _firestore.batch();
     for (final String id in docIds) {
-      final DocumentReference docRef =
-          _firestore.collection('documents').doc(id);
+      final DocumentReference docRef = _firestore
+          .collection('documents')
+          .doc(id);
       batch.update(docRef, {
         'relatedId': relatedId,
         'relatedType': relatedType,
@@ -266,32 +268,58 @@ class LoanService {
     if (_uid == null) return [];
 
     final loans = await fetchLoans(status: 'active');
-    return loans
-        .map(
-          (l) => {
-            'date':
-                l.paymentDate?.toIso8601String() ??
-                DateTime.now().toIso8601String(),
-            'items': [l.toJson()],
-          },
-        )
-        .toList();
+    return _buildUpcomingPaymentGroups(loans, from: from, to: to);
   }
 
   Stream<List<dynamic>> streamUpcomingPayments({DateTime? from, DateTime? to}) {
     if (_uid == null) return Stream.value([]);
     return streamLoans(status: 'active').map((loans) {
-      return loans
-          .map(
-            (l) => {
-              'date':
-                  l.paymentDate?.toIso8601String() ??
-                  DateTime.now().toIso8601String(),
-              'items': [l.toJson()],
-            },
-          )
-          .toList();
+      return _buildUpcomingPaymentGroups(loans, from: from, to: to);
     });
+  }
+
+  List<Map<String, dynamic>> _buildUpcomingPaymentGroups(
+    List<Loan> loans, {
+    DateTime? from,
+    DateTime? to,
+  }) {
+    final effectiveFrom = LoanCalculations.normalizeDay(from ?? DateTime.now());
+    final effectiveTo = to == null ? null : LoanCalculations.normalizeDay(to);
+
+    final groups = loans
+        .map((loan) {
+          final dueDate = LoanCalculations.nextDueDate(
+            loan.paymentDate,
+            loan.paymentFrequency,
+            from: effectiveFrom,
+          );
+          final data = loan.toJson();
+          data['id'] = loan.id;
+          data['paymentAmount'] = LoanCalculations.paymentAmount(loan);
+          data['monthlyEquivalent'] = LoanCalculations.monthlyEquivalent(loan);
+          data['nextDueDate'] = dueDate.toIso8601String();
+          return {
+            'date': dueDate.toIso8601String(),
+            'items': [data],
+          };
+        })
+        .where((group) {
+          final date = DateTime.tryParse(group['date'].toString());
+          if (date == null) return false;
+          final day = LoanCalculations.normalizeDay(date);
+          if (day.isBefore(effectiveFrom)) return false;
+          if (effectiveTo != null && day.isAfter(effectiveTo)) return false;
+          return true;
+        })
+        .toList();
+
+    groups.sort((a, b) {
+      final aDate = DateTime.tryParse(a['date'].toString()) ?? DateTime.now();
+      final bDate = DateTime.tryParse(b['date'].toString()) ?? DateTime.now();
+      return aDate.compareTo(bDate);
+    });
+
+    return groups;
   }
 
   Future<List<dynamic>> fetchPastActivities({

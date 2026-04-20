@@ -24,7 +24,6 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   final TextEditingController _renewalDateController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
-  
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _petNameController = TextEditingController();
   final TextEditingController _manufacturerController = TextEditingController();
@@ -102,9 +101,8 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         0.0;
   }
 
-  List<String> get _frequencyOptions => _selectedCategory == 'Appliance'
-      ? const ['One-time']
-      : _paymentTypes;
+  List<String> get _frequencyOptions =>
+      _selectedCategory == 'Appliance' ? const ['One-time'] : _paymentTypes;
 
   String get _normalizedPaymentType =>
       _selectedCategory == 'Appliance' ? 'One-time' : _paymentType;
@@ -199,9 +197,9 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   Future<void> _savePolicy() async {
     final validationError = _validateRequiredFields();
     if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validationError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationError)));
       return;
     }
 
@@ -211,8 +209,6 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
       final paymentDate = _parseDateText(_dateController.text);
       final renewalDate =
           _parseDateText(_renewalDateController.text) ?? paymentDate;
-      final startDate = _parseDateText(_startDateController.text);
-      final endDate = _parseDateText(_endDateController.text);
 
       String policyName = _text(_nameController);
 
@@ -240,7 +236,9 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         vehicleModel: _selectedCategory == 'Auto'
             ? _text(_vehicleModelController)
             : null,
-        timeLeft: _selectedCategory == 'Auto' ? _text(_timeLeftController) : null,
+        timeLeft: _selectedCategory == 'Auto'
+            ? _text(_timeLeftController)
+            : null,
         paymentsCompleted: _selectedCategory == 'Auto'
             ? int.tryParse(_text(_paymentsCompletedController))
             : null,
@@ -248,25 +246,32 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
             ? int.tryParse(_text(_totalPaymentsController))
             : null,
         paymentDay: _paymentDayDescription(paymentDate),
-        personalInsuranceType: _selectedCategory == 'Personal' ? _personalInsuranceType : null,
+        personalInsuranceType: _selectedCategory == 'Personal'
+            ? _personalInsuranceType
+            : null,
         status: 'active',
       );
 
       final createdPolicy = await _apiService.createInsurance(policy);
 
       if (renewalDate != null && createdPolicy.id != null) {
+        final isWarranty = createdPolicy.isOneTime;
         final reminder = await _apiService.createReminder(
           itemId: createdPolicy.id!,
           itemType: 'insurance',
-          title: 'Insurance Renewal: ${createdPolicy.name}',
+          title: isWarranty
+              ? 'Warranty Expiry: ${createdPolicy.name}'
+              : 'Insurance Renewal: ${createdPolicy.name}',
           remindAt: renewalDate,
-          note: 'Automatic renewal reminder for your insurance policy.',
+          note: isWarranty
+              ? 'Reminder for your warranty expiry.'
+              : 'Automatic renewal reminder for your insurance policy.',
         );
 
         await NotificationService.scheduleReminder(
           id: NotificationService.getNotificationId(reminder['id']),
           title: reminder['title'] ?? 'Insurance Reminder',
-          body: reminder['note'] ?? 'Upcoming insurance renewal.',
+          body: reminder['note'] ?? 'Upcoming insurance action.',
           scheduledDate: renewalDate,
         );
       }
