@@ -8,7 +8,9 @@ import '../services/security_service.dart';
 /// Step 2 – Confirm the PIN
 /// On match: encrypts and stores PIN securely, then navigates to success.
 class SetPinScreen extends StatefulWidget {
-  const SetPinScreen({super.key});
+  final String? afterSetupRoute;
+
+  const SetPinScreen({super.key, this.afterSetupRoute});
 
   @override
   State<SetPinScreen> createState() => _SetPinScreenState();
@@ -80,7 +82,12 @@ class _SetPinScreenState extends State<SetPinScreen> {
       await SecurityService.setPin(_pin);
       if (!mounted) return;
       setState(() => _isSaving = false);
-      context.pushReplacement('/pin-locked');
+      final afterSetupRoute = widget.afterSetupRoute;
+      if (afterSetupRoute != null && afterSetupRoute.isNotEmpty) {
+        context.go(afterSetupRoute);
+      } else {
+        context.pushReplacement('/pin-locked');
+      }
     }
   }
 

@@ -90,22 +90,21 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
       }
 
       // ── Step 2: Check vault auth (PIN / biometrics) ───────────────────────
-      final biometricEnabled = await SecurityService.isBiometricEnabled();
       final pinEnabled = await SecurityService.isPinSet();
 
       if (!mounted) return;
 
-      // No lock — grant access
-      if (!biometricEnabled && !pinEnabled) {
-        VaultAccessSession.unlock(userId: uid);
-        if (mounted) {
-          setState(() {
-            _authorized = true;
-            _checking = false;
-          });
-        }
+      if (!pinEnabled) {
+        VaultAccessSession.reset();
+        GoRouter.of(
+          context,
+        ).pushReplacement('/set-pin', extra: {'afterSetupRoute': '/vault'});
         return;
       }
+
+      final biometricEnabled = await SecurityService.isBiometricEnabled();
+
+      if (!mounted) return;
 
       // Try biometrics first
       if (biometricEnabled) {

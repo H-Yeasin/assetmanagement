@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../services/subscription_service.dart';
 
 class SubscriptionPlanScreen extends StatefulWidget {
-  const SubscriptionPlanScreen({super.key});
+  final bool openedFromVaultGate;
+
+  const SubscriptionPlanScreen({super.key, this.openedFromVaultGate = false});
 
   @override
   State<SubscriptionPlanScreen> createState() => _SubscriptionPlanScreenState();
@@ -16,6 +18,11 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
   bool _isCancelling = false;
 
   void _handleBackNavigation() {
+    if (widget.openedFromVaultGate) {
+      context.go('/home');
+      return;
+    }
+
     if (Navigator.of(context).canPop()) {
       context.pop();
     } else {

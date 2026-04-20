@@ -62,14 +62,8 @@ final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   routes: <RouteBase>[
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const Login(),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => const SignIn(),
-    ),
+    GoRoute(path: '/login', builder: (context, state) => const Login()),
+    GoRoute(path: '/signup', builder: (context, state) => const SignIn()),
     GoRoute(
       path: '/insurance-upcoming',
       builder: (context, state) => const InsuranceUpcomingActionsScreen(),
@@ -211,7 +205,12 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/subscription-plan',
-      builder: (context, state) => const SubscriptionPlanScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return SubscriptionPlanScreen(
+          openedFromVaultGate: extra?['openedFromVaultGate'] == true,
+        );
+      },
     ),
     GoRoute(
       path: '/choose-payment',
@@ -263,7 +262,12 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/set-pin',
-      builder: (context, state) => const SetPinScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return SetPinScreen(
+          afterSetupRoute: extra?['afterSetupRoute'] as String?,
+        );
+      },
     ),
     GoRoute(
       path: '/pin-locked',
