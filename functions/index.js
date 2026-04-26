@@ -1218,3 +1218,65 @@ export const checkRemindersAndNotify = onSchedule(
     }
   },
 );
+
+export const checkTrialExpirations = onSchedule(
+  "0 0 * * *", // Run once a day at midnight
+  async (event) => {
+    const now = admin.firestore.Timestamp.now();
+
+    try {
+      // Find users with trialing status whose trial has ended
+      const snapshot = await db
+        .collection("users")
+        .where("subscription.status", "==", "trialing")
+        .where("subscription.trialEndDate", "<=", now)
+        .get();
+
+      if (snapshot.empty) {
+        console.log("No expired trials found.");
+        return;
+      }
+
+      console.log(`Found ${snapshot.docs.length} expired trials.`);
+      const batch = db.batch();
+      const notifications = [];
+
+      for (const doc of snapshot.docs) {
+        const userData = doc.data();
+        const fcmToken = userData.fcmToken;
+
+        // Revoke access by updating status
+        batch.update(doc.ref, {
+          "subscription.status": "expired",
+          "subscription.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        if (fcmToken) {
+          notifications.push({
+            token: fcmToken,
+            notification: {
+              title: "Free Trial Expired",
+              body: "Your 14-day free trial has expired. Subscribe now to keep accessing your secure Vault!",
+            },
+            data: {
+              type: "trial_expired",
+            },
+          });
+        }
+      }
+
+      // Commit status updates
+      await batch.commit();
+
+      // Send notifications
+      if (notifications.length > 0) {
+        const response = await admin.messaging().sendEach(notifications);
+        console.log(`Sent ${response.successCount} expiry notifications.`);
+      }
+
+      console.log("Trial expiration check completed.");
+    } catch (error) {
+      console.error("Error checking trial expirations:", error);
+    }
+  },
+);

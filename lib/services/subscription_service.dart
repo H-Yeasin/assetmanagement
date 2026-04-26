@@ -80,6 +80,7 @@ class SubscriptionState {
   final String stripeSubscriptionId;
   final bool cancelAtPeriodEnd;
   final DateTime? currentPeriodEnd;
+  final DateTime? trialEndDate;
 
   const SubscriptionState({
     required this.planCode,
@@ -91,6 +92,7 @@ class SubscriptionState {
     required this.stripeSubscriptionId,
     required this.cancelAtPeriodEnd,
     required this.currentPeriodEnd,
+    this.trialEndDate,
   });
 
   static const inactive = SubscriptionState(
@@ -103,10 +105,26 @@ class SubscriptionState {
     stripeSubscriptionId: '',
     cancelAtPeriodEnd: false,
     currentPeriodEnd: null,
+    trialEndDate: null,
   );
 
-  bool get isActive =>
-      status == 'active' || status == 'trialing' || status == 'past_due';
+  bool get isActive {
+    if (status == 'active' || status == 'past_due') return true;
+    if (status == 'trialing') {
+      // Check custom trialEndDate first
+      if (trialEndDate != null) {
+        return trialEndDate!.isAfter(DateTime.now());
+      }
+      // Fallback to currentPeriodEnd (Stripe trial)
+      if (currentPeriodEnd != null) {
+        return currentPeriodEnd!.isAfter(DateTime.now());
+      }
+      // If no date found but status is trialing, assume active for now
+      // (Backend will update status to expired when needed)
+      return true;
+    }
+    return false;
+  }
 
   factory SubscriptionState.fromMap(Map<String, dynamic>? data) {
     if (data == null) return inactive;
@@ -128,6 +146,7 @@ class SubscriptionState {
       stripeSubscriptionId: data['stripeSubscriptionId'] as String? ?? '',
       cancelAtPeriodEnd: data['cancelAtPeriodEnd'] == true,
       currentPeriodEnd: parseDate(data['currentPeriodEnd']),
+      trialEndDate: parseDate(data['trialEndDate']),
     );
   }
 }

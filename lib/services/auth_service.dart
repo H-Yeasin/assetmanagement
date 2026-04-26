@@ -422,6 +422,17 @@ class AuthService {
       if (!existing.exists) 'twoFactorEnabled': false,
       if (!existing.exists) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
+      if (!existing.exists ||
+          (existing.data()?['subscription'] as Map?)?.isEmpty == true ||
+          existing.data()?['subscription'] == null)
+        'subscription': {
+          'status': 'trialing',
+          'trialEndDate': Timestamp.fromDate(
+            DateTime.now().add(const Duration(days: 14)),
+          ),
+          'planCode': 'monthly_core',
+          'planName': 'FFP Vault Monthly (Trial)',
+        },
     }, SetOptions(merge: true));
   }
 
