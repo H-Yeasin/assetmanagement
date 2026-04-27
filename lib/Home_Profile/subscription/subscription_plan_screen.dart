@@ -81,13 +81,23 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
     return 'Active until ${DateFormat('MMM d, yyyy').format(date)}';
   }
 
+  String _formatTrialEnd(DateTime? date) {
+    if (date == null) return 'Trial expires soon';
+    final days = date.difference(DateTime.now()).inDays;
+    if (days > 0) return 'Trial expires in $days days';
+    if (days == 0) return 'Trial expires today';
+    return 'Trial expired';
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<SubscriptionState>(
       stream: _subscriptionService.streamSubscription(),
       builder: (context, snapshot) {
         final subscription = snapshot.data ?? SubscriptionState.inactive;
-        final isActive = subscription.isActive;
+        final isSubscribed = subscription.isSubscribed;
+        final isFreeTrialActive = subscription.isFreeTrialActive;
+        final hasAccess = subscription.isActive;
 
         return PopScope(
           canPop: false,
@@ -107,7 +117,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 16),
-                          if (isActive)
+                          if (hasAccess)
                             GestureDetector(
                               onTap: _handleBackNavigation,
                               child: const Icon(
@@ -132,10 +142,12 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                const Expanded(
+                                Expanded(
                                   child: Text(
-                                    'Start your 14 days\nfree trial',
-                                    style: TextStyle(
+                                    subscription.status == 'trialing' && !isFreeTrialActive 
+                                        ? 'Your trial has\nexpired'
+                                        : 'Subscribe to\nthe Vault',
+                                    style: const TextStyle(
                                       fontSize: 30,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.black,
@@ -146,9 +158,11 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                               ],
                             ),
                           const SizedBox(height: 20),
-                          if (isActive)
+                          if (hasAccess)
                             Text(
-                              'Manage your\nmonthly plan',
+                              isSubscribed 
+                                ? 'Manage your\nmonthly plan'
+                                : '14 days free trial\nactive',
                               style: const TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w800,
@@ -158,9 +172,11 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                             ),
                           const SizedBox(height: 12),
                           Text(
-                            isActive
+                            isSubscribed
                                 ? 'Your subscription is active. You can keep it, or cancel anytime before your next billing date.'
-                                : 'Organize your payments. Secure your documents.\nStay in control without the mental load.',
+                                : isFreeTrialActive
+                                    ? 'You have full access to the Vault during your trial. Subscribe now to maintain access after it ends.'
+                                    : 'Organize your payments. Secure your documents.\nStay in control without the mental load.',
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF888888),
@@ -187,9 +203,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                             ),
                             child: Column(
                               children: const [
-                                _FeatureItem(
-                                  text: 'Centralized Payment Tracking.',
-                                ),
+                                _FeatureItem(text: 'Centralized Payment Tracking.'),
                                 SizedBox(height: 16),
                                 _FeatureItem(text: 'Smart Reminders'),
                                 SizedBox(height: 16),
@@ -225,9 +239,11 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            '14 days free trial',
-                                            style: TextStyle(
+                                          Text(
+                                            isSubscribed 
+                                                ? 'Subscription'
+                                                : '14 days free trial',
+                                            style: const TextStyle(
                                               fontSize: 17,
                                               fontWeight: FontWeight.w700,
                                               color: Colors.black,
@@ -235,16 +251,18 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            isActive
+                                            isSubscribed
                                                 ? subscription.cancelAtPeriodEnd
                                                       ? 'Cancellation scheduled'
                                                       : 'Subscription active'
-                                                : 'First 2 weeks on us',
+                                                : isFreeTrialActive
+                                                    ? 'Currently active'
+                                                    : 'Trial expired',
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500,
                                               color:
-                                                  subscription.cancelAtPeriodEnd
+                                                  subscription.cancelAtPeriodEnd || (!isSubscribed && !isFreeTrialActive)
                                                   ? const Color(0xFFFF9800)
                                                   : const Color(0xFFC61C36),
                                             ),
@@ -287,16 +305,16 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                             text: TextSpan(
                                               children: [
                                                 TextSpan(
-                                                  text: isActive
+                                                  text: isSubscribed
                                                       ? '\$6.99'
                                                       : 'Then \$6.99',
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                     fontSize: 20,
                                                     fontWeight: FontWeight.w800,
                                                     color: Colors.black,
                                                   ),
                                                 ),
-                                                TextSpan(
+                                                const TextSpan(
                                                   text: ' / month',
                                                   style: TextStyle(
                                                     fontSize: 14,
@@ -309,12 +327,11 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            isActive
-                                                ? _formatPeriodEnd(
-                                                    subscription
-                                                        .currentPeriodEnd,
-                                                  )
-                                                : 'Starts after trial ends',
+                                            isSubscribed
+                                                ? _formatPeriodEnd(subscription.currentPeriodEnd)
+                                                : isFreeTrialActive 
+                                                    ? _formatTrialEnd(subscription.trialEndDate)
+                                                    : 'Starts immediately',
                                             style: const TextStyle(
                                               fontSize: 13,
                                               color: Color(0xFF888888),
@@ -323,7 +340,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                         ],
                                       ),
                                     ),
-                                    if (isActive)
+                                    if (isSubscribed)
                                       GestureDetector(
                                         onTap:
                                             subscription.cancelAtPeriodEnd ||
@@ -380,7 +397,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                           width: double.infinity,
                           height: 54,
                           child: ElevatedButton(
-                            onPressed: isActive
+                            onPressed: isSubscribed
                                 ? subscription.cancelAtPeriodEnd ||
                                           _isCancelling
                                       ? null
@@ -401,11 +418,11 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                     color: Colors.white,
                                   )
                                 : Text(
-                                    isActive
+                                    isSubscribed
                                         ? subscription.cancelAtPeriodEnd
                                               ? 'Cancellation Scheduled'
                                               : 'Cancel Subscription'
-                                        : 'Start Free Trial',
+                                        : 'Subscribe Now',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -413,7 +430,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                   ),
                           ),
                         ),
-                        if (isActive) ...[
+                        if (hasAccess) ...[
                           const SizedBox(height: 14),
                           GestureDetector(
                             onTap: () => context.go('/home'),
@@ -429,7 +446,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                         ],
                         const SizedBox(height: 16),
                         Text(
-                          isActive
+                          isSubscribed
                               ? 'If you cancel, access remains available until the current billing period ends.'
                               : 'Recurring billing. No commitment. By continuing.\nYou agree to our Terms of Service and Privacy Policy.',
                           textAlign: TextAlign.center,

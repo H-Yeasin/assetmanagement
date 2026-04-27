@@ -108,23 +108,23 @@ class SubscriptionState {
     trialEndDate: null,
   );
 
-  bool get isActive {
-    if (status == 'active' || status == 'past_due') return true;
-    if (status == 'trialing') {
-      // Check custom trialEndDate first
+  bool get isSubscribed {
+    return status == 'active' ||
+        status == 'past_due' ||
+        (status == 'trialing' && stripeSubscriptionId.isNotEmpty);
+  }
+
+  bool get isFreeTrialActive {
+    if (status == 'trialing' && stripeSubscriptionId.isEmpty) {
       if (trialEndDate != null) {
         return trialEndDate!.isAfter(DateTime.now());
       }
-      // Fallback to currentPeriodEnd (Stripe trial)
-      if (currentPeriodEnd != null) {
-        return currentPeriodEnd!.isAfter(DateTime.now());
-      }
-      // If no date found but status is trialing, assume active for now
-      // (Backend will update status to expired when needed)
-      return true;
+      return true; // Fallback if no date is set but status is trialing without Stripe
     }
     return false;
   }
+
+  bool get isActive => isSubscribed || isFreeTrialActive;
 
   factory SubscriptionState.fromMap(Map<String, dynamic>? data) {
     if (data == null) return inactive;
