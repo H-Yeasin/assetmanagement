@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/app_config.dart';
 import '../services/subscription_service.dart';
 
 class SubscriptionAccessGate extends StatefulWidget {
@@ -27,7 +28,7 @@ class _SubscriptionAccessGateState extends State<SubscriptionAccessGate> {
         }
 
         final subscription = snapshot.data ?? SubscriptionState.inactive;
-        if (subscription.isActive) {
+        if (subscription.isActive || AppConfig.bypassVaultSubscription) {
           return widget.child;
         }
 

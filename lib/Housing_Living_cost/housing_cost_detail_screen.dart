@@ -296,13 +296,24 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            NumberFormat('#,##0.00').format(_cost.amount),
+                            '\$${NumberFormat('#,##0.00').format(_cost.amount)}',
                             style: const TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF111111),
                             ),
                           ),
+                          if (_cost.dueDate != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Next Payment: ${DateFormat('MMM dd, yyyy').format(_cost.dueDate!)}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF888888),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

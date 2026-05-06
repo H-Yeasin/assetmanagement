@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 
 import '../Home_Dashboard/widgets.dart';
+import '../config/app_config.dart';
 import '../services/biometric_service.dart';
 import '../services/security_service.dart';
 import '../services/subscription_service.dart';
@@ -69,7 +70,7 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
 
       if (!mounted) return;
 
-      if (!subscription.isActive) {
+      if (!subscription.isActive && !AppConfig.bypassVaultSubscription) {
         VaultAccessSession.reset();
         // Replace the gated vault route so back navigation returns to the
         // previous stable screen instead of a half-initialized gate.

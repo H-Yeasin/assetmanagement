@@ -6,7 +6,8 @@ class InsurancePolicy {
   final String? id;
   final String userId;
   final String name;
-  final String category; // auto, home, pet, appliance, personal, other
+  final String
+  category; // auto, home, pet, warranty, appliance, personal, other
   final double premium;
   final String? paymentFrequency;
   final String? provider;
@@ -129,16 +130,26 @@ class InsurancePolicy {
   String get normalizedFrequency =>
       (paymentFrequency ?? '').trim().toLowerCase();
 
+  String get normalizedCategory => category.trim().toLowerCase();
+
   String get normalizedStatus => status.trim().toLowerCase();
 
   bool get isActive => normalizedStatus == 'active';
 
-  bool get isOneTime =>
-      normalizedFrequency.contains('one-time') ||
-      category.toLowerCase() == 'appliance';
+  bool get isWarranty =>
+      normalizedCategory == 'warranty' || normalizedCategory == 'appliance';
+
+  bool get isOneTime => normalizedFrequency.contains('one-time') || isWarranty;
 
   double get monthlyEquivalent {
     if (isOneTime) return 0;
+    if (normalizedFrequency.contains('bi-weekly') ||
+        normalizedFrequency.contains('biweekly')) {
+      return premium * 26 / 12;
+    }
+    if (normalizedFrequency.contains('weekly')) {
+      return premium * 52 / 12;
+    }
     if (normalizedFrequency.contains('annually') ||
         normalizedFrequency.contains('yearly')) {
       return premium / 12;
@@ -150,6 +161,14 @@ class InsurancePolicy {
   }
 
   double get annualEquivalent {
+    if (isOneTime) return premium;
+    if (normalizedFrequency.contains('bi-weekly') ||
+        normalizedFrequency.contains('biweekly')) {
+      return premium * 26;
+    }
+    if (normalizedFrequency.contains('weekly')) {
+      return premium * 52;
+    }
     if (normalizedFrequency.contains('monthly')) {
       return premium * 12;
     }
@@ -163,9 +182,7 @@ class InsurancePolicy {
 
   String get paymentStatusLabel {
     if (isOneTime) {
-      return category.toLowerCase() == 'appliance'
-          ? 'Warranty expiry'
-          : 'One-time payment';
+      return isWarranty ? 'Warranty expiry' : 'One-time payment';
     }
     return autoPayEnabledForStatus
         ? 'Paid automatically'
@@ -233,6 +250,7 @@ class InsurancePolicy {
       case 'pet':
         return 'assets/images/insurance/petinsurance.png';
       case 'appliance':
+      case 'warranty':
         return 'assets/images/insurance/appliance.png';
       case 'personal':
         return 'assets/images/insurance/personalinsurance.png';
@@ -252,6 +270,7 @@ class InsurancePolicy {
       case 'personal':
         return 'assets/images/insurance/catagorypersonal.png';
       case 'appliance':
+      case 'warranty':
         return 'assets/images/insurance/appliance.png';
       case 'other':
         return 'assets/images/insurance/other.png';
@@ -269,6 +288,7 @@ class InsurancePolicy {
       case 'pet':
         return const Color(0xFF4CAF50);
       case 'appliance':
+      case 'warranty':
         return const Color(0xFF9C27B0);
       case 'personal':
         return const Color(0xFFE91E63);
@@ -286,6 +306,7 @@ class InsurancePolicy {
       case 'pet':
         return const Color(0xFFE8F5E9);
       case 'appliance':
+      case 'warranty':
         return const Color(0xFFF3E5F5);
       case 'personal':
         return const Color(0xFFFCE4EC);

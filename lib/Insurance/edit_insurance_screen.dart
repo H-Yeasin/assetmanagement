@@ -42,7 +42,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   String _paymentDay = 'Every 15th of the month';
   List<Map<String, dynamic>> _uploadedDocuments = [];
 
-  final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Yearly'];
+  final List<String> _paymentTypes = ['Monthly', 'Bi-weekly', 'Yearly'];
   final List<String> _statusOptions = ['Active', 'Inactive', 'Archived'];
   final List<String> _personalTypes = [
     'Disability',
@@ -74,6 +74,17 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
   String _titleCase(String value) {
     if (value.isEmpty) return value;
     return value[0].toUpperCase() + value.substring(1).toLowerCase();
+  }
+
+  bool get _isWarrantyPolicy => widget.policy.isWarranty;
+
+  List<String> get _frequencyOptions => _paymentType == 'Quarterly'
+      ? [..._paymentTypes, 'Quarterly']
+      : _paymentTypes;
+
+  String get _categoryDisplay {
+    if (_isWarrantyPolicy) return 'Warranty';
+    return _titleCase(widget.policy.category);
   }
 
   @override
@@ -133,10 +144,14 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
     final freq = widget.policy.paymentFrequency?.toLowerCase();
     if (freq == 'monthly') {
       _paymentType = 'Monthly';
+    } else if (freq == 'bi-weekly' || freq == 'biweekly') {
+      _paymentType = 'Bi-weekly';
     } else if (freq == 'quarterly') {
       _paymentType = 'Quarterly';
     } else if (freq == 'annually' || freq == 'yearly') {
       _paymentType = 'Yearly';
+    } else if (freq == 'one-time') {
+      _paymentType = 'One-time';
     } else {
       _paymentType = 'Monthly';
     }
@@ -183,9 +198,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       final renewalDate = _parseDateText(_dateController.text);
       final startDate = _parseDateText(_startDateController.text);
       final endDate = _parseDateText(_endDateController.text);
-      final selectedPaymentType = widget.policy.category == 'appliance'
-          ? 'One-time'
-          : _paymentType;
+      final selectedPaymentType = _isWarrantyPolicy ? 'One-time' : _paymentType;
       final normalizedStatus = _status.toLowerCase();
 
       final tempPolicy = InsurancePolicy(
@@ -201,9 +214,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         coverageNotes: _notesController.text,
         petName: _petNameController.text,
         propertyAddress: _addressController.text,
-        applianceName: widget.policy.category == 'appliance'
-            ? _nameController.text
-            : null,
+        applianceName: _isWarrantyPolicy ? _nameController.text : null,
         manufacturer: _manufacturerController.text,
         policyNumber: _policyNumberController.text,
         vehicleModel: _vehicleModelController.text,
@@ -213,7 +224,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         startDate: startDate,
         endDate: endDate,
         coverageType: _coverageType,
-        isAutoPay: widget.policy.category == 'appliance' ? false : _isAutoPay,
+        isAutoPay: _isWarrantyPolicy ? false : _isAutoPay,
         paymentDay: _paymentDay,
         personalInsuranceType: _personalInsuranceType,
         status: normalizedStatus,
@@ -260,9 +271,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String categoryDisp =
-        widget.policy.category[0].toUpperCase() +
-        widget.policy.category.substring(1);
+    final String categoryDisp = _categoryDisplay;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
@@ -320,7 +329,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
               ..._buildPetEditFields()
             else if (widget.policy.category == 'home')
               ..._buildHomeEditFields()
-            else if (widget.policy.category == 'appliance')
+            else if (_isWarrantyPolicy)
               ..._buildWarrantyEditFields()
             else
               ..._buildDefaultEditFields(),
@@ -377,7 +386,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: _buildDropdownField(
-              _paymentTypes,
+              _frequencyOptions,
               _paymentType,
               'Yearly',
               (v) => setState(() => _paymentType = v!),
@@ -571,7 +580,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: _buildDropdownField(
-              _paymentTypes,
+              _frequencyOptions,
               _paymentType,
               'Yearly',
               (v) => setState(() => _paymentType = v!),
@@ -637,7 +646,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: _buildDropdownField(
-              _paymentTypes,
+              _frequencyOptions,
               _paymentType,
               'Monthly',
               (v) => setState(() => _paymentType = v!),
@@ -697,7 +706,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: _buildDropdownField(
-              _paymentTypes,
+              _frequencyOptions,
               _paymentType,
               'Monthly',
               (v) => setState(() => _paymentType = v!),
@@ -717,8 +726,8 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
 
   List<Widget> _buildWarrantyEditFields() {
     return [
-      _buildLabel('Appliance Name'),
-      _buildTextField(_nameController, 'Washing Machine'),
+      _buildLabel('Item Name'),
+      _buildTextField(_nameController, 'Fridge, Sofa, TV'),
 
       _buildLabel('Manufacturer'),
       _buildTextField(_manufacturerController, 'Bosch'),
@@ -892,7 +901,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: _buildDropdownField(
-              _paymentTypes,
+              _frequencyOptions,
               _paymentType,
               'Yearly',
               (v) => setState(() => _paymentType = v!),

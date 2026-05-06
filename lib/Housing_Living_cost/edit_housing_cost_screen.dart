@@ -233,6 +233,7 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                     Row(
                       children: [
                         Expanded(
+                          flex: 5,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -247,6 +248,7 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
+                          flex: 6,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -461,7 +463,7 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
     final categories = HousingCost.displayCategories;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -479,20 +481,20 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       color: HousingCost.iconBgColorForCategory(cat['id']!),
                       shape: BoxShape.circle,
                     ),
                     child: Image.asset(
                       cat['icon']!,
-                      width: 18,
-                      height: 18,
+                      width: 14,
+                      height: 14,
                       errorBuilder: (c, e, s) =>
-                          const Icon(Icons.category, size: 18),
+                          const Icon(Icons.category, size: 14),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       cat['label']!,

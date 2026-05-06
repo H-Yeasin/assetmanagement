@@ -7,6 +7,13 @@ import 'package:flutter/material.dart';
 import '../Insurance/models/insurance_model.dart';
 import '../Loan_Screen/models/document_model.dart';
 
+class InsuranceOccurrence {
+  final InsurancePolicy policy;
+  final DateTime date;
+
+  const InsuranceOccurrence({required this.policy, required this.date});
+}
+
 class InsuranceService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
@@ -120,43 +127,90 @@ class InsuranceService {
     DateTime? from,
     DateTime? to,
   }) async {
+    final occurrences = await fetchUpcomingRenewalOccurrences(
+      from: from,
+      to: to,
+    );
+    final seenIds = <String>{};
+    final policies = <InsurancePolicy>[];
+    for (final occurrence in occurrences) {
+      final id = occurrence.policy.id ?? occurrence.policy.name;
+      if (seenIds.add(id)) {
+        policies.add(occurrence.policy);
+      }
+    }
+    return policies;
+  }
+
+  Future<List<InsuranceOccurrence>> fetchUpcomingRenewalOccurrences({
+    DateTime? from,
+    DateTime? to,
+  }) async {
     if (_uid == null) return [];
 
-    final now = DateTime.now();
-    final effectiveFrom = DateTime(
-      (from ?? now).year,
-      (from ?? now).month,
-      (from ?? now).day,
-    );
-    final effectiveTo = to == null ? null : DateTime(to.year, to.month, to.day);
+    final effectiveFrom = _normalizeDay(from ?? DateTime.now());
+    final effectiveTo = to == null ? null : _normalizeDay(to);
 
     final policies = await fetchInsurances(status: 'active');
-    final upcomingPolicies =
-        policies.where((policy) {
-          final renewalDate = policy.renewalDate;
-          if (renewalDate == null) return false;
+    final occurrences = <InsuranceOccurrence>[];
 
-          final renewalDay = DateTime(
-            renewalDate.year,
-            renewalDate.month,
-            renewalDate.day,
-          );
+    for (final policy in policies) {
+      final dates = generateOccurrences(policy, from: from, to: to);
+      for (final date in dates) {
+        final day = _normalizeDay(date);
+        if (day.isBefore(effectiveFrom)) continue;
+        if (effectiveTo != null && day.isAfter(effectiveTo)) continue;
+        occurrences.add(InsuranceOccurrence(policy: policy, date: day));
+      }
+    }
 
-          if (renewalDay.isBefore(effectiveFrom)) return false;
-          if (effectiveTo != null && renewalDay.isAfter(effectiveTo)) {
-            return false;
-          }
-          return true;
-        }).toList()..sort((a, b) {
-          final aDate = a.renewalDate;
-          final bDate = b.renewalDate;
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return 1;
-          if (bDate == null) return -1;
-          return aDate.compareTo(bDate);
-        });
+    occurrences.sort((a, b) => a.date.compareTo(b.date));
+    return occurrences;
+  }
 
-    return upcomingPolicies;
+  static List<DateTime> generateOccurrences(
+    InsurancePolicy policy, {
+    DateTime? from,
+    DateTime? to,
+  }) {
+    if (!policy.isActive) return [];
+
+    final effectiveFrom = _normalizeDay(from ?? DateTime.now());
+    final effectiveTo = _normalizeDay(to ?? _addMonths(effectiveFrom, 6));
+
+    if (policy.isOneTime) {
+      final oneTimeDate =
+          policy.renewalDate ?? policy.endDate ?? policy.startDate;
+      if (oneTimeDate == null) return [];
+      final day = _normalizeDay(oneTimeDate);
+      if (day.isBefore(effectiveFrom) || day.isAfter(effectiveTo)) return [];
+      return [day];
+    }
+
+    final baseDate = policy.startDate ?? policy.renewalDate;
+    if (baseDate == null) return [];
+
+    final policyEndDate = policy.endDate == null
+        ? effectiveTo
+        : _normalizeDay(policy.endDate!);
+    final cutoff = policyEndDate.isBefore(effectiveTo)
+        ? policyEndDate
+        : effectiveTo;
+    if (cutoff.isBefore(effectiveFrom)) return [];
+
+    final dates = <DateTime>[];
+    var next = _nextDueDate(
+      baseDate,
+      policy.normalizedFrequency,
+      effectiveFrom,
+    );
+    var guard = 0;
+    while (!next.isAfter(cutoff) && guard < 400) {
+      dates.add(next);
+      next = _nextDueDateAfter(next, policy.normalizedFrequency);
+      guard++;
+    }
+    return dates;
   }
 
   // ── Documents ─────────────────────────────────────────────────────────────
@@ -389,5 +443,72 @@ class InsuranceService {
       default:
         return 'image/jpeg';
     }
+  }
+
+  static DateTime _normalizeDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  static DateTime _nextDueDate(
+    DateTime baseDate,
+    String frequency,
+    DateTime from,
+  ) {
+    final start = _normalizeDay(baseDate);
+    final reference = _normalizeDay(from);
+    if (!start.isBefore(reference)) return start;
+
+    final normalizedFrequency = frequency.trim().toLowerCase();
+    if (normalizedFrequency.contains('weekly') ||
+        normalizedFrequency.contains('bi-weekly') ||
+        normalizedFrequency.contains('biweekly')) {
+      final days =
+          normalizedFrequency.contains('bi-weekly') ||
+              normalizedFrequency.contains('biweekly')
+          ? 14
+          : 7;
+      final diffDays = reference.difference(start).inDays;
+      final periods = (diffDays / days).ceil();
+      return start.add(Duration(days: periods * days));
+    }
+
+    final months = normalizedFrequency.contains('quarterly')
+        ? 3
+        : normalizedFrequency.contains('annually') ||
+              normalizedFrequency.contains('yearly')
+        ? 12
+        : 1;
+    var next = start;
+    while (next.isBefore(reference)) {
+      next = _addMonths(next, months);
+    }
+    return next;
+  }
+
+  static DateTime _nextDueDateAfter(DateTime date, String frequency) {
+    final normalizedFrequency = frequency.trim().toLowerCase();
+    if (normalizedFrequency.contains('bi-weekly') ||
+        normalizedFrequency.contains('biweekly')) {
+      return _normalizeDay(date).add(const Duration(days: 14));
+    }
+    if (normalizedFrequency.contains('weekly')) {
+      return _normalizeDay(date).add(const Duration(days: 7));
+    }
+    if (normalizedFrequency.contains('quarterly')) {
+      return _addMonths(_normalizeDay(date), 3);
+    }
+    if (normalizedFrequency.contains('annually') ||
+        normalizedFrequency.contains('yearly')) {
+      return _addMonths(_normalizeDay(date), 12);
+    }
+    return _addMonths(_normalizeDay(date), 1);
+  }
+
+  static DateTime _addMonths(DateTime date, int months) {
+    final targetMonth = date.month + months;
+    final targetYear = date.year + ((targetMonth - 1) ~/ 12);
+    final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+    final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+    final day = date.day > lastDay ? lastDay : date.day;
+    return DateTime(targetYear, normalizedMonth, day);
   }
 }

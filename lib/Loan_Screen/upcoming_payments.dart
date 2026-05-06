@@ -68,17 +68,20 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
     }
 
     for (final policy in policies) {
-      if (policy.renewalDate == null || policy.isOneTime || !policy.isActive) {
+      if (policy.isOneTime || !policy.isActive) {
         continue;
       }
-      items.add(
-        _PaymentListItem(
-          date: policy.renewalDate!,
-          title: policy.name,
-          amount: policy.premium,
-          isPaid: policy.autoPayEnabledForStatus,
-        ),
-      );
+      final dates = InsuranceService.generateOccurrences(policy);
+      for (final date in dates) {
+        items.add(
+          _PaymentListItem(
+            date: date,
+            title: policy.name,
+            amount: policy.premium,
+            isPaid: policy.autoPayEnabledForStatus,
+          ),
+        );
+      }
     }
 
     items.sort((a, b) => a.date.compareTo(b.date));

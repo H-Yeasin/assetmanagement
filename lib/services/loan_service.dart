@@ -284,33 +284,49 @@ class LoanService {
     DateTime? to,
   }) {
     final effectiveFrom = LoanCalculations.normalizeDay(from ?? DateTime.now());
-    final effectiveTo = to == null ? null : LoanCalculations.normalizeDay(to);
+    final effectiveTo = LoanCalculations.normalizeDay(
+      to ?? _addMonths(effectiveFrom, 6),
+    );
+    final groupsByDate = <String, List<Map<String, dynamic>>>{};
 
-    final groups = loans
-        .map((loan) {
-          final dueDate = LoanCalculations.nextDueDate(
-            loan.paymentDate,
-            loan.paymentFrequency,
-            from: effectiveFrom,
-          );
-          final data = loan.toJson();
-          data['id'] = loan.id;
-          data['paymentAmount'] = LoanCalculations.paymentAmount(loan);
-          data['monthlyEquivalent'] = LoanCalculations.monthlyEquivalent(loan);
-          data['nextDueDate'] = dueDate.toIso8601String();
-          return {
-            'date': dueDate.toIso8601String(),
-            'items': [data],
-          };
-        })
-        .where((group) {
-          final date = DateTime.tryParse(group['date'].toString());
-          if (date == null) return false;
-          final day = LoanCalculations.normalizeDay(date);
-          if (day.isBefore(effectiveFrom)) return false;
-          if (effectiveTo != null && day.isAfter(effectiveTo)) return false;
-          return true;
-        })
+    for (final loan in loans) {
+      final baseDate = loan.paymentDate ?? loan.startDate;
+      if (baseDate == null) continue;
+
+      final loanEndDate = loan.endDate == null
+          ? effectiveTo
+          : LoanCalculations.normalizeDay(loan.endDate!);
+      final cutoff = loanEndDate.isBefore(effectiveTo)
+          ? loanEndDate
+          : effectiveTo;
+      if (cutoff.isBefore(effectiveFrom)) continue;
+
+      var dueDate = LoanCalculations.nextDueDate(
+        baseDate,
+        loan.paymentFrequency,
+        from: effectiveFrom,
+      );
+
+      var guard = 0;
+      while (!dueDate.isAfter(cutoff) && guard < 400) {
+        final data = loan.toJson();
+        data['id'] = loan.id;
+        data['paymentAmount'] = LoanCalculations.paymentAmount(loan);
+        data['monthlyEquivalent'] = LoanCalculations.monthlyEquivalent(loan);
+        data['nextDueDate'] = dueDate.toIso8601String();
+        final key = dueDate.toIso8601String();
+        groupsByDate.putIfAbsent(key, () => <Map<String, dynamic>>[]).add(data);
+
+        dueDate = LoanCalculations.nextDueDateAfter(
+          dueDate,
+          loan.paymentFrequency,
+        );
+        guard++;
+      }
+    }
+
+    final groups = groupsByDate.entries
+        .map((entry) => {'date': entry.key, 'items': entry.value})
         .toList();
 
     groups.sort((a, b) {
@@ -320,6 +336,15 @@ class LoanService {
     });
 
     return groups;
+  }
+
+  DateTime _addMonths(DateTime date, int months) {
+    final targetMonth = date.month + months;
+    final targetYear = date.year + ((targetMonth - 1) ~/ 12);
+    final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+    final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+    final day = date.day > lastDay ? lastDay : date.day;
+    return DateTime(targetYear, normalizedMonth, day);
   }
 
   Future<List<dynamic>> fetchPastActivities({

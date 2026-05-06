@@ -42,9 +42,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
 
   String _paymentSummaryTitle() {
     if (_policy.isOneTime) {
-      return _policy.category == 'appliance'
-          ? 'One-time Warranty Cost'
-          : 'One-time Payment';
+      return _policy.isWarranty ? 'One-time Warranty Cost' : 'One-time Payment';
     }
     return 'Annual Payment';
   }
@@ -54,6 +52,28 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
       return 'Excluded from monthly payment totals';
     }
     return 'Monthly equivalent: \$${NumberFormat('#,##0.00').format(_monthlyEquivalent())}';
+  }
+
+  DateTime? _nextScheduleDate() {
+    final dates = InsuranceService.generateOccurrences(_policy);
+    return dates.isEmpty ? null : dates.first;
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Not set';
+    return DateFormat('MMM dd, yyyy').format(date);
+  }
+
+  String _scheduleLabel() {
+    if (_policy.isOneTime) return 'One-time';
+    final frequency = _policy.paymentFrequency;
+    if (frequency == null || frequency.trim().isEmpty) return 'Monthly';
+    return frequency;
+  }
+
+  String _categoryDisplay() {
+    if (_policy.isWarranty) return 'Warranty';
+    return _policy.category[0].toUpperCase() + _policy.category.substring(1);
   }
 
   @override
@@ -219,8 +239,8 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String categoryDisp =
-        _policy.category[0].toUpperCase() + _policy.category.substring(1);
+    final String categoryDisp = _categoryDisplay();
+    final nextScheduleDate = _nextScheduleDate();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
@@ -320,6 +340,44 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                       color: Color(0xFF888888),
                       fontWeight: FontWeight.w500,
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF0F0F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Payment Schedule',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111111),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ScheduleRow(label: 'Schedule', value: _scheduleLabel()),
+                  _ScheduleRow(
+                    label: _policy.isOneTime ? 'Paid on' : 'Next Payment',
+                    value: _formatDate(nextScheduleDate),
+                  ),
+                  _ScheduleRow(
+                    label: 'Start Date',
+                    value: _formatDate(_policy.startDate),
+                  ),
+                  _ScheduleRow(
+                    label: _policy.isOneTime ? 'End Date' : 'Renewal Date',
+                    value: _formatDate(_policy.renewalDate ?? _policy.endDate),
                   ),
                 ],
               ),
@@ -650,6 +708,42 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
             const SizedBox(height: 48),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ScheduleRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ScheduleRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF888888),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF111111),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

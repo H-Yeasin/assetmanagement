@@ -49,11 +49,11 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
     'Personal',
     'Pet',
     'Home',
-    'Appliance',
+    'Warranty',
     'Auto',
     'Other',
   ];
-  final List<String> _paymentTypes = ['Monthly', 'Quarterly', 'Yearly'];
+  final List<String> _paymentTypes = ['Monthly', 'Bi-weekly', 'Yearly'];
   final List<String> _personalTypes = [
     'Disability',
     'Travel',
@@ -101,11 +101,13 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         0.0;
   }
 
+  bool get _isWarrantyCategory => _selectedCategory == 'Warranty';
+
   List<String> get _frequencyOptions =>
-      _selectedCategory == 'Appliance' ? const ['One-time'] : _paymentTypes;
+      _isWarrantyCategory ? const ['One-time'] : _paymentTypes;
 
   String get _normalizedPaymentType =>
-      _selectedCategory == 'Appliance' ? 'One-time' : _paymentType;
+      _isWarrantyCategory ? 'One-time' : _paymentType;
 
   String get _nameLabel => 'Name';
 
@@ -117,8 +119,8 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         return 'Pet insurance name';
       case 'Home':
         return 'Home insurance name';
-      case 'Appliance':
-        return 'Warranty name';
+      case 'Warranty':
+        return 'Item name (e.g. Fridge, Sofa, TV)';
       case 'Auto':
         return 'Auto insurance name';
       case 'Other':
@@ -129,10 +131,10 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   }
 
   String get _amountLabel =>
-      _selectedCategory == 'Appliance' ? 'One-time Payment' : 'Payment';
+      _isWarrantyCategory ? 'One-time Payment' : 'Payment';
 
   String get _amountHint =>
-      _selectedCategory == 'Appliance' ? '\$0.00' : '\$100';
+      _isWarrantyCategory ? '\$0.00' : '\$100';
 
   String get _frequencyLabel => 'Schedule';
 
@@ -144,7 +146,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         return 'Add any notes about your pet insurance.';
       case 'Auto':
         return 'Add any notes about this auto insurance.';
-      case 'Appliance':
+      case 'Warranty':
         return 'Add any notes about this warranty.';
       default:
         return 'Add any notes about this insurance.';
@@ -154,15 +156,15 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   String _paymentDayDescription(DateTime? date) {
     if (date == null) return '';
 
-    if (_selectedCategory == 'Appliance') {
+    if (_isWarrantyCategory) {
       return DateFormat('MMM dd, yyyy').format(date);
     }
 
     switch (_normalizedPaymentType) {
       case 'Monthly':
         return 'Every ${date.day}${_daySuffix(date.day)} of the month';
-      case 'Quarterly':
-        return 'Quarterly on ${DateFormat('MMM dd').format(date)}';
+      case 'Bi-weekly':
+        return 'Every other week starting ${DateFormat('MMM dd').format(date)}';
       case 'Yearly':
         return 'Yearly on ${DateFormat('MMM dd').format(date)}';
       case 'One-time':
@@ -225,10 +227,10 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         propertyAddress: _selectedCategory == 'Home'
             ? _text(_addressController)
             : null,
-        applianceName: _selectedCategory == 'Appliance'
+        applianceName: _isWarrantyCategory
             ? _text(_nameController)
             : null,
-        manufacturer: _selectedCategory == 'Appliance'
+        manufacturer: _isWarrantyCategory
             ? _text(_manufacturerController)
             : null,
         policyNumber: _text(_policyNumberController),
@@ -294,7 +296,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         return 'Add Pet Insurance';
       case 'Home':
         return 'Add Home Insurance';
-      case 'Appliance':
+      case 'Warranty':
         return 'Add Warranty';
       case 'Auto':
         return 'Add Auto Insurance';
@@ -331,7 +333,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
               return GestureDetector(
                 onTap: () => setState(() {
                   _selectedCategory = cat;
-                  _paymentType = cat == 'Appliance' ? 'One-time' : 'Monthly';
+                  _paymentType = cat == 'Warranty' ? 'One-time' : 'Monthly';
                   _showAdditionalDetails = false;
                 }),
                 child: Container(
@@ -513,7 +515,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
                 _buildDropdownField(
                   _frequencyOptions,
                   _normalizedPaymentType,
-                  _selectedCategory == 'Appliance' ? 'One-time' : 'Monthly',
+                  _isWarrantyCategory ? 'One-time' : 'Monthly',
                   (v) => setState(() => _paymentType = v!),
                   isRed: true,
                 ),
@@ -597,7 +599,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
           _buildTextField(_policyNumberController, 'Policy number'),
         ]);
         break;
-      case 'Appliance':
+      case 'Warranty':
         widgets.addAll([
           _buildLabel('Manufacturer'),
           _buildTextField(_manufacturerController, 'Manufacturer'),

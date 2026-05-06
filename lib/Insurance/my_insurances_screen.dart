@@ -16,7 +16,7 @@ class MyInsurancesScreen extends StatefulWidget {
 class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
   final InsuranceService _apiService = InsuranceService();
   List<InsurancePolicy> _policies = [];
-  List<InsurancePolicy> _upcomingPolicies = [];
+  List<InsuranceOccurrence> _upcomingOccurrences = [];
   bool _isLoading = true;
   String? _error;
   String _selectedCategory = 'All';
@@ -27,7 +27,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     'Pet',
     'Home',
     'Auto',
-    'Appliance',
+    'Warranty',
     'Other',
   ];
 
@@ -43,16 +43,15 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
       _error = null;
     });
     try {
-      final results = await Future.wait([
-        _apiService.fetchInsurances(),
-        _apiService.fetchUpcomingRenewals(),
-      ]);
+      final policies = await _apiService.fetchInsurances();
+      final upcomingOccurrences = await _apiService
+          .fetchUpcomingRenewalOccurrences();
       setState(() {
-        _policies = results[0];
-        _upcomingPolicies = results[1];
+        _policies = policies;
+        _upcomingOccurrences = upcomingOccurrences;
         _isLoading = false;
         debugPrint(
-          'Loaded ${_policies.length} policies and ${_upcomingPolicies.length} upcoming renewals.',
+          'Loaded ${_policies.length} policies and ${_upcomingOccurrences.length} upcoming renewals.',
         );
       });
     } catch (e) {
@@ -78,10 +77,26 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     return value[0].toUpperCase() + value.substring(1).toLowerCase();
   }
 
+  String _displayCategory(InsurancePolicy policy) {
+    if (policy.isWarranty) return 'Warranty';
+    return _titleCase(policy.category);
+  }
+
+  DateTime? _nextDate(InsurancePolicy policy) {
+    final dates = InsuranceService.generateOccurrences(policy);
+    return dates.isEmpty ? null : dates.first;
+  }
+
   String _policySubtitle(InsurancePolicy policy) {
-    final baseSubtitle = policy.provider ?? _titleCase(policy.category);
-    if (policy.isActive) return baseSubtitle;
-    return '$baseSubtitle - ${_titleCase(policy.status)}';
+    final baseSubtitle = policy.provider ?? _displayCategory(policy);
+    final nextDate = _nextDate(policy);
+    final dateText = nextDate == null
+        ? ''
+        : policy.isOneTime
+        ? ' - Paid on ${DateFormat('MMM dd').format(nextDate)}'
+        : ' - Next Payment: ${DateFormat('MMM dd').format(nextDate)}';
+    if (policy.isActive) return '$baseSubtitle$dateText';
+    return '$baseSubtitle$dateText - ${_titleCase(policy.status)}';
   }
 
   double _monthlyEquivalent(InsurancePolicy policy) {
@@ -126,7 +141,9 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     if (_selectedCategory == 'All') return _policies;
     return _policies
         .where(
-          (p) => p.category.toLowerCase() == _selectedCategory.toLowerCase(),
+          (p) =>
+              _displayCategory(p).toLowerCase() ==
+              _selectedCategory.toLowerCase(),
         )
         .toList();
   }
@@ -285,7 +302,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Column(
-                          children: _upcomingPolicies.isEmpty
+                          children: _upcomingOccurrences.isEmpty
                               ? [
                                   const Padding(
                                     padding: EdgeInsets.symmetric(vertical: 20),
@@ -300,9 +317,9 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                                     ),
                                   ),
                                 ]
-                              : _upcomingPolicies.take(3).map((p) {
-                                  final renewalDate =
-                                      p.renewalDate ?? DateTime.now();
+                              : _upcomingOccurrences.take(3).map((occurrence) {
+                                  final p = occurrence.policy;
+                                  final renewalDate = occurrence.date;
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: UpcomingActionItem(
@@ -428,9 +445,9 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                                   subtitle: _policySubtitle(p),
                                   amount:
                                       '\$${NumberFormat('#,##0.00').format(p.premium)}',
-                                  frequency:
-                                      p.paymentFrequency ??
-                                      (p.isOneTime ? 'One-time' : 'Yearly'),
+                                  frequency: p.isOneTime
+                                      ? 'One-time'
+                                      : p.paymentFrequency ?? 'Yearly',
                                   isAutoPay: p.autoPayEnabledForStatus,
                                   onTap: () async {
                                     await context.push(

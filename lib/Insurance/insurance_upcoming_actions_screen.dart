@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/insurance_service.dart';
-import 'models/insurance_model.dart';
 import 'package:ffp_vault/Insurance/insurance_widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -16,7 +15,7 @@ class InsuranceUpcomingActionsScreen extends StatefulWidget {
 class _InsuranceUpcomingActionsScreenState
     extends State<InsuranceUpcomingActionsScreen> {
   final InsuranceService _apiService = InsuranceService();
-  List<InsurancePolicy> _upcomingPolicies = [];
+  List<InsuranceOccurrence> _upcomingOccurrences = [];
   bool _isLoading = true;
   String? _error;
 
@@ -32,9 +31,9 @@ class _InsuranceUpcomingActionsScreenState
       _error = null;
     });
     try {
-      final policies = await _apiService.fetchUpcomingRenewals();
+      final occurrences = await _apiService.fetchUpcomingRenewalOccurrences();
       setState(() {
-        _upcomingPolicies = policies;
+        _upcomingOccurrences = occurrences;
         _isLoading = false;
       });
     } catch (e) {
@@ -128,7 +127,7 @@ class _InsuranceUpcomingActionsScreenState
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (_upcomingPolicies.isEmpty)
+                    if (_upcomingOccurrences.isEmpty)
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.only(top: 40),
@@ -139,8 +138,9 @@ class _InsuranceUpcomingActionsScreenState
                         ),
                       )
                     else
-                      ..._upcomingPolicies.map((p) {
-                        final renewalDate = p.renewalDate ?? DateTime.now();
+                      ..._upcomingOccurrences.map((occurrence) {
+                        final p = occurrence.policy;
+                        final renewalDate = occurrence.date;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: UpcomingActionItem(

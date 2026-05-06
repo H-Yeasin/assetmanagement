@@ -35,12 +35,17 @@ class InsuranceListItem extends StatelessWidget {
     final bool isYearly =
         freqLower.contains('yearly') || freqLower.contains('annually');
     final bool isQuarterly = freqLower.contains('quarterly');
+    final bool isOneTime = freqLower.contains('one-time');
 
-    final frequencyColor = isYearly
+    final frequencyColor = isOneTime
+        ? const Color(0xFF607D8B)
+        : isYearly
         ? const Color(0xFFFFA726)
         : (isQuarterly ? const Color(0xFF906AF9) : const Color(0xFFBA68C8));
 
-    final frequencyBgColor = isYearly
+    final frequencyBgColor = isOneTime
+        ? const Color(0xFFECEFF1)
+        : isYearly
         ? const Color(0xFFFFF7E6)
         : (isQuarterly
               ? const Color(0xFFF2E7FF)
@@ -49,6 +54,8 @@ class InsuranceListItem extends StatelessWidget {
     String displayFrequency = frequency.replaceAll('(', '').replaceAll(')', '');
     if (isYearly) {
       displayFrequency = 'Yearly';
+    } else if (isOneTime) {
+      displayFrequency = 'One-time';
     } else if (displayFrequency.isNotEmpty) {
       displayFrequency =
           displayFrequency[0].toUpperCase() + displayFrequency.substring(1);
@@ -143,7 +150,11 @@ class InsuranceListItem extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.sync, color: frequencyColor, size: 12),
+                            Icon(
+                              isOneTime ? Icons.event_available : Icons.sync,
+                              color: frequencyColor,
+                              size: 12,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               displayFrequency,
