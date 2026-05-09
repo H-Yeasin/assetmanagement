@@ -264,6 +264,44 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                       ),
                       const SizedBox(height: 12),
 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: GestureDetector(
+                          onTap: () => context.push('/loan-payment-timeline'),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFF0F0F0),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(
+                                  Icons.calendar_month,
+                                  color: brandRed,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'View Payment Timeline',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: brandRed,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
                       // ── Payment Cards ──
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),

@@ -9,6 +9,7 @@ import 'package:ffp_vault/Loan_Screen/add_loan_screen.dart';
 import 'package:ffp_vault/Loan_Screen/upcoming_actions_screen.dart';
 import 'package:ffp_vault/Loan_Screen/completed_loans_screen.dart';
 import 'package:ffp_vault/Loan_Screen/loan_detail_screen.dart';
+import 'package:ffp_vault/Loan_Screen/loan_payment_timeline_screen.dart';
 import 'package:ffp_vault/Loan_Screen/add_documents_screen.dart';
 import 'package:ffp_vault/Home_Dashboard/main_shell.dart';
 import 'package:ffp_vault/Home_Dashboard/home_dashboard.dart';
@@ -301,6 +302,11 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/upcoming-actions',
       builder: (context, state) => const UpcomingActionsScreen(),
+    ),
+    GoRoute(
+      path: '/loan-payment-timeline',
+      builder: (context, state) =>
+          LoanPaymentTimelineScreen(loan: state.extra as Loan?),
     ),
     GoRoute(
       path: '/past-activities',

@@ -93,7 +93,7 @@ function buildSubscriptionState({
     stripePaymentIntentId: paymentIntentId,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     ...(activated ?
-      {activatedAt: admin.firestore.FieldValue.serverTimestamp()} :
+      { activatedAt: admin.firestore.FieldValue.serverTimestamp() } :
       {}),
   };
 }
@@ -117,8 +117,8 @@ function buildInactiveSubscriptionState(customerId = "") {
 
 async function replaceUserSubscription(userRef, subscriptionState) {
   await userRef.set(
-    {subscription: subscriptionState},
-    {mergeFields: ["subscription"]},
+    { subscription: subscriptionState },
+    { mergeFields: ["subscription"] },
   );
 }
 
@@ -153,7 +153,7 @@ async function cancelStripeSubscriptionIfRetryable(stripeClient, subscriptionId)
   try {
     const subscription = await stripeClient.subscriptions.retrieve(subscriptionId);
     if (["incomplete", "incomplete_expired"].includes(subscription.status) ||
-        (subscription.status === "trialing" && !subscription.default_payment_method)) {
+      (subscription.status === "trialing" && !subscription.default_payment_method)) {
       return await stripeClient.subscriptions.cancel(subscriptionId);
     }
     return subscription;
@@ -167,7 +167,7 @@ async function cancelStripeSubscriptionIfRetryable(stripeClient, subscriptionId)
 
 async function syncStripeSubscriptionToFirestore(
   subscription,
-  {paymentIntentId = "", activated = false} = {},
+  { paymentIntentId = "", activated = false } = {},
 ) {
   const userRef = await resolveUserRefForSubscription(subscription);
   if (!userRef) {
@@ -238,21 +238,21 @@ async function getOrCreateStripeCustomer(uid, email, stripeClient) {
   const existingCustomerId = userData?.subscription?.stripeCustomerId;
 
   if (existingCustomerId) {
-    return {customerId: existingCustomerId, userRef, userData};
+    return { customerId: existingCustomerId, userRef, userData };
   }
 
   const customer = await stripeClient.customers.create({
     email: email || undefined,
-    metadata: {uid},
+    metadata: { uid },
   });
 
   await userRef.set({
     subscription: {
       stripeCustomerId: customer.id,
     },
-  }, {merge: true});
+  }, { merge: true });
 
-  return {customerId: customer.id, userRef, userData};
+  return { customerId: customer.id, userRef, userData };
 }
 
 function normalizeEmail(email) {
@@ -308,37 +308,175 @@ function transporter() {
 
 async function sendOtpEmail(email, otp, purpose = "reset") {
   const { from, client } = transporter();
+
   const subjectMap = {
-    reset: "FFP Vault Password Reset OTP",
-    twoFactorEnable: "FFP Vault Two-Factor Setup OTP",
-    twoFactorLogin: "FFP Vault Login Verification OTP",
+    reset: "Reset your password \u2013 FFP Vault",
+    twoFactorEnable: "Enable two-factor authentication \u2013 FFP Vault",
+    twoFactorLogin: "Verify your login \u2013 FFP Vault",
   };
   const titleMap = {
     reset: "Reset your password",
     twoFactorEnable: "Enable two-factor authentication",
     twoFactorLogin: "Verify your login",
   };
-  const descMap = {
-    reset: "Use this 6-digit OTP to reset your FFP Vault password:",
+  const bodyMap = {
+    reset: "We received a request to reset your password for your FFP Vault.",
     twoFactorEnable:
-      "Use this 6-digit OTP to enable two-factor authentication:",
-    twoFactorLogin: "Use this 6-digit OTP to complete your login:",
+      "We received a request to enable two-factor authentication on your FFP Vault account.",
+    twoFactorLogin:
+      "We received a login attempt for your FFP Vault account. Use the code below to complete your sign-in.",
   };
 
-  await client.sendMail({
-    from,
-    to: email,
-    subject: subjectMap[purpose] || subjectMap.reset,
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px">
-        <h2 style="margin:0 0 12px;color:#111">${titleMap[purpose] || titleMap.reset}</h2>
-        <p style="color:#444;margin:0 0 20px">${descMap[purpose] || descMap.reset}</p>
-        <div style="font-size:36px;letter-spacing:10px;font-weight:800;color:#C61C36;margin:12px 0 20px">${otp}</div>
-        <p style="color:#666;margin:0 0 8px">This OTP expires in ${OTP_EXPIRE_MINUTES} minutes.</p>
-        <p style="color:#888;margin:0">If you did not request this, ignore this email.</p>
-      </div>
-    `,
-  });
+  const title = titleMap[purpose] || titleMap.reset;
+  const bodyText = bodyMap[purpose] || bodyMap.reset;
+  const subject = subjectMap[purpose] || subjectMap.reset;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+
+        <!-- Card -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+
+          <!-- Header accent bar -->
+          <tr>
+            <td style="background-color:#C61C36;height:5px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- Logo / Brand header -->
+          <tr>
+            <td align="center" style="padding:36px 40px 28px;">
+              <!-- Real FFP logo (hosted on Firebase Storage for email client compatibility) -->
+              <img
+                src="https://storage.googleapis.com/ffp-vault-app.firebasestorage.app/public%2Flogo.png"
+                alt="Financial Freedom Power"
+                width="80"
+                style="display:block;margin:0 auto 14px;width:80px;height:auto;"
+              />
+              <div style="margin:0;font-size:18px;font-weight:700;color:#111111;letter-spacing:-0.3px;">
+                Financial Freedom Power
+              </div>
+              <div style="margin:4px 0 0;font-size:12px;color:#888888;letter-spacing:0.4px;text-transform:uppercase;">
+                FFP Vault
+              </div>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <div style="height:1px;background-color:#f0f0f0;"></div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px 0;">
+
+              <!-- Title -->
+              <h1 style="margin:0 0 20px;font-size:22px;font-weight:700;color:#111111;line-height:1.3;">
+                ${title}
+              </h1>
+
+              <!-- Greeting -->
+              <p style="margin:0 0 16px;font-size:15px;color:#444444;line-height:1.6;">
+                Hi,
+              </p>
+
+              <!-- Body text -->
+              <p style="margin:0 0 28px;font-size:15px;color:#444444;line-height:1.7;">
+                ${bodyText}<br/>Use the code below to continue:
+              </p>
+
+              <!-- OTP Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <div style="display:inline-block;background-color:#fff8f8;border:2px solid #C61C36;border-radius:12px;padding:20px 36px;">
+                      <span style="font-size:38px;font-weight:900;color:#C61C36;letter-spacing:12px;font-family:'Courier New',Courier,monospace;">
+                        ${otp}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Expiry note -->
+              <p style="margin:0 0 12px;font-size:14px;color:#666666;line-height:1.6;">
+                This code will expire in <strong>${OTP_EXPIRE_MINUTES} minutes</strong>.
+              </p>
+
+              <!-- Ignore note -->
+              <p style="margin:0 0 32px;font-size:14px;color:#888888;line-height:1.6;">
+                If you didn&rsquo;t request this, you can safely ignore this email.
+              </p>
+
+              <!-- Reassurance -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:36px;">
+                <tr>
+                  <td style="background-color:#f9f9f9;border-left:3px solid #C61C36;border-radius:0 8px 8px 0;padding:14px 18px;">
+                    <p style="margin:0;font-size:13px;color:#555555;line-height:1.5;">
+                      &#128274;&nbsp; Your information remains secure.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <div style="height:1px;background-color:#f0f0f0;"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:28px 40px 36px;">
+              <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#333333;">
+                Financial Freedom Power
+              </p>
+              <p style="margin:0 0 12px;font-size:12px;color:#999999;letter-spacing:0.2px;">
+                Secure Document &amp; Financial Organization
+              </p>
+              <a href="mailto:support@financialfreedompower.com"
+                style="font-size:12px;color:#C61C36;text-decoration:none;">
+                support@financialfreedompower.com
+              </a>
+            </td>
+          </tr>
+
+          <!-- Bottom accent bar -->
+          <tr>
+            <td style="background-color:#C61C36;height:3px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+  `;
+
+  await client.sendMail({ from, to: email, subject, html });
 }
 
 async function getOtpState(email) {
@@ -383,87 +521,87 @@ async function issueTwoFactorOtp({ uid, email, purpose }) {
 }
 
 export const requestPasswordResetOtp = onCall(
-  {secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret]},
+  { secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret] },
   async (request) => {
 
 
-  try {
-    const email = normalizeEmail(request.data?.email);
+    try {
+      const email = normalizeEmail(request.data?.email);
+      if (!validateEmail(email)) {
+        throw new HttpsError("invalid-argument", "Valid email is required.");
+      }
+
+      // Avoid leaking whether the account exists.
+      let userRecord = null;
+      try {
+        userRecord = await admin.auth().getUserByEmail(email);
+      } catch (_) {
+        userRecord = null;
+      }
+
+      if (!userRecord) {
+        return { success: true, message: "OTP sent if account exists." };
+      }
+
+      const otp = generateOtp();
+      const salt = crypto.randomBytes(16).toString("hex");
+      const otpHash = hashOtp(email, otp, salt);
+      const expiresAt = admin.firestore.Timestamp.fromDate(
+        new Date(Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000),
+      );
+
+      const ref = db.collection(OTP_COLLECTION).doc(docIdForEmail(email));
+      await ref.set(
+        {
+          email,
+          uid: userRecord.uid,
+          otpHash,
+          salt,
+          expiresAt,
+          attempts: 0,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      await sendOtpEmail(email, otp);
+      return { success: true, message: "OTP sent successfully." };
+    } catch (error) {
+      console.error("requestPasswordResetOtp failed:", error);
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError(
+        "internal",
+        `Failed to process forgot password: ${error.message || "Unknown error"}`,
+      );
+    }
+  });
+
+
+export const requestTwoFactorEnable = onCall(
+  { secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret] },
+  async (request) => {
+
+
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Login required.");
+    }
+
+    const uid = request.auth.uid;
+    const email = normalizeEmail(
+      request.data?.email || request.auth.token?.email || "",
+    );
     if (!validateEmail(email)) {
       throw new HttpsError("invalid-argument", "Valid email is required.");
     }
 
-    // Avoid leaking whether the account exists.
-    let userRecord = null;
-    try {
-      userRecord = await admin.auth().getUserByEmail(email);
-    } catch (_) {
-      userRecord = null;
-    }
-
-    if (!userRecord) {
-      return {success: true, message: "OTP sent if account exists."};
-    }
-
-    const otp = generateOtp();
-    const salt = crypto.randomBytes(16).toString("hex");
-    const otpHash = hashOtp(email, otp, salt);
-    const expiresAt = admin.firestore.Timestamp.fromDate(
-      new Date(Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000),
-    );
-
-    const ref = db.collection(OTP_COLLECTION).doc(docIdForEmail(email));
-    await ref.set(
-      {
-        email,
-        uid: userRecord.uid,
-        otpHash,
-        salt,
-        expiresAt,
-        attempts: 0,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      {merge: true},
-    );
-
-    await sendOtpEmail(email, otp);
-    return {success: true, message: "OTP sent successfully."};
-  } catch (error) {
-    console.error("requestPasswordResetOtp failed:", error);
-    if (error instanceof HttpsError) throw error;
-    throw new HttpsError(
-      "internal",
-      `Failed to process forgot password: ${error.message || "Unknown error"}`,
-    );
-  }
-});
-
-
-export const requestTwoFactorEnable = onCall(
-  {secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret]},
-  async (request) => {
-
-
-  if (!request.auth?.uid) {
-    throw new HttpsError("unauthenticated", "Login required.");
-  }
-
-  const uid = request.auth.uid;
-  const email = normalizeEmail(
-    request.data?.email || request.auth.token?.email || "",
-  );
-  if (!validateEmail(email)) {
-    throw new HttpsError("invalid-argument", "Valid email is required.");
-  }
-
-  await issueTwoFactorOtp({ uid, email, purpose: "twoFactorEnable" });
-  return {
-    success: true,
-    message: "Verification code sent.",
-    email,
-  };
-});
+    await issueTwoFactorOtp({ uid, email, purpose: "twoFactorEnable" });
+    return {
+      success: true,
+      message: "Verification code sent.",
+      email,
+    };
+  });
 
 export const verifyTwoFactorEnable = onCall(async (request) => {
   if (!request.auth?.uid) {
@@ -520,40 +658,40 @@ export const verifyTwoFactorEnable = onCall(async (request) => {
 });
 
 export const requestTwoFactorLogin = onCall(
-  {secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret]},
+  { secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret] },
   async (request) => {
 
 
-  if (!request.auth?.uid) {
-    throw new HttpsError("unauthenticated", "Login required.");
-  }
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Login required.");
+    }
 
-  const uid = request.auth.uid;
-  const userSnap = await db.collection("users").doc(uid).get();
-  const userData = userSnap.data() || {};
-  const enabled = userData.twoFactorEnabled === true;
-  if (!enabled) {
-    return { success: true, twoFactorRequired: false };
-  }
+    const uid = request.auth.uid;
+    const userSnap = await db.collection("users").doc(uid).get();
+    const userData = userSnap.data() || {};
+    const enabled = userData.twoFactorEnabled === true;
+    if (!enabled) {
+      return { success: true, twoFactorRequired: false };
+    }
 
-  const email = normalizeEmail(
-    userData.twoFactorEmail ||
+    const email = normalizeEmail(
+      userData.twoFactorEmail ||
       request.auth.token?.email ||
       request.data?.email ||
       "",
-  );
-  if (!validateEmail(email)) {
-    throw new HttpsError("failed-precondition", "No 2FA email configured.");
-  }
+    );
+    if (!validateEmail(email)) {
+      throw new HttpsError("failed-precondition", "No 2FA email configured.");
+    }
 
-  await issueTwoFactorOtp({ uid, email, purpose: "twoFactorLogin" });
-  return {
-    success: true,
-    twoFactorRequired: true,
-    message: "Verification code sent.",
-    email,
-  };
-});
+    await issueTwoFactorOtp({ uid, email, purpose: "twoFactorLogin" });
+    return {
+      success: true,
+      twoFactorRequired: true,
+      message: "Verification code sent.",
+      email,
+    };
+  });
 
 export const verifyTwoFactorLogin = onCall(async (request) => {
   if (!request.auth?.uid) {
@@ -608,7 +746,7 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
       );
     }
 
-    const {ref, data} = await getOtpState(email);
+    const { ref, data } = await getOtpState(email);
     if (!data) {
       throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
     }
@@ -643,7 +781,7 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return {success: true, message: "OTP verified."};
+    return { success: true, message: "OTP verified." };
   } catch (error) {
     console.error("verifyPasswordResetOtp failed:", error);
     if (error instanceof HttpsError) throw error;
@@ -665,7 +803,7 @@ export const resetPasswordWithOtp = onCall(async (request) => {
       );
     }
 
-    const {ref, data} = await getOtpState(email);
+    const { ref, data } = await getOtpState(email);
     if (!data) {
       throw new HttpsError("not-found", "OTP not found. Request a new OTP.");
     }
@@ -688,10 +826,10 @@ export const resetPasswordWithOtp = onCall(async (request) => {
       uid = user.uid;
     }
 
-    await admin.auth().updateUser(uid, {password: newPassword});
+    await admin.auth().updateUser(uid, { password: newPassword });
     await ref.delete();
 
-    return {success: true, message: "Password reset successful."};
+    return { success: true, message: "Password reset successful." };
   } catch (error) {
     console.error("resetPasswordWithOtp failed:", error);
     if (error instanceof HttpsError) throw error;
@@ -700,7 +838,7 @@ export const resetPasswordWithOtp = onCall(async (request) => {
 });
 
 
-export const getStripePublicConfig = onCall({secrets: [stripePublishableKey]}, async () => {
+export const getStripePublicConfig = onCall({ secrets: [stripePublishableKey] }, async () => {
   return {
     publishableKey: getStripePublishableKey(),
     currency: SUBSCRIPTION_PLAN.currency,
@@ -711,14 +849,14 @@ export const getStripePublicConfig = onCall({secrets: [stripePublishableKey]}, a
   };
 });
 
-export const createStripePaymentIntent = onCall({secrets: [stripeSecretKey]}, async (request) => {
+export const createStripePaymentIntent = onCall({ secrets: [stripeSecretKey] }, async (request) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Login required to make payments.");
   }
 
   try {
     const stripe = getStripeClient();
-    const {customerId, userRef, userData} = await getOrCreateStripeCustomer(
+    const { customerId, userRef, userData } = await getOrCreateStripeCustomer(
       request.auth.uid,
       request.auth.token.email,
       stripe,
@@ -799,8 +937,8 @@ export const createStripePaymentIntent = onCall({secrets: [stripeSecretKey]}, as
     }
 
     const ephemeralKey = await stripe.ephemeralKeys.create(
-      {customer: customerId},
-      {apiVersion: "2024-06-20"},
+      { customer: customerId },
+      { apiVersion: "2024-06-20" },
     );
 
     await replaceUserSubscription(
@@ -831,7 +969,7 @@ export const createStripePaymentIntent = onCall({secrets: [stripeSecretKey]}, as
   }
 });
 
-export const finalizeStripePayment = onCall({secrets: [stripeSecretKey]}, async (request) => {
+export const finalizeStripePayment = onCall({ secrets: [stripeSecretKey] }, async (request) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Login required to make payments.");
   }
@@ -917,7 +1055,7 @@ export const finalizeStripePayment = onCall({secrets: [stripeSecretKey]}, async 
   }
 });
 
-export const abandonStripeCheckout = onCall({secrets: [stripeSecretKey]}, async (request) => {
+export const abandonStripeCheckout = onCall({ secrets: [stripeSecretKey] }, async (request) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Login required to manage billing.");
   }
@@ -939,7 +1077,7 @@ export const abandonStripeCheckout = onCall({secrets: [stripeSecretKey]}, async 
       subscription.customer?.id || "";
 
     if (["active", "trialing"].includes(subscription.status) &&
-        subscription.default_payment_method) {
+      subscription.default_payment_method) {
       return {
         status: "kept",
         subscriptionStatus: subscription.status,
@@ -973,7 +1111,7 @@ export const abandonStripeCheckout = onCall({secrets: [stripeSecretKey]}, async 
   }
 });
 
-export const cancelStripeSubscription = onCall({secrets: [stripeSecretKey]}, async (request) => {
+export const cancelStripeSubscription = onCall({ secrets: [stripeSecretKey] }, async (request) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Login required to manage billing.");
   }
@@ -1016,7 +1154,7 @@ export const cancelStripeSubscription = onCall({secrets: [stripeSecretKey]}, asy
 });
 
 export const stripeWebhook = onRequest(
-  {secrets: [stripeSecretKey, stripeWebhookSecret]},
+  { secrets: [stripeSecretKey, stripeWebhookSecret] },
   async (request, response) => {
     if (request.method !== "POST") {
       response.status(405).send("Method Not Allowed");
@@ -1043,65 +1181,65 @@ export const stripeWebhook = onRequest(
       );
 
       switch (event.type) {
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
-        const subscription = event.data.object;
-        await syncStripeSubscriptionToFirestore(subscription);
-        break;
-      }
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object;
-        const customerId = typeof subscription.customer === "string" ?
-          subscription.customer :
-          subscription.customer?.id || "";
-        await markStripeCustomerInactive(customerId, subscription.status || "canceled");
-        break;
-      }
-      case "invoice.payment_succeeded": {
-        const invoice = event.data.object;
-        if (!invoice.subscription) break;
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-        const userRef = await resolveUserRefForSubscription(subscription);
-        if (userRef) {
-          await recordStripePayment({
-            uid: userRef.id,
-            subscriptionId: subscription.id,
-            paymentIntentId: typeof invoice.payment_intent === "string" ?
-              invoice.payment_intent :
-              invoice.payment_intent?.id || "",
-            amount: invoice.amount_paid,
-            currency: invoice.currency,
-            status: "succeeded",
-            invoiceId: invoice.id,
-          });
+        case "customer.subscription.created":
+        case "customer.subscription.updated": {
+          const subscription = event.data.object;
+          await syncStripeSubscriptionToFirestore(subscription);
+          break;
         }
-        await syncStripeSubscriptionToFirestore(
-          subscription,
-          {
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object;
+          const customerId = typeof subscription.customer === "string" ?
+            subscription.customer :
+            subscription.customer?.id || "";
+          await markStripeCustomerInactive(customerId, subscription.status || "canceled");
+          break;
+        }
+        case "invoice.payment_succeeded": {
+          const invoice = event.data.object;
+          if (!invoice.subscription) break;
+          const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+          const userRef = await resolveUserRefForSubscription(subscription);
+          if (userRef) {
+            await recordStripePayment({
+              uid: userRef.id,
+              subscriptionId: subscription.id,
+              paymentIntentId: typeof invoice.payment_intent === "string" ?
+                invoice.payment_intent :
+                invoice.payment_intent?.id || "",
+              amount: invoice.amount_paid,
+              currency: invoice.currency,
+              status: "succeeded",
+              invoiceId: invoice.id,
+            });
+          }
+          await syncStripeSubscriptionToFirestore(
+            subscription,
+            {
+              paymentIntentId: typeof invoice.payment_intent === "string" ?
+                invoice.payment_intent :
+                invoice.payment_intent?.id || "",
+              activated: true,
+            },
+          );
+          break;
+        }
+        case "invoice.payment_failed": {
+          const invoice = event.data.object;
+          if (!invoice.subscription) break;
+          const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+          await syncStripeSubscriptionToFirestore(subscription, {
             paymentIntentId: typeof invoice.payment_intent === "string" ?
               invoice.payment_intent :
               invoice.payment_intent?.id || "",
-            activated: true,
-          },
-        );
-        break;
-      }
-      case "invoice.payment_failed": {
-        const invoice = event.data.object;
-        if (!invoice.subscription) break;
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-        await syncStripeSubscriptionToFirestore(subscription, {
-          paymentIntentId: typeof invoice.payment_intent === "string" ?
-            invoice.payment_intent :
-            invoice.payment_intent?.id || "",
-        });
-        break;
-      }
-      default:
-        break;
+          });
+          break;
+        }
+        default:
+          break;
       }
 
-      response.json({received: true});
+      response.json({ received: true });
     } catch (error) {
       console.error("Stripe webhook error", error);
       response.status(400).send(`Webhook Error: ${error.message}`);

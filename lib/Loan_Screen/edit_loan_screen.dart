@@ -153,7 +153,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
       text: _intText(loan.completedPayments),
     );
     _annualPaymentController = TextEditingController(
-      text: _decimalText(loan.monthlyPayment * 12),
+      text: _decimalText(loan.monthlyPayment),
     );
     _timeLeftController = TextEditingController(
       text: _intText(loan.totalPayments - loan.completedPayments),
@@ -323,11 +323,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLabel(
-                    _selectedFrequency == 'Monthly'
-                        ? 'Monthly Payment'
-                        : 'Payment Amount ($_selectedFrequency)',
-                  ),
+                  _buildLabel('Payment Amount (per payment)'),
                   _buildInputField(
                     controller: _monthlyPaymentController,
                     hint: '\$500',
@@ -541,11 +537,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildInputField(controller: _nameController, hint: 'Toyota Corolla'),
         const SizedBox(height: 20),
 
-        _buildLabel(
-          _selectedFrequency == 'Monthly'
-              ? 'Monthly Payment'
-              : 'Payment Amount ($_selectedFrequency)',
-        ),
+        _buildLabel('Payment Amount (per payment)'),
         _buildInputField(
           controller: _monthlyPaymentController,
           hint: '\$260',
@@ -720,11 +712,20 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         _buildInputField(controller: _nameController, hint: 'Name'),
         const SizedBox(height: 20),
 
-        _buildLabel('Total Annual Payments'),
+        _buildLabel('Payment Amount (per payment)'),
         _buildInputField(
           controller: _annualPaymentController,
-          hint: '\$2,400',
+          hint: '\$475',
           isNumber: true,
+        ),
+        const SizedBox(height: 20),
+
+        _buildLabel('Payment Frequency'),
+        _buildDropdownField(
+          _frequencies,
+          _selectedFrequency,
+          'Monthly',
+          (v) => setState(() => _selectedFrequency = v!),
         ),
         const SizedBox(height: 20),
 
@@ -1111,20 +1112,19 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
       final bool isMortgage = _selectedCategory == 'mortgage';
       final bool isCarLoan = _selectedCategory == 'car';
 
-      double monthly;
+      double paymentAmount;
       if (isMortgage) {
-        final annualStr = _annualPaymentController.text.replaceAll(
+        final paymentAmountStr = _annualPaymentController.text.replaceAll(
           RegExp(r'[^\d.]'),
           '',
         );
-        final annual = double.tryParse(annualStr) ?? 0.0;
-        monthly = annual / 12;
+        paymentAmount = double.tryParse(paymentAmountStr) ?? 0.0;
       } else {
-        final monthlyStr = _monthlyPaymentController.text.replaceAll(
+        final paymentAmountStr = _monthlyPaymentController.text.replaceAll(
           RegExp(r'[^\d.]'),
           '',
         );
-        monthly = double.tryParse(monthlyStr) ?? 0.0;
+        paymentAmount = double.tryParse(paymentAmountStr) ?? 0.0;
       }
 
       final totalStr = _totalAmountController.text.replaceAll(
@@ -1140,14 +1140,14 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
 
       final totalP = LoanCalculations.estimatedTotalPayments(
         totalAmount: totalAmount,
-        paymentAmount: monthly,
+        paymentAmount: paymentAmount,
         enteredTotalPayments: int.tryParse(_totalPaymentsController.text) ?? 0,
       );
       final completedP = int.tryParse(_completedPaymentsController.text) ?? 0;
 
       final remaining = isMortgage
           ? 0.0
-          : (totalAmount - (completedP * monthly));
+          : (totalAmount - (completedP * paymentAmount));
 
       final paymentDate = _parseDateText(_paymentDateController.text);
       final now = DateTime.now();
@@ -1157,7 +1157,7 @@ class _EditLoanScreenState extends State<EditLoanScreen> {
         'category': _selectedCategory == 'business'
             ? 'other'
             : _selectedCategory,
-        'monthlyPayment': monthly,
+        'monthlyPayment': paymentAmount,
         'paymentDate': DateTime(
           paymentDate?.year ?? widget.loan.paymentDate?.year ?? now.year,
           paymentDate?.month ?? widget.loan.paymentDate?.month ?? now.month,

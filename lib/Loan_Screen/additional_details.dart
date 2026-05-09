@@ -97,7 +97,7 @@ class AdditionalDetailsScreen extends StatelessWidget {
             _DetailCard(
               iconPath: 'assets/images/icon/installment.png',
               iconColor: const Color(0xFF9C27B0), // Purple
-              title: 'Installment',
+              title: 'Payment Amount',
               value: NumberFormat.simpleCurrency().format(loan.monthlyPayment),
             ),
             _DetailCard(
@@ -200,7 +200,7 @@ class AdditionalDetailsScreen extends StatelessWidget {
         _DetailCard(
           iconPath: 'assets/images/icon/installment.png',
           iconColor: Colors.blue,
-          title: 'Monthly Payment',
+          title: 'Payment Amount',
           value: NumberFormat.simpleCurrency().format(loan.monthlyPayment),
         ),
         _DetailCard(

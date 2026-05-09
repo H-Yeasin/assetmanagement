@@ -244,7 +244,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        'Monthly Payment',
+                                        'Monthly Equivalent',
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Color(0xFF888888),
@@ -266,7 +266,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                                           'Monthly') ...[
                                         const SizedBox(height: 2),
                                         Text(
-                                          '(${NumberFormat.simpleCurrency(decimalDigits: 2).format(_currentLoan.monthlyPayment)} ${_currentLoan.paymentFrequency})',
+                                          '${NumberFormat.simpleCurrency(decimalDigits: 2).format(LoanCalculations.paymentAmount(_currentLoan))} ${_currentLoan.paymentFrequency}',
                                           style: const TextStyle(
                                             fontSize: 10,
                                             color: brandRed,
@@ -504,6 +504,37 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                               const SizedBox(width: 8),
                               const Text(
                                 'Additional Details',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: brandRed,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      GestureDetector(
+                        onTap: () => context.push(
+                          '/loan-payment-timeline',
+                          extra: _currentLoan,
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.calendar_month, color: brandRed),
+                              SizedBox(width: 8),
+                              Text(
+                                'Payment Timeline',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,

@@ -22,7 +22,6 @@ class LoanCalculations {
     String? category,
   }) {
     if (amount <= 0) return 0;
-    if (category == 'mortgage') return amount;
 
     switch (frequency.trim().toLowerCase()) {
       case 'weekly':
@@ -102,6 +101,37 @@ class LoanCalculations {
         ? 'Monthly'
         : loan.paymentFrequency;
     return frequency == 'Monthly' ? 'Monthly' : frequency;
+  }
+
+  static List<DateTime> paymentOccurrences(
+    Loan loan, {
+    DateTime? from,
+    DateTime? to,
+    bool includePast = false,
+  }) {
+    final baseDate = loan.startDate ?? loan.paymentDate;
+    if (baseDate == null) return [];
+
+    final today = normalizeDay(DateTime.now());
+    final start = normalizeDay(baseDate);
+    final effectiveFrom = normalizeDay(from ?? (includePast ? start : today));
+    final defaultTo = loan.endDate ?? _addMonths(today, 12);
+    final effectiveTo = normalizeDay(to ?? defaultTo);
+    if (effectiveTo.isBefore(effectiveFrom)) return [];
+
+    var current = start;
+    while (current.isBefore(effectiveFrom)) {
+      current = nextDueDateAfter(current, loan.paymentFrequency);
+    }
+
+    final dates = <DateTime>[];
+    var guard = 0;
+    while (!current.isAfter(effectiveTo) && guard < 2000) {
+      dates.add(current);
+      current = nextDueDateAfter(current, loan.paymentFrequency);
+      guard++;
+    }
+    return dates;
   }
 
   static DateTime _addMonths(DateTime date, int months) {

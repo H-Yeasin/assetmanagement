@@ -301,14 +301,13 @@ class LoanService {
           : effectiveTo;
       if (cutoff.isBefore(effectiveFrom)) continue;
 
-      var dueDate = LoanCalculations.nextDueDate(
-        baseDate,
-        loan.paymentFrequency,
+      final dueDates = LoanCalculations.paymentOccurrences(
+        loan,
         from: effectiveFrom,
+        to: cutoff,
       );
 
-      var guard = 0;
-      while (!dueDate.isAfter(cutoff) && guard < 400) {
+      for (final dueDate in dueDates) {
         final data = loan.toJson();
         data['id'] = loan.id;
         data['paymentAmount'] = LoanCalculations.paymentAmount(loan);
@@ -316,12 +315,6 @@ class LoanService {
         data['nextDueDate'] = dueDate.toIso8601String();
         final key = dueDate.toIso8601String();
         groupsByDate.putIfAbsent(key, () => <Map<String, dynamic>>[]).add(data);
-
-        dueDate = LoanCalculations.nextDueDateAfter(
-          dueDate,
-          loan.paymentFrequency,
-        );
-        guard++;
       }
     }
 
