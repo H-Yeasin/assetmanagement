@@ -371,6 +371,7 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
                                       ? 'Paid automatically'
                                       : 'Manual payment required',
                                   isPaid: item['autoPay'],
+                                  sectionColor: brandRed,
                                 );
                               }).toList(),
                             );

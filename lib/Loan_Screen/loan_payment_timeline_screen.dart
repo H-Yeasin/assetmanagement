@@ -38,23 +38,25 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
       _isLoading = false;
       _refreshSingleLoan();
     } else {
-      _subscription = _loanService.streamLoans(status: 'active').listen(
-        (loans) {
-          if (!mounted) return;
-          setState(() {
-            _loans = loans;
-            _isLoading = false;
-            _error = null;
-          });
-        },
-        onError: (error) {
-          if (!mounted) return;
-          setState(() {
-            _error = error.toString();
-            _isLoading = false;
-          });
-        },
-      );
+      _subscription = _loanService
+          .streamLoans(status: 'active')
+          .listen(
+            (loans) {
+              if (!mounted) return;
+              setState(() {
+                _loans = loans;
+                _isLoading = false;
+                _error = null;
+              });
+            },
+            onError: (error) {
+              if (!mounted) return;
+              setState(() {
+                _error = error.toString();
+                _isLoading = false;
+              });
+            },
+          );
     }
   }
 
@@ -86,7 +88,8 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
 
     for (final loan in _loans) {
       final start = loan.startDate ?? loan.paymentDate ?? today;
-      final end = loan.endDate ??
+      final end =
+          loan.endDate ??
           DateTime(
             today.year,
             today.month + rollingTimelineFutureMonths,
@@ -101,11 +104,7 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
       for (final date in dates) {
         final day = _normalizeDay(date);
         items.add(
-          _TimelineItem(
-            loan: loan,
-            date: day,
-            isPast: day.isBefore(today),
-          ),
+          _TimelineItem(loan: loan, date: day, isPast: day.isBefore(today)),
         );
       }
     }
@@ -266,6 +265,7 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
                             ).format(LoanCalculations.paymentAmount(item.loan)),
                             status: _statusLabel(item),
                             isPaid: item.loan.autoPay,
+                            sectionColor: brandRed,
                           ),
                         ),
                       const SizedBox(height: 32),

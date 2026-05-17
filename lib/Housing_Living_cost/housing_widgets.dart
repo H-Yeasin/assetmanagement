@@ -33,10 +33,10 @@ class HousingCostListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = isPaid ? const Color(0xFF2196F3) : brandRed;
+    final statusColor = isPaid ? const Color(0xFF2196F3) : brandPurple;
     final statusBgColor = isPaid
         ? const Color(0xFFE3F2FD)
-        : const Color(0xFFFFEBEE);
+        : brandPurple.withValues(alpha: 0.1);
 
     return GestureDetector(
       onTap: onTap,
@@ -544,7 +544,7 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: Color(0xFFC61C36)),
+            colorScheme: const ColorScheme.light(primary: brandPurple),
           ),
           child: child!,
         );
@@ -666,7 +666,7 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
                       ),
                       const Icon(
                         Icons.calendar_today,
-                        color: Color(0xFFC61C36),
+                        color: brandPurple,
                         size: 18,
                       ),
                     ],
@@ -706,7 +706,7 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
                       ),
                       const Icon(
                         Icons.access_time,
-                        color: Color(0xFFC61C36),
+                        color: brandPurple,
                         size: 18,
                       ),
                     ],
@@ -739,7 +739,7 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
                     onPressed: _isSaving ? null : _onSave,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFDE7E9),
-                      foregroundColor: const Color(0xFFC61C36),
+                      foregroundColor: brandPurple,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -752,7 +752,7 @@ class _HousingReminderModalState extends State<HousingReminderModal> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFFC61C36),
+                              color: brandPurple,
                             ),
                           )
                         : const Text(

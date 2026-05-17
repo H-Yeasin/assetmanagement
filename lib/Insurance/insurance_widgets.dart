@@ -2,10 +2,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Home_Dashboard/widgets.dart';
+import '../Loan_Screen/loan_widgets.dart';
 import 'models/insurance_model.dart';
 import '../services/insurance_service.dart';
 import '../services/notification_service.dart';
-import '../Loan_Screen/loan_widgets.dart';
 
 class InsuranceListItem extends StatelessWidget {
   final String iconPath;
@@ -199,7 +199,7 @@ class UpcomingActionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = isAutoPay ? const Color(0xFF2196F3) : brandRed;
+    final statusColor = isAutoPay ? const Color(0xFF2196F3) : brandBlue;
     final statusBgColor = statusColor.withValues(alpha: 0.1);
 
     return Container(
@@ -722,7 +722,7 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
         return Theme(
           data: Theme.of(
             context,
-          ).copyWith(colorScheme: const ColorScheme.light(primary: brandRed)),
+          ).copyWith(colorScheme: const ColorScheme.light(primary: brandBlue)),
           child: child!,
         );
       },
@@ -844,7 +844,11 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const Icon(Icons.calendar_today, color: brandRed, size: 18),
+                    const Icon(
+                      Icons.calendar_today,
+                      color: brandBlue,
+                      size: 18,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -880,7 +884,7 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const Icon(Icons.access_time, color: brandRed, size: 18),
+                    const Icon(Icons.access_time, color: brandBlue, size: 18),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -911,7 +915,7 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
                   onPressed: _isSaving ? null : _onSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFDE7E9),
-                    foregroundColor: brandRed,
+                    foregroundColor: brandBlue,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
@@ -924,7 +928,7 @@ class _InsuranceReminderModalState extends State<InsuranceReminderModal> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: brandRed,
+                            color: brandBlue,
                           ),
                         )
                       : const Text(

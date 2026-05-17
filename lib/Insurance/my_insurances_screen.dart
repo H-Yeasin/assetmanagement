@@ -72,7 +72,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $_error'), backgroundColor: brandRed),
+          SnackBar(content: Text('Error: $_error'), backgroundColor: brandBlue),
         );
       }
     }
@@ -163,7 +163,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator(color: brandRed)),
+        body: Center(child: CircularProgressIndicator(color: brandBlue)),
       );
     }
 
@@ -205,7 +205,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                       width: 40,
                       height: 40,
                       decoration: const BoxDecoration(
-                        color: brandRed,
+                        color: brandBlue,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -224,7 +224,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _loadInsurances,
-                color: brandRed,
+                color: brandBlue,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
@@ -382,12 +382,12 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? brandRed
+                                      ? brandBlue
                                       : const Color(0xFFFBFBFB),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: isSelected
-                                        ? brandRed
+                                        ? brandBlue
                                         : const Color(0xFFF0F0F0),
                                   ),
                                 ),

@@ -124,22 +124,8 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
       final createdCost = await _apiService.createHousingCost(cost);
 
       if (_reminderEnabled && createdCost.id != null && dueDate != null) {
-        DateTime remindAt = dueDate;
-        if (_reminderTiming == '1 day before') {
-          remindAt = dueDate.subtract(const Duration(days: 1));
-        } else if (_reminderTiming == '3 days before') {
-          remindAt = dueDate.subtract(const Duration(days: 3));
-        } else if (_reminderTiming == '1 week before') {
-          remindAt = dueDate.subtract(const Duration(days: 7));
-        }
-
-        await _apiService.createReminder(
-          itemId: createdCost.id!,
-          itemType: 'housing',
-          title: 'Payment Reminder: ${createdCost.name}',
-          remindAt: remindAt,
-          note: 'Automatic reminder for your housing cost.',
-        );
+        // Generate recurring monthly reminders for all upcoming months
+        await _apiService.ensureRecurringReminders(createdCost);
       }
 
       if (mounted) {
@@ -597,9 +583,8 @@ class _AddHousingCostScreenState extends State<AddHousingCostScreen> {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => HousingAddDocumentsScreen(
-              initialDocuments: _uploadedDocuments,
-            ),
+            builder: (_) =>
+                HousingAddDocumentsScreen(initialDocuments: _uploadedDocuments),
           ),
         );
         if (result != null && result is List<Map<String, dynamic>>) {

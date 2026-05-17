@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 const Color brandRed = Color(0xFFC61C36);
+const Color brandBlue = Color(0xFF2196F3);
+const Color brandPurple = Color(0xFF8E44AD);
 
 // ── Category Card ────────────────────────────────────────────────────────────
 class CategoryCard extends StatelessWidget {
@@ -90,6 +92,7 @@ class ReminderCard extends StatelessWidget {
   final String dueInfo;
   final String? detailInfo;
   final Color? detailColor;
+  final Color? sectionColor;
   final VoidCallback onTap;
 
   const ReminderCard({
@@ -100,11 +103,15 @@ class ReminderCard extends StatelessWidget {
     required this.dueInfo,
     this.detailInfo,
     this.detailColor,
+    this.sectionColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final dateBoxBgColor =
+        sectionColor?.withValues(alpha: 0.1) ?? const Color(0xFFF8E8EA);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GestureDetector(
@@ -122,7 +129,7 @@ class ReminderCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8E8EA),
+                  color: dateBoxBgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -198,6 +205,7 @@ class PaymentCard extends StatelessWidget {
   final String amount;
   final String status;
   final bool isPaid;
+  final Color? sectionColor;
 
   const PaymentCard({
     super.key,
@@ -207,23 +215,25 @@ class PaymentCard extends StatelessWidget {
     required this.amount,
     required this.status,
     required this.isPaid,
+    this.sectionColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final manualColor = sectionColor ?? brandRed;
     // Colors based on the screenshot (Light blue for paid, Light red for manual)
-    final statusColor = isPaid ? const Color(0xFF2196F3) : brandRed;
+    final statusColor = isPaid ? const Color(0xFF2196F3) : manualColor;
     final statusBgColor = isPaid
         ? const Color(0xFFE3F2FD)
-        : const Color(0xFFFFEBEE);
+        : manualColor.withValues(alpha: 0.1);
 
     // The date box uses the same light blue for 'paid automatically' but light red for manual in the design
     final dateBoxBgColor = isPaid
         ? const Color(0xFFE3F2FD)
-        : const Color(0xFFFFEBEE);
+        : manualColor.withValues(alpha: 0.1);
     final dateTextColor = isPaid
         ? const Color(0xFF546E7A)
-        : const Color(0xFF8D6E63);
+        : manualColor.withValues(alpha: 0.8);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -394,7 +404,7 @@ class AddItemBottomSheet extends StatelessWidget {
               _CategoryOption(
                 iconPath: 'assets/images/icon/housing.png',
                 title: 'Housing / Living Costs',
-                iconColor: Colors.purple,
+                iconColor: brandPurple,
                 onTap: () {
                   Navigator.pop(context);
                   context.go('/housing-costs');
@@ -403,7 +413,7 @@ class AddItemBottomSheet extends StatelessWidget {
               _CategoryOption(
                 iconPath: 'assets/images/icon/insurance.png',
                 title: 'Insurance',
-                iconColor: Colors.blue,
+                iconColor: brandBlue,
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/my-insurances');
@@ -509,6 +519,7 @@ class CalendarWidget extends StatefulWidget {
   final Set<DateTime> manualDays;
   final DateTime? initialFocusedDay;
   final String calendarId;
+  final Color? sectionColor;
 
   const CalendarWidget({
     super.key,
@@ -516,6 +527,7 @@ class CalendarWidget extends StatefulWidget {
     this.manualDays = const {},
     this.initialFocusedDay,
     required this.calendarId,
+    this.sectionColor,
   });
 
   @override
@@ -529,6 +541,8 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   String get _focusedStorageKey => '${widget.calendarId}_focused_day';
   String get _selectedStorageKey => '${widget.calendarId}_selected_day';
 
+  Color get _manualColor => widget.sectionColor ?? brandRed;
+
   @override
   void initState() {
     super.initState();
@@ -536,16 +550,14 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       widget.initialFocusedDay ?? DateTime.now(),
     );
     final storedFocused =
-        PageStorage.maybeOf(context)?.readState(
+        PageStorage.maybeOf(
               context,
-              identifier: _focusedStorageKey,
-            )
+            )?.readState(context, identifier: _focusedStorageKey)
             as DateTime?;
     final storedSelected =
-        PageStorage.maybeOf(context)?.readState(
+        PageStorage.maybeOf(
               context,
-              identifier: _selectedStorageKey,
-            )
+            )?.readState(context, identifier: _selectedStorageKey)
             as DateTime?;
 
     _focusedDay = _normalizedDay(storedFocused ?? initialFocused);
@@ -559,16 +571,8 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
   void _persistCalendarState() {
     final storage = PageStorage.maybeOf(context);
-    storage?.writeState(
-      context,
-      _focusedDay,
-      identifier: _focusedStorageKey,
-    );
-    storage?.writeState(
-      context,
-      _selectedDay,
-      identifier: _selectedStorageKey,
-    );
+    storage?.writeState(context, _focusedDay, identifier: _focusedStorageKey);
+    storage?.writeState(context, _selectedDay, identifier: _selectedStorageKey);
   }
 
   void _updateFocusedDay(DateTime focusedDay, {DateTime? selectedDay}) {
@@ -595,7 +599,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     final hasManualMarker = _hasManualMarker(date);
     final hasPaidMarker = _hasPaidMarker(date);
     final markerColor = hasManualMarker
-        ? brandRed
+        ? _manualColor
         : hasPaidMarker
         ? const Color(0xFF8FD3F4)
         : null;
@@ -606,7 +610,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         color: isSelected
             ? const Color(0xFFB3E5FC)
             : isToday
-            ? brandRed.withValues(alpha: 0.2)
+            ? _manualColor.withValues(alpha: 0.2)
             : Colors.transparent,
         shape: BoxShape.circle,
       ),
@@ -619,7 +623,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
               fontWeight: isSelected || isToday
                   ? FontWeight.w700
                   : FontWeight.w500,
-              color: isToday && !isSelected ? brandRed : const Color(0xFF111111),
+              color: isToday && !isSelected
+                  ? _manualColor
+                  : const Color(0xFF111111),
             ),
           ),
           if (markerColor != null)
@@ -796,7 +802,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             onPageChanged: (focusedDay) => _updateFocusedDay(focusedDay),
             calendarFormat: CalendarFormat.month,
             startingDayOfWeek: StartingDayOfWeek.sunday,
-            headerVisible: false, // Hide default header
+            headerVisible: false,
             daysOfWeekStyle: const DaysOfWeekStyle(
               weekdayStyle: TextStyle(
                 color: Color(0xFFBBBBBB),
@@ -811,7 +817,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             ),
             calendarStyle: CalendarStyle(
               todayDecoration: BoxDecoration(
-                color: brandRed.withValues(alpha: 0.2),
+                color: _manualColor.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               selectedDecoration: const BoxDecoration(
@@ -822,8 +828,8 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                 color: Color(0xFF111111),
                 fontWeight: FontWeight.w700,
               ),
-              todayTextStyle: const TextStyle(
-                color: brandRed,
+              todayTextStyle: TextStyle(
+                color: _manualColor,
                 fontWeight: FontWeight.w700,
               ),
               defaultTextStyle: const TextStyle(
@@ -854,7 +860,10 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                 label: 'Paid automatically',
               ),
               const SizedBox(width: 16),
-              _CalendarLegend(color: brandRed, label: 'Manual action required'),
+              _CalendarLegend(
+                color: _manualColor,
+                label: 'Manual action required',
+              ),
             ],
           ),
         ],
@@ -998,11 +1007,15 @@ class CustomBottomNavBar extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(26),
+          topRight: Radius.circular(26),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -1010,25 +1023,30 @@ class CustomBottomNavBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _NavItem(
-            iconPath: 'assets/images/icon/home_bottom_nevigation.png',
+            imageAsset: 'assets/images/icon/home_bottom.png',
+            activeImageAsset: 'assets/images/icon/active_home_bottom.png',
             label: 'Home',
             isSelected: currentIndex == 0,
             onTap: () => onTap(0),
           ),
           _NavItem(
-            iconPath: 'assets/images/icon/add_bottom_nevigation.png',
+            icon: Icons.add_circle_outline,
+            activeIcon: Icons.add_circle,
             label: 'Add',
             isSelected: currentIndex == 1,
             onTap: () => onTap(1),
           ),
           _NavItem(
-            iconPath: 'assets/images/icon/vault_bottom_nevigation.png',
+            imageAsset: 'assets/images/icon/vault_bottom_nevigation.png',
+            activeImageAsset:
+                'assets/images/icon/active_vault_bottom_nevigation.png',
             label: 'Vault',
             isSelected: currentIndex == 2,
             onTap: () => onTap(2),
           ),
           _NavItem(
-            iconPath: 'assets/images/icon/profile_bottom_nevigation.png',
+            imageAsset: 'assets/images/icon/profile_icon.png',
+            activeImageAsset: 'assets/images/icon/active_profile_icon.png',
             label: 'Profile',
             isSelected: currentIndex == 3,
             onTap: () => onTap(3),
@@ -1040,13 +1058,22 @@ class CustomBottomNavBar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final String iconPath;
+  final IconData? icon;
+  final IconData? activeIcon;
+
+  // Optional image assets
+  final String? imageAsset;
+  final String? activeImageAsset;
+
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.iconPath,
+    this.icon,
+    this.activeIcon,
+    this.imageAsset,
+    this.activeImageAsset,
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -1054,25 +1081,38 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool useImage = imageAsset != null || activeImageAsset != null;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(
-            iconPath,
-            width: 24,
-            height: 24,
-            color: isSelected ? brandRed : const Color(0xFF888888),
-          ),
+          useImage
+              ? Image.asset(
+                  isSelected
+                      ? (activeImageAsset ?? imageAsset!)
+                      : (imageAsset ?? activeImageAsset!),
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.contain,
+                  color: isSelected ? brandRed : const Color(0xFFAAAAAA),
+                )
+              : Icon(
+                  isSelected ? activeIcon : icon,
+                  size: 24,
+                  color: isSelected ? brandRed : const Color(0xFFAAAAAA),
+                ),
+
           const SizedBox(height: 4),
+
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? brandRed : const Color(0xFF888888),
+              color: isSelected ? brandRed : const Color(0xFFAAAAAA),
             ),
           ),
         ],

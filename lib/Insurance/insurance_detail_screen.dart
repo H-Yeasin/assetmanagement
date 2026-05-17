@@ -117,7 +117,6 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
     if (_policy.id == null) return;
 
     if (!_reminderEnabled) {
-      // Disable all notifications for this policy's reminders
       final snapshot = await _firestore
           .collection('reminders')
           .where('itemId', isEqualTo: _policy.id)
@@ -134,7 +133,6 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
       return;
     }
 
-    // Ensure all recurring reminders exist
     await _apiService.ensureRecurringReminders(_policy);
 
     DateTime scheduledDate = baseDate ?? DateTime.now();
@@ -154,7 +152,6 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
       }
     }
 
-    // Update the first upcoming reminder's notification to enabled
     final pendingSnapshot = await _firestore
         .collection('reminders')
         .where('itemId', isEqualTo: _policy.id)
@@ -286,7 +283,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                 child: Text(
                   'Edit',
                   style: TextStyle(
-                    color: brandRed,
+                    color: brandBlue,
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
                   ),
@@ -440,7 +437,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                       height: 18,
                       errorBuilder: (c, e, s) => const Icon(
                         Icons.grid_view_rounded,
-                        color: brandRed,
+                        color: brandBlue,
                         size: 18,
                       ),
                     ),
@@ -448,7 +445,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                     const Text(
                       'Additional Details',
                       style: TextStyle(
-                        color: brandRed,
+                        color: brandBlue,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
@@ -482,16 +479,16 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: brandRed),
+                      border: Border.all(color: brandBlue),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.add, color: brandRed, size: 16),
+                        Icon(Icons.add, color: brandBlue, size: 16),
                         SizedBox(width: 4),
                         Text(
                           'Add Documents',
                           style: TextStyle(
-                            color: brandRed,
+                            color: brandBlue,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -676,7 +673,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
                       _rescheduleNotification();
                     },
                     activeThumbColor: Colors.white,
-                    activeTrackColor: brandRed,
+                    activeTrackColor: brandBlue,
                     trackOutlineColor: WidgetStateProperty.all(
                       Colors.transparent,
                     ),
@@ -793,7 +790,7 @@ class _ActionBox extends StatelessWidget {
               width: 48,
               height: 48,
               errorBuilder: (c, e, s) =>
-                  const Icon(Icons.payment, color: brandRed, size: 40),
+                  const Icon(Icons.payment, color: brandBlue, size: 40),
             ),
             const SizedBox(height: 8),
             Text(

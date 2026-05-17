@@ -93,7 +93,10 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
     bool enabled,
   ) async {
     try {
-      await _loanService.updateReminderNotificationEnabled(reminder.id, enabled);
+      await _loanService.updateReminderNotificationEnabled(
+        reminder.id,
+        enabled,
+      );
 
       final notificationId = NotificationService.getNotificationId(reminder.id);
       if (!enabled || !_globalNotificationsEnabled) {
@@ -119,9 +122,9 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update reminder: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update reminder: $e')));
     }
   }
 
@@ -373,10 +376,11 @@ class _ReminderListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = notificationsAllowed && reminder.notificationEnabled;
-    final statusColor = reminder.isAuto ? const Color(0xFF2196F3) : brandRed;
+    final manualColor = reminder.sectionColor;
+    final statusColor = reminder.isAuto ? const Color(0xFF2196F3) : manualColor;
     final statusBackground = reminder.isAuto
         ? const Color(0xFFE3F2FD)
-        : const Color(0xFFFFEBEE);
+        : manualColor.withValues(alpha: 0.1);
     final dateLine =
         '${DateFormat('MMM dd, yyyy • hh:mm a').format(reminder.remindAt)}${reminder.amountLabel.isNotEmpty ? ' • ${reminder.amountLabel}' : ''}';
 
@@ -484,10 +488,7 @@ class _ReminderListTile extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              TextButton(
-                onPressed: onMarkDone,
-                child: const Text('Mark Done'),
-              ),
+              TextButton(onPressed: onMarkDone, child: const Text('Mark Done')),
             ],
           ),
           if (!notificationsAllowed)
@@ -495,10 +496,7 @@ class _ReminderListTile extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Global reminder notifications are turned off.',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF888888),
-                ),
+                style: TextStyle(fontSize: 11, color: Color(0xFF888888)),
               ),
             ),
         ],

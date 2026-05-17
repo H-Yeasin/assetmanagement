@@ -82,7 +82,10 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
     BuildContext context,
     TextEditingController controller,
   ) async {
-    final initialDate = _parseDateText(controller.text) ?? widget.cost.dueDate ?? DateTime.now();
+    final initialDate =
+        _parseDateText(controller.text) ??
+        widget.cost.dueDate ??
+        DateTime.now();
 
     final DateTime? picked = await showDialog<DateTime>(
       context: context,
@@ -148,18 +151,10 @@ class _EditHousingCostScreenState extends State<EditHousingCostScreen> {
 
       await _apiService.updateHousingCost(widget.cost.id!, updates);
 
-      if (_autoPay && dueDate != null) {
-        // Use the due date for the auto-pay reminder
-        // Currently setting reminder for the due date itself
-        final pDate = dueDate;
-
-        await _apiService.createReminder(
-          itemId: widget.cost.id!,
-          itemType: 'housing',
-          title: 'Housing Payment Update: ${_nameController.text}',
-          remindAt: pDate,
-          note: 'Updated automatic reminder for your housing cost.',
-        );
+      // Re-fetch the updated cost to generate recurring reminders
+      final updatedCost = await _apiService.getHousingCost(widget.cost.id!);
+      if (updatedCost.dueDate != null) {
+        await _apiService.ensureRecurringReminders(updatedCost);
       }
 
       if (mounted) {

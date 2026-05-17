@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import '../Home_Dashboard/widgets.dart';
 import 'models/housing_cost_model.dart';
 import '../services/housing_service.dart';
 import '../services/notification_service.dart';
@@ -120,7 +121,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
     await NotificationService.scheduleReminder(
       id: NotificationService.getNotificationId(reminder['id'].toString()),
       title: reminder['title'] ?? 'Housing Payment Reminder',
-      body: reminder['note'] ?? 'Reminder for housing payment.',
+      body: reminder['body'] ?? 'Reminder for housing payment.',
       scheduledDate: scheduledDate,
     );
   }
@@ -216,7 +217,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF5F5),
+      backgroundColor: const Color(0xFFF2E8F5),
       body: SafeArea(
         child: Column(
           children: [
@@ -259,7 +260,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFC61C36),
+                        color: brandPurple,
                       ),
                     ),
                   ),
@@ -281,7 +282,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFDE7E9).withValues(alpha: 0.5),
+                        color: brandPurple.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Column(
@@ -370,7 +371,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                               height: 18,
                               errorBuilder: (c, e, s) => const Icon(
                                 Icons.apps,
-                                color: Color(0xFFC61C36),
+                                color: Color(0xFF8E44AD),
                                 size: 18,
                               ),
                             ),
@@ -380,7 +381,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFFC61C36),
+                                color: brandPurple,
                               ),
                             ),
                           ],
@@ -409,15 +410,18 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.calendar_month, color: Color(0xFFC61C36)),
-                            SizedBox(width: 8),
-                            Text(
+                          children: [
+                            const Icon(
+                              Icons.calendar_month,
+                              color: brandPurple,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
                               'Payment Timeline',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFFC61C36),
+                                color: brandPurple,
                               ),
                             ),
                           ],
@@ -457,18 +461,14 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                           },
                           child: const Row(
                             children: [
-                              Icon(
-                                Icons.add,
-                                color: Color(0xFFC61C36),
-                                size: 16,
-                              ),
+                              Icon(Icons.add, color: brandPurple, size: 16),
                               SizedBox(width: 4),
                               Text(
                                 'Add Documents',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFFC61C36),
+                                  color: brandPurple,
                                 ),
                               ),
                             ],
@@ -552,12 +552,12 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFDE7E9),
+                              color: brandPurple.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
                               Icons.repeat,
-                              color: Color(0xFFC61C36),
+                              color: brandPurple,
                               size: 20,
                             ),
                           ),
@@ -588,7 +588,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                             value: _cost.autoPay,
                             onChanged: _toggleAutoPay,
                             activeThumbColor: Colors.white,
-                            activeTrackColor: const Color(0xFFC61C36),
+                            activeTrackColor: brandPurple,
                             trackOutlineColor: WidgetStateProperty.all(
                               Colors.transparent,
                             ),
@@ -620,7 +620,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFDE7E9),
+                              color: brandPurple.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Image.asset(
@@ -630,7 +630,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                               errorBuilder: (c, e, s) => const Icon(
                                 Icons.notifications,
                                 size: 20,
-                                color: Color(0xFFC61C36),
+                                color: Color(0xFF8E44AD),
                               ),
                             ),
                           ),
@@ -712,7 +712,7 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                               _rescheduleNotification();
                             },
                             activeThumbColor: Colors.white,
-                            activeTrackColor: const Color(0xFFC61C36),
+                            activeTrackColor: brandPurple,
                             trackOutlineColor: WidgetStateProperty.all(
                               Colors.transparent,
                             ),
