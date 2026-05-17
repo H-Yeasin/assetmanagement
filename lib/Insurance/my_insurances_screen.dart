@@ -46,6 +46,16 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
       final policies = await _apiService.fetchInsurances();
       final upcomingOccurrences = await _apiService
           .fetchUpcomingRenewalOccurrences();
+
+      // Backfill recurring reminders for all active policies
+      for (final policy in policies.where((p) => p.isActive)) {
+        try {
+          await _apiService.ensureRecurringReminders(policy);
+        } catch (e) {
+          debugPrint('Error ensuring reminders for ${policy.id}: $e');
+        }
+      }
+
       setState(() {
         _policies = policies;
         _upcomingOccurrences = upcomingOccurrences;

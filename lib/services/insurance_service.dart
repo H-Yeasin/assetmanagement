@@ -213,6 +213,79 @@ class InsuranceService {
     return dates;
   }
 
+  /// Ensures recurring reminders exist for an insurance policy.
+  /// Creates a Firestore reminder for each upcoming occurrence that
+  /// doesn't already have a pending (isDone=false) reminder.
+  /// Returns the list of created/updated reminder IDs.
+  Future<List<Map<String, dynamic>>> ensureRecurringReminders(
+    InsurancePolicy policy, {
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    if (_uid == null) return [];
+    if (policy.id == null) return [];
+
+    // Generate all upcoming occurrences for this policy
+    final occurrences = generateOccurrences(policy, from: from, to: to);
+    if (occurrences.isEmpty) return [];
+
+    // Fetch existing reminders for this insurance item that are not done
+    final existingSnapshot = await _firestore
+        .collection('reminders')
+        .where('userId', isEqualTo: _uid)
+        .where('itemType', isEqualTo: 'insurance')
+        .where('itemId', isEqualTo: policy.id)
+        .where('isDone', isEqualTo: false)
+        .get();
+
+    // Build a set of existing remindAt dates (normalized) to avoid duplicates
+    final existingRemindAtDates = existingSnapshot.docs
+        .map((doc) {
+          final data = doc.data();
+          final remindAt = data['remindAt'] as Timestamp?;
+          return remindAt != null ? _normalizeDay(remindAt.toDate()) : null;
+        })
+        .where((d) => d != null)
+        .map((d) => d!)
+        .toSet();
+
+    final isWarranty = policy.isOneTime;
+    final reminderTitle = isWarranty
+        ? 'Warranty Expiry: ${policy.name}'
+        : 'Insurance Renewal: ${policy.name}';
+    final reminderNote = isWarranty
+        ? 'Reminder for your warranty expiry.'
+        : 'Automatic renewal reminder for your insurance policy.';
+
+    final results = <Map<String, dynamic>>[];
+
+    for (final occurrenceDate in occurrences) {
+      final normalizedDate = _normalizeDay(occurrenceDate);
+
+      // Skip if a reminder already exists for this date
+      if (existingRemindAtDates.contains(normalizedDate)) continue;
+
+      // Create a reminder for this occurrence
+      final data = {
+        'userId': _uid,
+        'itemType': 'insurance',
+        'itemId': policy.id,
+        'remindAt': Timestamp.fromDate(normalizedDate),
+        'title': reminderTitle,
+        'note': reminderNote,
+        'isDone': false,
+        'notificationEnabled': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      final docRef = await _firestore.collection('reminders').add(data);
+      final doc = await docRef.get();
+      results.add({...doc.data()!, 'id': doc.id});
+    }
+
+    return results;
+  }
+
   // ── Documents ─────────────────────────────────────────────────────────────
 
   Future<DocumentFile> uploadDocument(

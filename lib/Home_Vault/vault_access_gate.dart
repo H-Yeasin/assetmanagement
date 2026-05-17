@@ -7,33 +7,16 @@ import '../config/app_config.dart';
 import '../services/biometric_service.dart';
 import '../services/security_service.dart';
 import '../services/subscription_service.dart';
-
-/// Tracks whether the vault session is unlocked for the current app session.
-class VaultAccessSession {
-  static bool _isUnlocked = false;
-  static String? _unlockedUserId;
-
-  static bool get isUnlocked => _isUnlocked;
-
-  static bool isUnlockedFor(String? userId) {
-    return userId != null && _isUnlocked && _unlockedUserId == userId;
-  }
-
-  static void unlock({String? userId}) {
-    final uid = userId ?? FirebaseAuth.instance.currentUser?.uid;
-    _isUnlocked = uid != null;
-    _unlockedUserId = uid;
-  }
-
-  static void reset() {
-    _isUnlocked = false;
-    _unlockedUserId = null;
-  }
-}
+import '../services/vault_session_manager.dart';
 
 /// A single gate widget that checks BOTH subscription status and vault auth
 /// (PIN / biometrics) in a single linear async flow, with NO stream re-builds
 /// that would cause the screen to flicker or shake.
+///
+/// Registers with [VaultSessionManager] via enter/leave gate so that
+/// navigating between vault sub-routes does NOT trigger a lock, while
+/// leaving the vault entirely (or the app going to background) does.
+/// Also tracks user interaction for the idle timeout.
 class VaultAccessGate extends StatefulWidget {
   final Widget child;
 
@@ -43,7 +26,8 @@ class VaultAccessGate extends StatefulWidget {
   State<VaultAccessGate> createState() => _VaultAccessGateState();
 }
 
-class _VaultAccessGateState extends State<VaultAccessGate> {
+class _VaultAccessGateState extends State<VaultAccessGate>
+    with WidgetsBindingObserver {
   bool _authorized = false;
   bool _checking = true;
   bool _started = false;
@@ -53,10 +37,48 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final mgr = VaultSessionManager.instance;
+    mgr.enterGate();
+
+    // Re-run the gate if the session manager notifies (e.g. on background lock).
+    mgr.addListener(_onSessionChanged);
+
     Future.microtask(() {
       if (mounted && !_started) _runGate();
     });
   }
+
+  @override
+  void dispose() {
+    VaultSessionManager.instance.removeListener(_onSessionChanged);
+    VaultSessionManager.instance.leaveGate();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ── App lifecycle observer ─────────────────────────────────────────────────
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      VaultSessionManager.instance.onAppBackground();
+    }
+  }
+
+  // ── Session-manager listener ───────────────────────────────────────────────
+
+  void _onSessionChanged() {
+    if (!mounted) return;
+    if (!VaultSessionManager.instance.isUnlocked) {
+      // Vault was locked externally (background / idle timeout).
+      _goHome();
+    }
+  }
+
+  // ── Gate logic ─────────────────────────────────────────────────────────────
 
   Future<void> _runGate() async {
     if (_started) return;
@@ -71,7 +93,7 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
       if (!mounted) return;
 
       if (!subscription.isActive && !AppConfig.bypassVaultSubscription) {
-        VaultAccessSession.reset();
+        VaultSessionManager.instance.lock();
         // Replace the gated vault route so back navigation returns to the
         // previous stable screen instead of a half-initialized gate.
         GoRouter.of(context).pushReplacement(
@@ -82,7 +104,7 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
       }
 
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (VaultAccessSession.isUnlockedFor(uid)) {
+      if (VaultSessionManager.instance.isUnlockedFor(uid)) {
         setState(() {
           _authorized = true;
           _checking = false;
@@ -96,7 +118,7 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
       if (!mounted) return;
 
       if (!pinEnabled) {
-        VaultAccessSession.reset();
+        VaultSessionManager.instance.lock();
         GoRouter.of(
           context,
         ).pushReplacement('/set-pin', extra: {'afterSetupRoute': '/vault'});
@@ -116,7 +138,7 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
           );
           if (!mounted) return;
           if (success) {
-            VaultAccessSession.unlock(userId: uid);
+            VaultSessionManager.instance.unlock(userId: uid);
             setState(() {
               _authorized = true;
               _checking = false;
@@ -134,7 +156,7 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
         final result = await GoRouter.of(context).push<bool>('/pin-verify');
         if (!mounted) return;
         if (result == true) {
-          VaultAccessSession.unlock();
+          VaultSessionManager.instance.unlock();
           setState(() {
             _authorized = true;
             _checking = false;
@@ -155,7 +177,7 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
 
   void _goHome() {
     if (!mounted) return;
-    VaultAccessSession.reset();
+    VaultSessionManager.instance.lock();
     GoRouter.of(context).go('/home');
   }
 
@@ -170,6 +192,13 @@ class _VaultAccessGateState extends State<VaultAccessGate> {
     if (!_authorized) {
       return const Scaffold(backgroundColor: Colors.white);
     }
-    return widget.child;
+
+    // Wrap child with a Listener to track user activity for idle timeout.
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => VaultSessionManager.instance.updateActivity(),
+      onPointerMove: (_) => VaultSessionManager.instance.updateActivity(),
+      child: widget.child,
+    );
   }
 }

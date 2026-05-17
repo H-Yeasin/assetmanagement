@@ -201,7 +201,7 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
       final selectedPaymentType = _isWarrantyPolicy ? 'One-time' : _paymentType;
       final normalizedStatus = _status.toLowerCase();
 
-      final tempPolicy = InsurancePolicy(
+      final updatedPolicy = InsurancePolicy(
         userId: widget.policy.userId,
         name: widget.policy.category == 'pet'
             ? _petNameController.text
@@ -231,30 +231,40 @@ class _EditInsuranceScreenState extends State<EditInsuranceScreen> {
         documents: _uploadedDocuments.map((d) => d['id']).toList(),
       );
 
-      final packedUpdates = tempPolicy.toJson();
+      final packedUpdates = updatedPolicy.toJson();
       await _apiService.updateInsurance(widget.policy.id!, packedUpdates);
 
-      if (renewalDate != null &&
-          normalizedStatus == 'active' &&
-          (_isAutoPay ||
-              selectedPaymentType.toLowerCase().contains('one-time'))) {
-        // Use the renewal date for the auto-pay reminder
-        final pDate = renewalDate;
-        final isWarranty = selectedPaymentType.toLowerCase().contains(
-          'one-time',
+      // Ensure recurring reminders exist for all upcoming occurrences
+      if (normalizedStatus == 'active' && widget.policy.id != null) {
+        // Use a copy with the id set so ensureRecurringReminders works
+        final policyWithId = InsurancePolicy(
+          id: widget.policy.id,
+          userId: updatedPolicy.userId,
+          name: updatedPolicy.name,
+          category: updatedPolicy.category,
+          premium: updatedPolicy.premium,
+          paymentFrequency: updatedPolicy.paymentFrequency,
+          provider: updatedPolicy.provider,
+          renewalDate: updatedPolicy.renewalDate,
+          coverageNotes: updatedPolicy.coverageNotes,
+          petName: updatedPolicy.petName,
+          propertyAddress: updatedPolicy.propertyAddress,
+          applianceName: updatedPolicy.applianceName,
+          manufacturer: updatedPolicy.manufacturer,
+          policyNumber: updatedPolicy.policyNumber,
+          vehicleModel: updatedPolicy.vehicleModel,
+          timeLeft: updatedPolicy.timeLeft,
+          paymentsCompleted: updatedPolicy.paymentsCompleted,
+          totalPayments: updatedPolicy.totalPayments,
+          startDate: updatedPolicy.startDate,
+          endDate: updatedPolicy.endDate,
+          isAutoPay: updatedPolicy.isAutoPay,
+          paymentDay: updatedPolicy.paymentDay,
+          personalInsuranceType: updatedPolicy.personalInsuranceType,
+          status: updatedPolicy.status,
+          documents: updatedPolicy.documents,
         );
-
-        await _apiService.createReminder(
-          itemId: widget.policy.id!,
-          itemType: 'insurance',
-          title: isWarranty
-              ? 'Warranty Expiry: ${_nameController.text}'
-              : 'Insurance Renewal: ${_nameController.text}',
-          remindAt: pDate,
-          note: isWarranty
-              ? 'Reminder for your warranty expiry.'
-              : 'Automatic renewal reminder for your insurance policy.',
-        );
+        await _apiService.ensureRecurringReminders(policyWithId);
       }
 
       if (mounted) context.pop(true);

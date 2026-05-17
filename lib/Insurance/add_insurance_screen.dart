@@ -5,6 +5,7 @@ import '../Home_Dashboard/widgets.dart';
 import 'models/insurance_model.dart';
 import '../services/insurance_service.dart';
 import '../services/notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../Loan_Screen/loan_widgets.dart';
 import 'dart:ui';
 
@@ -133,8 +134,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
   String get _amountLabel =>
       _isWarrantyCategory ? 'One-time Payment' : 'Payment';
 
-  String get _amountHint =>
-      _isWarrantyCategory ? '\$0.00' : '\$100';
+  String get _amountHint => _isWarrantyCategory ? '\$0.00' : '\$100';
 
   String get _frequencyLabel => 'Schedule';
 
@@ -227,9 +227,7 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         propertyAddress: _selectedCategory == 'Home'
             ? _text(_addressController)
             : null,
-        applianceName: _isWarrantyCategory
-            ? _text(_nameController)
-            : null,
+        applianceName: _isWarrantyCategory ? _text(_nameController) : null,
         manufacturer: _isWarrantyCategory
             ? _text(_manufacturerController)
             : null,
@@ -256,26 +254,23 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
 
       final createdPolicy = await _apiService.createInsurance(policy);
 
-      if (renewalDate != null && createdPolicy.id != null) {
-        final isWarranty = createdPolicy.isOneTime;
-        final reminder = await _apiService.createReminder(
-          itemId: createdPolicy.id!,
-          itemType: 'insurance',
-          title: isWarranty
-              ? 'Warranty Expiry: ${createdPolicy.name}'
-              : 'Insurance Renewal: ${createdPolicy.name}',
-          remindAt: renewalDate,
-          note: isWarranty
-              ? 'Reminder for your warranty expiry.'
-              : 'Automatic renewal reminder for your insurance policy.',
+      if (createdPolicy.id != null) {
+        // Ensure recurring reminders are created for all upcoming occurrences
+        final reminderResults = await _apiService.ensureRecurringReminders(
+          createdPolicy,
         );
 
-        await NotificationService.scheduleReminder(
-          id: NotificationService.getNotificationId(reminder['id']),
-          title: reminder['title'] ?? 'Insurance Reminder',
-          body: reminder['note'] ?? 'Upcoming insurance action.',
-          scheduledDate: renewalDate,
-        );
+        // Schedule a local notification for the first upcoming reminder
+        if (reminderResults.isNotEmpty) {
+          final firstReminder = reminderResults.first;
+          final remindAt = (firstReminder['remindAt'] as Timestamp).toDate();
+          await NotificationService.scheduleReminder(
+            id: NotificationService.getNotificationId(firstReminder['id']),
+            title: firstReminder['title'] ?? 'Insurance Reminder',
+            body: firstReminder['note'] ?? 'Upcoming insurance action.',
+            scheduledDate: remindAt,
+          );
+        }
       }
 
       if (mounted) context.pop(true);
