@@ -188,7 +188,7 @@ class _HousingPaymentTimelineScreenState
               builder: (context) {
                 final items = _items();
                 final calendarItems = _items(tab: 0);
-                final hasOpenEndedItems = _costs.any((cost) => cost.dueDate != null);
+                final hasOpenEndedItems = _costs.isNotEmpty;
                 return SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
