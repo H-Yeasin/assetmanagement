@@ -32,6 +32,11 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
     '1 week before',
   ];
 
+  FirebaseFirestore get _firestore => FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'ffpvault',
+  );
+
   double _monthlyEquivalent() {
     return _policy.monthlyEquivalent;
   }
@@ -109,67 +114,69 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
 
   Future<void> _rescheduleNotification() async {
     final baseDate = _baseReminderDate ?? _policy.renewalDate;
-    if (_policy.id == null || baseDate == null) return;
+    if (_policy.id == null) return;
 
     if (!_reminderEnabled) {
-      final existing = await _apiService.createReminder(
-        itemId: _policy.id!,
-        itemType: 'insurance',
-        title: _policy.isOneTime
-            ? 'Warranty Expiry: ${_policy.name}'
-            : 'Insurance Renewal: ${_policy.name}',
-        remindAt: baseDate,
-        note: _policy.isOneTime
-            ? 'Reminder for your warranty expiry.'
-            : 'Automatic renewal reminder for your insurance policy.',
-      );
-      await _apiService.updateReminderNotificationEnabled(
-        existing['id'].toString(),
-        false,
-      );
-      await NotificationService.cancelReminder(
-        NotificationService.getNotificationId(existing['id'].toString()),
-      );
+      // Disable all notifications for this policy's reminders
+      final snapshot = await _firestore
+          .collection('reminders')
+          .where('itemId', isEqualTo: _policy.id)
+          .where('itemType', isEqualTo: 'insurance')
+          .where('isDone', isEqualTo: false)
+          .get();
+
+      for (final doc in snapshot.docs) {
+        await _apiService.updateReminderNotificationEnabled(doc.id, false);
+        await NotificationService.cancelReminder(
+          NotificationService.getNotificationId(doc.id),
+        );
+      }
       return;
     }
 
-    DateTime scheduledDate = baseDate;
-    switch (_selectedReminder) {
-      case '1 day before':
-        scheduledDate = baseDate.subtract(const Duration(days: 1));
-        break;
-      case '3 days before':
-        scheduledDate = baseDate.subtract(const Duration(days: 3));
-        break;
-      case '1 week before':
-        scheduledDate = baseDate.subtract(const Duration(days: 7));
-        break;
-      default:
-        break;
+    // Ensure all recurring reminders exist
+    await _apiService.ensureRecurringReminders(_policy);
+
+    DateTime scheduledDate = baseDate ?? DateTime.now();
+    if (baseDate != null) {
+      switch (_selectedReminder) {
+        case '1 day before':
+          scheduledDate = baseDate.subtract(const Duration(days: 1));
+          break;
+        case '3 days before':
+          scheduledDate = baseDate.subtract(const Duration(days: 3));
+          break;
+        case '1 week before':
+          scheduledDate = baseDate.subtract(const Duration(days: 7));
+          break;
+        default:
+          break;
+      }
     }
 
-    final reminder = await _apiService.createReminder(
-      itemId: _policy.id!,
-      itemType: 'insurance',
-      title: _policy.isOneTime
-          ? 'Warranty Expiry: ${_policy.name}'
-          : 'Insurance Renewal: ${_policy.name}',
-      remindAt: scheduledDate,
-      note: _policy.isOneTime
-          ? 'Reminder for your warranty expiry.'
-          : 'Automatic renewal reminder for your insurance policy.',
-    );
+    // Update the first upcoming reminder's notification to enabled
+    final pendingSnapshot = await _firestore
+        .collection('reminders')
+        .where('itemId', isEqualTo: _policy.id)
+        .where('itemType', isEqualTo: 'insurance')
+        .where('isDone', isEqualTo: false)
+        .orderBy('remindAt')
+        .limit(1)
+        .get();
 
-    await _apiService.updateReminderNotificationEnabled(
-      reminder['id'].toString(),
-      true,
-    );
-    await NotificationService.scheduleReminder(
-      id: NotificationService.getNotificationId(reminder['id'].toString()),
-      title: reminder['title'] ?? 'Insurance Reminder',
-      body: reminder['note'] ?? 'Upcoming insurance renewal.',
-      scheduledDate: scheduledDate,
-    );
+    if (pendingSnapshot.docs.isNotEmpty) {
+      final firstReminder = pendingSnapshot.docs.first;
+      await _apiService.updateReminderNotificationEnabled(
+        firstReminder.id,
+        true,
+      );
+      await NotificationService.scheduleReminder(
+        id: NotificationService.getNotificationId(firstReminder.id),
+        title: 'Insurance Reminder',
+        body: 'Upcoming insurance renewal.',
+        scheduledDate: scheduledDate,
+      );
+    }
   }
 
   Future<void> _refreshPolicy() async {

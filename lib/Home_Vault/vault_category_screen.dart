@@ -10,6 +10,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/models/document_model.dart';
 import '../services/loan_service.dart';
 import '../services/vault_file_service.dart';
+import 'vault_category_widgets.dart';
 
 class VaultCategoryScreen extends StatefulWidget {
   final String categoryName;
@@ -96,7 +97,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _ActionCard(
+                          child: VaultActionCard(
                             icon: 'assets/images/upload.png',
                             label: 'Upload File',
                             onTap: _isUploading ? () {} : _showUploadOptions,
@@ -104,7 +105,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                         ),
                         const SizedBox(width: 14),
                         Expanded(
-                          child: _ActionCard(
+                          child: VaultActionCard(
                             icon: 'assets/images/createsubfolder.png',
                             label: 'Create Folder',
                             onTap: () async {
@@ -201,7 +202,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                                   final itemCount = allDocs
                                       .where((d) => d.folderId == folder.id)
                                       .length;
-                                  return _SubfolderRow(
+                                  return VaultSubfolderRow(
                                     name: folder.displayName,
                                     itemCount: '$itemCount items',
                                     onTap: () async {
@@ -252,7 +253,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                                   final isPdf =
                                       doc.mimeType == 'application/pdf' ||
                                       doc.filename.endsWith('.pdf');
-                                  return _RecentFileRow(
+                                  return VaultRecentFileRow(
                                     fileName: doc.displayName,
                                     fileInfo:
                                         '${(doc.size / 1024).toStringAsFixed(1)} KB',
@@ -299,7 +300,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _MenuOption(
+            VaultMenuOption(
               icon: Icons.edit_outlined,
               label: 'Rename',
               onTap: () async {
@@ -318,7 +319,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                 }
               },
             ),
-            _MenuOption(
+            VaultMenuOption(
               icon: 'assets/images/black_delete.png',
               label: 'Delete',
               color: brandRed,
@@ -356,7 +357,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _MenuOption(
+            VaultMenuOption(
               icon: Icons.edit_outlined,
               label: 'Rename',
               onTap: () async {
@@ -364,7 +365,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                 await _renameFile(doc);
               },
             ),
-            _MenuOption(
+            VaultMenuOption(
               icon: 'assets/images/black_delete.png',
               label: 'Delete',
               onTap: () async {
@@ -372,7 +373,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                 await _deleteFile(doc);
               },
             ),
-            _MenuOption(
+            VaultMenuOption(
               icon: 'assets/images/black_download.png',
               label: 'Download',
               onTap: () async {
@@ -380,7 +381,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                 await _downloadDocument(doc);
               },
             ),
-            _MenuOption(
+            VaultMenuOption(
               icon: 'assets/images/black_share.png',
               label: 'Share/Send',
               onTap: () async {
@@ -807,248 +808,6 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: isError ? brandRed : null,
-      ),
-    );
-  }
-}
-
-class _SubfolderRow extends StatelessWidget {
-  final String name;
-  final String itemCount;
-  final VoidCallback onTap;
-  final VoidCallback onMenuTap;
-
-  const _SubfolderRow({
-    required this.name,
-    required this.itemCount,
-    required this.onTap,
-    required this.onMenuTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: brandRed.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.folder_rounded, color: brandRed, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111111),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      itemCount,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF888888),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: onMenuTap,
-                child: const Icon(
-                  Icons.more_vert,
-                  color: Color(0xFF888888),
-                  size: 22,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RecentFileRow extends StatelessWidget {
-  final String fileName;
-  final String fileInfo;
-  final String fileType;
-  final VoidCallback onTap;
-  final VoidCallback onMenuTap;
-
-  const _RecentFileRow({
-    required this.fileName,
-    required this.fileInfo,
-    required this.fileType,
-    required this.onTap,
-    required this.onMenuTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: fileType == 'pdf'
-                      ? const Color(0xFFFFF0F2)
-                      : const Color(0xFFE3F2FD),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: fileType == 'pdf'
-                    ? Image.asset(
-                        'assets/images/pdficon.png',
-                        width: 22,
-                        height: 22,
-                      )
-                    : const Icon(
-                        Icons.image_rounded,
-                        color: Color(0xFF2196F3),
-                        size: 22,
-                      ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fileName,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111111),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      fileInfo,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF888888),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: onMenuTap,
-                child: const Icon(
-                  Icons.more_vert,
-                  color: Color(0xFF888888),
-                  size: 22,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MenuOption extends StatelessWidget {
-  final dynamic icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _MenuOption({
-    required this.icon,
-    required this.label,
-    this.color = const Color(0xFF111111),
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: EdgeInsets.zero,
-      leading: icon is IconData
-          ? Icon(icon as IconData, color: color)
-          : Image.asset(icon as String, width: 22, height: 22),
-      title: Text(
-        label,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  final dynamic icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F8F8),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFEEEEEE)),
-        ),
-        child: Column(
-          children: [
-            icon is IconData
-                ? Icon(
-                    icon as IconData,
-                    color: const Color(0xFFE5002C),
-                    size: 28,
-                  )
-                : Image.asset(icon as String, width: 28, height: 28),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF111111),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
