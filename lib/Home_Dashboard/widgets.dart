@@ -88,6 +88,8 @@ class ReminderCard extends StatelessWidget {
   final String day;
   final String title;
   final String dueInfo;
+  final String? detailInfo;
+  final Color? detailColor;
   final VoidCallback onTap;
 
   const ReminderCard({
@@ -96,6 +98,8 @@ class ReminderCard extends StatelessWidget {
     required this.day,
     required this.title,
     required this.dueInfo,
+    this.detailInfo,
+    this.detailColor,
     required this.onTap,
   });
 
@@ -159,11 +163,22 @@ class ReminderCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       dueInfo,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF888888),
+                        color: detailColor ?? const Color(0xFF888888),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (detailInfo != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        detailInfo!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF888888),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -46,7 +46,7 @@ subprojects {
                     .firstOrNull()
                     ?.targetCompatibility
                     ?.ifBlank { null }
-                    ?: JavaVersion.VERSION_1_8.toString()
+                    ?: JavaVersion.VERSION_17.toString()
 
             val kotlinTarget =
                 when (javaTarget) {

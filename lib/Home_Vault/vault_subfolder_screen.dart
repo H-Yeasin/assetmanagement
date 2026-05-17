@@ -508,13 +508,35 @@ class _VaultSubfolderScreenState extends State<VaultSubfolderScreen> {
     }
   }
 
-  void _previewDocument(DocumentFile doc) {
-    final isPdf =
-        doc.mimeType == 'application/pdf' || doc.filename.endsWith('.pdf');
-    if (isPdf) {
-      _launchURL(doc.path);
-    } else {
-      _showImagePreview(doc);
+  Future<void> _previewDocument(DocumentFile doc) async {
+    try {
+      final openUrl = await LoanService().getDocumentOpenUrl(doc);
+      final resolvedDoc = DocumentFile(
+        id: doc.id,
+        userId: doc.userId,
+        module: doc.module,
+        originalName: doc.originalName,
+        displayName: doc.displayName,
+        filename: doc.filename,
+        mimeType: doc.mimeType,
+        size: doc.size,
+        path: openUrl,
+        relatedType: doc.relatedType,
+        relatedId: doc.relatedId,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+        folderId: doc.folderId,
+      );
+      final isPdf =
+          resolvedDoc.mimeType == 'application/pdf' ||
+          resolvedDoc.filename.endsWith('.pdf');
+      if (isPdf) {
+        await _launchURL(resolvedDoc.path);
+      } else {
+        _showImagePreview(resolvedDoc);
+      }
+    } catch (e) {
+      _showMessage('Could not open the document: $e', isError: true);
     }
   }
 

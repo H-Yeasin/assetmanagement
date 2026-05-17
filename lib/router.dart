@@ -42,6 +42,7 @@ import 'package:ffp_vault/Loan_Screen/models/loan_model.dart';
 import 'package:ffp_vault/Housing_Living_cost/housing_costs_screen.dart';
 import 'package:ffp_vault/Housing_Living_cost/add_housing_cost_screen.dart';
 import 'package:ffp_vault/Housing_Living_cost/housing_cost_detail_screen.dart';
+import 'package:ffp_vault/Housing_Living_cost/housing_payment_timeline_screen.dart';
 import 'package:ffp_vault/Housing_Living_cost/models/housing_cost_model.dart';
 import 'package:ffp_vault/Insurance/my_insurances_screen.dart';
 import 'package:ffp_vault/Insurance/insurance_detail_screen.dart';
@@ -127,6 +128,12 @@ final GoRouter appRouter = GoRouter(
             final cost = state.extra as HousingCost;
             return HousingCostDetailScreen(cost: cost);
           },
+        ),
+        GoRoute(
+          path: '/housing-payment-timeline',
+          builder: (context, state) => HousingPaymentTimelineScreen(
+            cost: state.extra as HousingCost?,
+          ),
         ),
         GoRoute(
           path: '/my-insurances',

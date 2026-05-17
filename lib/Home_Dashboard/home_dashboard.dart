@@ -8,6 +8,7 @@ import '../services/loan_service.dart';
 import '../Housing_Living_cost/models/housing_cost_model.dart';
 import '../Insurance/models/insurance_model.dart';
 import '../Loan_Screen/models/loan_model.dart';
+import '../shared/reminder_presentation.dart';
 import 'widgets.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
@@ -16,6 +17,12 @@ class HomeDashboardScreen extends StatelessWidget {
   final LoanService _loanService = LoanService();
   final HousingService _housingService = HousingService();
   final InsuranceService _insuranceService = InsuranceService();
+  late final ReminderPresentationResolver _presentationResolver =
+      ReminderPresentationResolver(
+        loanService: _loanService,
+        housingService: _housingService,
+        insuranceService: _insuranceService,
+      );
 
   void _showAddItemSheet(BuildContext context) {
     showModalBottomSheet(
@@ -227,12 +234,22 @@ class HomeDashboardScreen extends StatelessWidget {
                   ),
                   GestureDetector(
                     onTap: () => context.push('/upcoming-reminders'),
-                    child: const Text(
-                      'See All',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E1E1E),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: brandRed.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'See All',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: brandRed,
+                        ),
                       ),
                     ),
                   ),
@@ -261,23 +278,68 @@ class HomeDashboardScreen extends StatelessWidget {
                     );
                   }
 
-                  return Column(
-                    children: reminders.take(2).map((r) {
-                      final remindAt =
-                          (r['remindAt'] as dynamic).toDate() as DateTime;
-                      final note = r['note'] ?? r['title'] ?? 'Reminder';
-                      final title = r['title'] ?? 'Task';
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: ReminderCard(
-                          month: DateFormat('MMM').format(remindAt),
-                          day: DateFormat('dd').format(remindAt),
-                          title: title,
-                          dueInfo: note,
-                          onTap: () => context.push('/upcoming-reminders'),
+                  return FutureBuilder<List<ReminderPresentation>>(
+                    future: Future.wait(
+                      reminders.take(2).map(
+                        (r) => _presentationResolver.resolve(
+                          r['itemType']?.toString(),
+                          r['itemId']?.toString(),
+                        ),
+                      ),
+                    ),
+                    builder: (context, presentationSnapshot) {
+                      if (presentationSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: CircularProgressIndicator(color: brandRed),
+                          ),
+                        );
+                      }
+
+                      final presentations =
+                          presentationSnapshot.data ?? const [];
+                      return Column(
+                        children: List.generate(
+                          reminders.take(2).length,
+                          (index) {
+                            final reminder = reminders[index];
+                            final presentation = index < presentations.length
+                                ? presentations[index]
+                                : const ReminderPresentation(
+                                    itemName: 'Reminder',
+                                    sectionLabel: 'Unknown',
+                                    sectionColor: Color(0xFF888888),
+                                    amountLabel: '',
+                                    statusLabel: 'Manual payment required',
+                                    isAuto: false,
+                                  );
+                            final remindAt =
+                                (reminder['remindAt'] as dynamic).toDate()
+                                    as DateTime;
+                            final detailInfo = [
+                              DateFormat('MMM dd, yyyy').format(remindAt),
+                              if (presentation.amountLabel.isNotEmpty)
+                                presentation.amountLabel,
+                            ].join(' • ');
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: ReminderCard(
+                                month: DateFormat('MMM').format(remindAt),
+                                day: DateFormat('dd').format(remindAt),
+                                title: presentation.itemName,
+                                dueInfo: presentation.sectionLabel,
+                                detailInfo: detailInfo,
+                                detailColor: presentation.sectionColor,
+                                onTap: () =>
+                                    context.push('/upcoming-reminders'),
+                              ),
+                            );
+                          },
                         ),
                       );
-                    }).toList(),
+                    },
                   );
                 },
               ),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../Home_Dashboard/widgets.dart';
+import '../shared/reminder_presentation.dart';
 import '../services/housing_service.dart';
 import '../services/insurance_service.dart';
 import '../services/loan_service.dart';
@@ -20,6 +21,7 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
   final LoanService _loanService = LoanService();
   final HousingService _housingService = HousingService();
   final InsuranceService _insuranceService = InsuranceService();
+  late final ReminderPresentationResolver _presentationResolver;
 
   bool _globalNotificationsEnabled = true;
   bool _isUpdatingGlobalToggle = false;
@@ -27,6 +29,11 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
   @override
   void initState() {
     super.initState();
+    _presentationResolver = ReminderPresentationResolver(
+      loanService: _loanService,
+      housingService: _housingService,
+      insuranceService: _insuranceService,
+    );
     _loadGlobalNotificationPreference();
   }
 
@@ -45,45 +52,26 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
     return Future.wait(
       reminders.map((reminder) async {
         final remindAt = (reminder['remindAt'] as dynamic).toDate() as DateTime;
-        final isAuto = await _resolveAutoStatus(
+        final presentation = await _presentationResolver.resolve(
           reminder['itemType']?.toString(),
           reminder['itemId']?.toString(),
         );
 
         return _ReminderViewModel(
           id: reminder['id']?.toString() ?? '',
-          title: reminder['title']?.toString() ?? 'Task',
-          note: reminder['note']?.toString() ?? 'Reminder',
+          title: presentation.itemName,
+          subtitle: presentation.sectionLabel,
+          amountLabel: presentation.amountLabel,
+          statusLabel: presentation.statusLabel,
+          sectionColor: presentation.sectionColor,
           remindAt: remindAt,
           itemType: reminder['itemType']?.toString() ?? '',
           itemId: reminder['itemId']?.toString() ?? '',
           notificationEnabled: reminder['notificationEnabled'] != false,
-          isAuto: isAuto,
+          isAuto: presentation.isAuto,
         );
       }),
     );
-  }
-
-  Future<bool> _resolveAutoStatus(String? itemType, String? itemId) async {
-    if (itemType == null || itemId == null || itemId.isEmpty) return false;
-
-    try {
-      switch (itemType) {
-        case 'loan':
-          final loan = await _loanService.getLoan(itemId);
-          return loan.autoPay;
-        case 'housing':
-          final cost = await _housingService.getHousingCost(itemId);
-          return cost.autoPay;
-        case 'insurance':
-          final insurance = await _insuranceService.getInsurance(itemId);
-          return insurance.isAutoPay ?? false;
-        default:
-          return false;
-      }
-    } catch (_) {
-      return false;
-    }
   }
 
   Future<void> _markAsDone(_ReminderViewModel reminder) async {
@@ -114,7 +102,7 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
         await NotificationService.scheduleReminder(
           id: notificationId,
           title: reminder.title,
-          body: reminder.note,
+          body: reminder.statusLabel,
           scheduledDate: reminder.remindAt,
         );
       }
@@ -344,7 +332,10 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
 class _ReminderViewModel {
   final String id;
   final String title;
-  final String note;
+  final String subtitle;
+  final String amountLabel;
+  final String statusLabel;
+  final Color sectionColor;
   final DateTime remindAt;
   final String itemType;
   final String itemId;
@@ -354,7 +345,10 @@ class _ReminderViewModel {
   const _ReminderViewModel({
     required this.id,
     required this.title,
-    required this.note,
+    required this.subtitle,
+    required this.amountLabel,
+    required this.statusLabel,
+    required this.sectionColor,
     required this.remindAt,
     required this.itemType,
     required this.itemId,
@@ -383,6 +377,8 @@ class _ReminderListTile extends StatelessWidget {
     final statusBackground = reminder.isAuto
         ? const Color(0xFFE3F2FD)
         : const Color(0xFFFFEBEE);
+    final dateLine =
+        '${DateFormat('MMM dd, yyyy • hh:mm a').format(reminder.remindAt)}${reminder.amountLabel.isNotEmpty ? ' • ${reminder.amountLabel}' : ''}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -440,17 +436,16 @@ class _ReminderListTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      reminder.note,
-                      style: const TextStyle(
+                      reminder.subtitle,
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF888888),
+                        color: reminder.sectionColor,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      DateFormat('MMM dd, yyyy • hh:mm a').format(
-                        reminder.remindAt,
-                      ),
+                      dateLine,
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF888888),
@@ -480,9 +475,7 @@ class _ReminderListTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  reminder.isAuto
-                      ? 'Paid Automatically'
-                      : 'Manual Action Required',
+                  reminder.statusLabel,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,

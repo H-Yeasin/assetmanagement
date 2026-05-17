@@ -9,8 +9,8 @@ import '../services/notification_service.dart';
 import 'housing_widgets.dart';
 import 'housing_additional_details_screen.dart';
 import 'edit_housing_cost_screen.dart';
-
 import 'housing_add_documents_screen.dart';
+import 'housing_payment_timeline_screen.dart';
 
 class HousingCostDetailScreen extends StatefulWidget {
   final HousingCost cost;
@@ -377,6 +377,43 @@ class _HousingCostDetailScreenState extends State<HousingCostDetailScreen> {
                             const SizedBox(width: 8),
                             const Text(
                               'Additional Details',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFC61C36),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                HousingPaymentTimelineScreen(cost: _cost),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.calendar_month, color: Color(0xFFC61C36)),
+                            SizedBox(width: 8),
+                            Text(
+                              'Payment Timeline',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,

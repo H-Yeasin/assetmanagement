@@ -6,24 +6,24 @@ import 'package:intl/intl.dart';
 
 import '../Home_Dashboard/widgets.dart';
 import '../shared/payment_timeline_helpers.dart';
-import '../services/loan_service.dart';
-import 'models/loan_model.dart';
-import 'utils/loan_calculations.dart';
+import '../services/housing_service.dart';
+import 'models/housing_cost_model.dart';
 
-class LoanPaymentTimelineScreen extends StatefulWidget {
-  final Loan? loan;
+class HousingPaymentTimelineScreen extends StatefulWidget {
+  final HousingCost? cost;
 
-  const LoanPaymentTimelineScreen({super.key, this.loan});
+  const HousingPaymentTimelineScreen({super.key, this.cost});
 
   @override
-  State<LoanPaymentTimelineScreen> createState() =>
-      _LoanPaymentTimelineScreenState();
+  State<HousingPaymentTimelineScreen> createState() =>
+      _HousingPaymentTimelineScreenState();
 }
 
-class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
-  final LoanService _loanService = LoanService();
-  StreamSubscription<List<Loan>>? _subscription;
-  List<Loan> _loans = [];
+class _HousingPaymentTimelineScreenState
+    extends State<HousingPaymentTimelineScreen> {
+  final HousingService _housingService = HousingService();
+  StreamSubscription<List<HousingCost>>? _subscription;
+  List<HousingCost> _costs = [];
   bool _isLoading = true;
   String? _error;
   int _selectedTab = 0;
@@ -33,16 +33,16 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.loan != null) {
-      _loans = [widget.loan!];
+    if (widget.cost != null) {
+      _costs = [widget.cost!];
       _isLoading = false;
-      _refreshSingleLoan();
+      _refreshSingleCost();
     } else {
-      _subscription = _loanService.streamLoans(status: 'active').listen(
-        (loans) {
+      _subscription = _housingService.streamHousingCosts().listen(
+        (costs) {
           if (!mounted) return;
           setState(() {
-            _loans = loans;
+            _costs = costs.where((cost) => cost.dueDate != null).toList();
             _isLoading = false;
             _error = null;
           });
@@ -64,45 +64,57 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
     super.dispose();
   }
 
-  Future<void> _refreshSingleLoan() async {
-    final id = widget.loan?.id;
+  Future<void> _refreshSingleCost() async {
+    final id = widget.cost?.id;
     if (id == null) return;
     try {
-      final loan = await _loanService.getLoan(id);
+      final cost = await _housingService.getHousingCost(id);
       if (!mounted) return;
-      setState(() => _loans = [loan]);
-    } catch (_) {
-      // Keep the passed-in loan available if refresh is unavailable.
-    }
+      setState(() => _costs = [cost]);
+    } catch (_) {}
   }
 
   DateTime _normalizeDay(DateTime date) =>
       DateTime(date.year, date.month, date.day);
 
-  List<_TimelineItem> _items({int? tab}) {
-    final selectedTab = tab ?? _selectedTab;
-    final items = <_TimelineItem>[];
-    final today = _normalizeDay(DateTime.now());
+  DateTime _addMonths(DateTime date, int months) {
+    final targetMonth = date.month + months;
+    final targetYear = date.year + ((targetMonth - 1) ~/ 12);
+    final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+    final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+    final day = date.day > lastDay ? lastDay : date.day;
+    return DateTime(targetYear, normalizedMonth, day);
+  }
 
-    for (final loan in _loans) {
-      final start = loan.startDate ?? loan.paymentDate ?? today;
-      final end = loan.endDate ??
-          DateTime(
-            today.year,
-            today.month + rollingTimelineFutureMonths,
-            today.day,
-          );
-      final dates = LoanCalculations.paymentOccurrences(
-        loan,
-        from: start,
-        to: end,
-        includePast: true,
-      );
-      for (final date in dates) {
+  List<DateTime> _occurrencesFor(HousingCost cost) {
+    final baseDate = cost.dueDate;
+    if (baseDate == null) return const [];
+
+    final today = _normalizeDay(DateTime.now());
+    final start = _normalizeDay(baseDate);
+    final futureCutoff = _addMonths(today, rollingTimelineFutureMonths);
+    final dates = <DateTime>[];
+    var current = start;
+    var guard = 0;
+    while (!current.isAfter(futureCutoff) && guard < 240) {
+      dates.add(current);
+      current = _addMonths(current, 1);
+      guard++;
+    }
+    return dates;
+  }
+
+  List<_HousingTimelineItem> _items({int? tab}) {
+    final selectedTab = tab ?? _selectedTab;
+    final today = _normalizeDay(DateTime.now());
+    final items = <_HousingTimelineItem>[];
+
+    for (final cost in _costs) {
+      for (final date in _occurrencesFor(cost)) {
         final day = _normalizeDay(date);
         items.add(
-          _TimelineItem(
-            loan: loan,
+          _HousingTimelineItem(
+            cost: cost,
             date: day,
             isPast: day.isBefore(today),
           ),
@@ -120,22 +132,22 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
     return items;
   }
 
-  Set<DateTime> _manualDays(List<_TimelineItem> items) {
+  Set<DateTime> _manualDays(List<_HousingTimelineItem> items) {
     return items
-        .where((item) => !item.loan.autoPay)
+        .where((item) => !item.cost.autoPay)
         .map((item) => _normalizeDay(item.date))
         .toSet();
   }
 
-  Set<DateTime> _paidDays(List<_TimelineItem> items) {
+  Set<DateTime> _paidDays(List<_HousingTimelineItem> items) {
     return items
-        .where((item) => item.loan.autoPay)
+        .where((item) => item.cost.autoPay)
         .map((item) => _normalizeDay(item.date))
         .toSet();
   }
 
-  String _statusLabel(_TimelineItem item) {
-    if (item.loan.autoPay) {
+  String _statusLabel(_HousingTimelineItem item) {
+    if (item.cost.autoPay) {
       return item.isPast ? 'Paid automatically' : 'Scheduled auto-payment';
     }
     return item.isPast ? 'Past scheduled payment' : 'Manual payment required';
@@ -143,7 +155,7 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.loan == null ? 'Payment Timeline' : widget.loan!.name;
+    final title = widget.cost == null ? 'Payment Timeline' : widget.cost!.name;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
@@ -176,6 +188,7 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
               builder: (context) {
                 final items = _items();
                 final calendarItems = _items(tab: 0);
+                final hasOpenEndedItems = _costs.any((cost) => cost.dueDate != null);
                 return SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
@@ -183,13 +196,13 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
                     children: [
                       const SizedBox(height: 12),
                       CalendarWidget(
-                        calendarId: widget.loan == null
-                            ? 'loan_payment_timeline'
-                            : 'loan_payment_timeline_${widget.loan!.id ?? widget.loan!.name}',
+                        calendarId: widget.cost == null
+                            ? 'housing_payment_timeline'
+                            : 'housing_payment_timeline_${widget.cost!.id ?? widget.cost!.name}',
                         paidDays: _paidDays(calendarItems),
                         manualDays: _manualDays(calendarItems),
                       ),
-                      if (_loans.any((loan) => loan.endDate == null)) ...[
+                      if (hasOpenEndedItems) ...[
                         const SizedBox(height: 16),
                         const TimelineInfoNote(),
                       ],
@@ -260,15 +273,15 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
                           (item) => PaymentCard(
                             month: DateFormat('MMM').format(item.date),
                             day: DateFormat('dd').format(item.date),
-                            title: item.loan.name,
+                            title: item.cost.name,
                             amount: NumberFormat.simpleCurrency(
                               decimalDigits: 2,
-                            ).format(LoanCalculations.paymentAmount(item.loan)),
+                            ).format(item.cost.amount),
                             status: _statusLabel(item),
-                            isPaid: item.loan.autoPay,
+                            isPaid: item.cost.autoPay,
                           ),
                         ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 );
@@ -278,13 +291,13 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
   }
 }
 
-class _TimelineItem {
-  final Loan loan;
+class _HousingTimelineItem {
+  final HousingCost cost;
   final DateTime date;
   final bool isPast;
 
-  const _TimelineItem({
-    required this.loan,
+  const _HousingTimelineItem({
+    required this.cost,
     required this.date,
     required this.isPast,
   });

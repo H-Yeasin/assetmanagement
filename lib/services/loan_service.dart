@@ -240,6 +240,25 @@ class LoanService {
     });
   }
 
+  Future<String> getDocumentOpenUrl(DocumentFile doc) async {
+    final path = doc.path.trim();
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+
+    if (_uid == null) {
+      throw Exception('User not logged in');
+    }
+    if ((doc.module ?? '').isEmpty || doc.filename.isEmpty) {
+      throw Exception('Document path is unavailable');
+    }
+
+    return _storage
+        .ref()
+        .child('${doc.module}/$_uid/${doc.filename}')
+        .getDownloadURL();
+  }
+
   Future<void> linkDocumentsToRelated(
     List<String> docIds,
     String relatedId,
