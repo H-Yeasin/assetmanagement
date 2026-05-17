@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../Home_Dashboard/widgets.dart';
@@ -18,6 +22,7 @@ class VaultCategoryScreen extends StatefulWidget {
 
 class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
   late Future<List<DocumentFile>> _documentsFuture;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -63,13 +68,7 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () async {
-                      await context.push(
-                        '/vault-create-subfolder',
-                        extra: widget.categoryName,
-                      );
-                      if (mounted) await _reloadDocuments();
-                    },
+                    onTap: _showCategoryActions,
                     child: Container(
                       width: 40,
                       height: 40,
@@ -94,45 +93,48 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        await context.push(
-                          '/vault-create-subfolder',
-                          extra: widget.categoryName,
-                        );
-                        if (mounted) await _reloadDocuments();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ActionCard(
+                            icon: 'assets/images/upload.png',
+                            label: 'Upload File',
+                            onTap: _isUploading ? () {} : _showUploadOptions,
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: brandRed.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _ActionCard(
+                            icon: 'assets/images/createsubfolder.png',
+                            label: 'Create Folder',
+                            onTap: () async {
+                              await context.push(
+                                '/vault-create-subfolder',
+                                extra: widget.categoryName,
+                              );
+                              if (mounted) await _reloadDocuments();
+                            },
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/createsubfolder.png',
-                              width: 24,
-                              height: 24,
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Create Subfolder',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: brandRed,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 28),
+                    if (_isUploading)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 24),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              CircularProgressIndicator(color: brandRed),
+                              SizedBox(height: 12),
+                              Text(
+                                'Uploading...',
+                                style: TextStyle(color: Color(0xFF888888)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     FutureBuilder<List<DocumentFile>>(
                       future: _documentsFuture,
                       builder: (context, snapshot) {
@@ -641,6 +643,164 @@ class _VaultCategoryScreenState extends State<VaultCategoryScreen> {
     );
   }
 
+  void _showCategoryActions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.upload_file),
+                title: const Text('Upload File'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showUploadOptions();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.create_new_folder),
+                title: const Text('Create Folder'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await context.push(
+                    '/vault-create-subfolder',
+                    extra: widget.categoryName,
+                  );
+                  if (mounted) await _reloadDocuments();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showUploadOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.insert_drive_file),
+                title: const Text('Upload Document'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _uploadFile();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _uploadFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      );
+
+      if (result == null || result.files.single.path == null) return;
+
+      setState(() => _isUploading = true);
+      final file = File(result.files.single.path!);
+
+      await LoanService().uploadDocument(file, module: _currentModule);
+
+      if (!mounted) return;
+      setState(() => _isUploading = false);
+      await _reloadDocuments();
+      _showMessage('File uploaded successfully.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isUploading = false);
+      _showMessage('Error uploading file: $e', isError: true);
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+      if (pickedFile == null) return;
+
+      setState(() => _isUploading = true);
+      final file = File(pickedFile.path);
+
+      await LoanService().uploadDocument(file, module: _currentModule);
+
+      if (!mounted) return;
+      setState(() => _isUploading = false);
+      await _reloadDocuments();
+      _showMessage('Image uploaded successfully.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isUploading = false);
+      _showMessage('Error uploading image: $e', isError: true);
+    }
+  }
+
+  Future<void> _showImageSourcePicker() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showMessage(String message, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -841,6 +1001,53 @@ class _MenuOption extends StatelessWidget {
           fontSize: 15,
           fontWeight: FontWeight.w500,
           color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  final dynamic icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F8F8),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFEEEEEE)),
+        ),
+        child: Column(
+          children: [
+            icon is IconData
+                ? Icon(
+                    icon as IconData,
+                    color: const Color(0xFFE5002C),
+                    size: 28,
+                  )
+                : Image.asset(icon as String, width: 28, height: 28),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF111111),
+              ),
+            ),
+          ],
         ),
       ),
     );
