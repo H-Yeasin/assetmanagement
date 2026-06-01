@@ -26,8 +26,39 @@ class VaultSessionManager extends ChangeNotifier {
 
   bool _isUnlocked = false;
   String? _unlockedUserId;
+  bool _expectingExternalActivity = false;
+  Timer? _externalActivityTimer;
 
   bool get isUnlocked => _isUnlocked;
+
+  /// Mark that an external activity (camera, file-picker, etc.) is about to
+  /// open.  The flag stays active for [_externalActivityWindow] so that
+  /// **all** lifecycle transitions triggered by the same intent are ignored.
+  /// It is cleared automatically on timeout or when [onAppResumed] is called.
+  static const Duration _externalActivityWindow = Duration(seconds: 60);
+
+  void expectExternalActivity() {
+    _expectingExternalActivity = true;
+    _externalActivityTimer?.cancel();
+    _externalActivityTimer = Timer(_externalActivityWindow, () {
+      _expectingExternalActivity = false;
+      _externalActivityTimer = null;
+    });
+  }
+
+  /// Called when the app returns to the foreground after an external activity.
+  void onAppResumed() {
+    _externalActivityTimer?.cancel();
+    _externalActivityTimer = null;
+    // Keep the flag alive briefly in case the OS fires another paused/inactive
+    // event immediately after resume (some Android OEMs do this).
+    if (_expectingExternalActivity) {
+      _externalActivityTimer = Timer(const Duration(seconds: 2), () {
+        _expectingExternalActivity = false;
+        _externalActivityTimer = null;
+      });
+    }
+  }
 
   bool isUnlockedFor(String? userId) =>
       userId != null && _isUnlocked && _unlockedUserId == userId;
@@ -126,9 +157,15 @@ class VaultSessionManager extends ChangeNotifier {
   // ── Lifecycle lock ─────────────────────────────────────────────────────────
 
   /// Called when the app transitions to paused/inactive/detached.
-  /// Locks the vault unconditionally if it was unlocked.
+  /// Locks the vault unless an external activity (camera, file-picker) is
+  /// expected.  The flag is NOT consumed here — it stays active until the
+  /// timer expires or [onAppResumed] clears it.
   void onAppBackground() {
     if (!_isUnlocked) return;
+    if (_expectingExternalActivity) {
+      debugPrint('VaultSessionManager: app backgrounded for expected external activity – NOT locking vault');
+      return;
+    }
     debugPrint('VaultSessionManager: app backgrounded – locking vault');
     lock();
   }
@@ -139,6 +176,8 @@ class VaultSessionManager extends ChangeNotifier {
   void dispose() {
     _cancelIdleTimer();
     _cancelPendingLock();
+    _externalActivityTimer?.cancel();
+    _externalActivityTimer = null;
     super.dispose();
   }
 }

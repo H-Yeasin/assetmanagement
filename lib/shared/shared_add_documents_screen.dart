@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../services/loan_service.dart';
 import '../services/housing_service.dart';
 import '../services/insurance_service.dart';
+import '../services/vault_session_manager.dart';
 import 'vault_selection_modal.dart';
 
 class SharedAddDocumentsScreen extends StatefulWidget {
@@ -92,6 +93,7 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
   }
 
   Future<void> _pickFile() async {
+    VaultSessionManager.instance.expectExternalActivity();
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
@@ -103,6 +105,7 @@ class _SharedAddDocumentsScreenState extends State<SharedAddDocumentsScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    VaultSessionManager.instance.expectExternalActivity();
     if (source == ImageSource.gallery) {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,

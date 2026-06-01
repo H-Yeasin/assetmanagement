@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/loan_service.dart';
+import '../services/vault_session_manager.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -99,6 +100,7 @@ class _VaultCreateSubfolderScreenState
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      VaultSessionManager.instance.expectExternalActivity();
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: source);
 
@@ -118,6 +120,7 @@ class _VaultCreateSubfolderScreenState
 
   Future<void> _pickFile() async {
     try {
+      VaultSessionManager.instance.expectExternalActivity();
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],

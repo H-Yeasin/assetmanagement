@@ -10,6 +10,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../Loan_Screen/models/document_model.dart';
 import '../services/loan_service.dart';
 import '../services/vault_file_service.dart';
+import '../services/vault_session_manager.dart';
 
 class VaultSubfolderScreen extends StatefulWidget {
   final String folderName;
@@ -304,6 +305,7 @@ class _VaultSubfolderScreenState extends State<VaultSubfolderScreen> {
 
   Future<void> _uploadFile() async {
     try {
+      VaultSessionManager.instance.expectExternalActivity();
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
@@ -366,6 +368,7 @@ class _VaultSubfolderScreenState extends State<VaultSubfolderScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      VaultSessionManager.instance.expectExternalActivity();
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: source);
       if (pickedFile == null) return;

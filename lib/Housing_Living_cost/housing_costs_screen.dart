@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
 import '../Home_Dashboard/widgets.dart';
-import 'housing_widgets.dart';
+import '../services/housing_service.dart';
 import 'add_housing_cost_screen.dart';
 import 'housing_cost_detail_screen.dart';
+import 'housing_payment_timeline_screen.dart';
+import 'housing_widgets.dart';
 import 'models/housing_cost_model.dart';
-import '../services/housing_service.dart';
-import 'package:intl/intl.dart';
-import 'package:go_router/go_router.dart';
 
 class HousingCostsScreen extends StatefulWidget {
   const HousingCostsScreen({super.key});
@@ -132,7 +134,7 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                         width: 32,
                         height: 32,
                         decoration: const BoxDecoration(
-                          color: brandPurple,
+                          color: brandRed,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -257,6 +259,48 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                           ),
                         ),
 
+                      const SizedBox(height: 24),
+                      if (_costs.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const HousingPaymentTimelineScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFF0F0F0),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.calendar_month, color: brandRed),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Payment Timeline',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: brandRed,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 32),
                     ],
                   ),

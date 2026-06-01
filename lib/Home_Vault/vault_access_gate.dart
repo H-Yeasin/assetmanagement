@@ -61,7 +61,9 @@ class _VaultAccessGateState extends State<VaultAccessGate>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
+    if (state == AppLifecycleState.resumed) {
+      VaultSessionManager.instance.onAppResumed();
+    } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
       VaultSessionManager.instance.onAppBackground();
@@ -74,9 +76,10 @@ class _VaultAccessGateState extends State<VaultAccessGate>
     if (!mounted) return;
     if (!VaultSessionManager.instance.isUnlocked) {
       // Vault was locked externally (background / idle timeout).
-      _goHome();
+      _goHome(shouldLock: false);
     }
   }
+
 
   // ── Gate logic ─────────────────────────────────────────────────────────────
 
@@ -175,9 +178,11 @@ class _VaultAccessGateState extends State<VaultAccessGate>
     }
   }
 
-  void _goHome() {
+  void _goHome({bool shouldLock = true}) {
     if (!mounted) return;
-    VaultSessionManager.instance.lock();
+    if (shouldLock) {
+      VaultSessionManager.instance.lock();
+    }
     GoRouter.of(context).go('/home');
   }
 

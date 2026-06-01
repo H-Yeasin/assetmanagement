@@ -164,14 +164,23 @@ class HomeDashboardScreen extends StatelessWidget {
                   StreamBuilder<List<HousingCost>>(
                     stream: _housingService.streamHousingCosts(),
                     builder: (context, snapshot) {
+                      final count = snapshot.hasData
+                          ? snapshot.data!.length
+                          : 0;
                       final loadingText =
                           snapshot.connectionState == ConnectionState.waiting
                           ? '...'
+                          : '$count housings';
+                      final dueText =
+                          snapshot.connectionState == ConnectionState.waiting
+                          ? '...'
                           : _getHousingSubtitle(snapshot.data ?? []);
+
                       return CategoryCard(
                         iconPath: 'assets/images/icon/housing.png',
                         title: 'Housing / Living Costs',
                         subtitle: loadingText,
+                        subtext: dueText,
                         iconColor: Colors.purple,
                         onTap: () {
                           context.go('/housing-costs');
@@ -255,6 +264,7 @@ class HomeDashboardScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
               StreamBuilder<List<dynamic>>(
                 stream: _loanService.streamUpcomingReminders(),
                 builder: (context, snapshot) {
@@ -280,12 +290,14 @@ class HomeDashboardScreen extends StatelessWidget {
 
                   return FutureBuilder<List<ReminderPresentation>>(
                     future: Future.wait(
-                      reminders.take(2).map(
-                        (r) => _presentationResolver.resolve(
-                          r['itemType']?.toString(),
-                          r['itemId']?.toString(),
-                        ),
-                      ),
+                      reminders
+                          .take(2)
+                          .map(
+                            (r) => _presentationResolver.resolve(
+                              r['itemType']?.toString(),
+                              r['itemId']?.toString(),
+                            ),
+                          ),
                     ),
                     builder: (context, presentationSnapshot) {
                       if (presentationSnapshot.connectionState ==
@@ -301,43 +313,41 @@ class HomeDashboardScreen extends StatelessWidget {
                       final presentations =
                           presentationSnapshot.data ?? const [];
                       return Column(
-                        children: List.generate(
-                          reminders.take(2).length,
-                          (index) {
-                            final reminder = reminders[index];
-                            final presentation = index < presentations.length
-                                ? presentations[index]
-                                : const ReminderPresentation(
-                                    itemName: 'Reminder',
-                                    sectionLabel: 'Unknown',
-                                    sectionColor: Color(0xFF888888),
-                                    amountLabel: '',
-                                    statusLabel: 'Manual payment required',
-                                    isAuto: false,
-                                  );
-                            final remindAt =
-                                (reminder['remindAt'] as dynamic).toDate()
-                                    as DateTime;
-                            final detailInfo = [
-                              DateFormat('MMM dd, yyyy').format(remindAt),
-                              if (presentation.amountLabel.isNotEmpty)
-                                presentation.amountLabel,
-                            ].join(' • ');
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: ReminderCard(
-                                month: DateFormat('MMM').format(remindAt),
-                                day: DateFormat('dd').format(remindAt),
-                                title: presentation.itemName,
-                                dueInfo: presentation.sectionLabel,
-                                detailInfo: detailInfo,
-                                detailColor: presentation.sectionColor,
-                                onTap: () =>
-                                    context.push('/upcoming-reminders'),
-                              ),
-                            );
-                          },
-                        ),
+                        children: List.generate(reminders.take(2).length, (
+                          index,
+                        ) {
+                          final reminder = reminders[index];
+                          final presentation = index < presentations.length
+                              ? presentations[index]
+                              : const ReminderPresentation(
+                                  itemName: 'Reminder',
+                                  sectionLabel: 'Unknown',
+                                  sectionColor: Color(0xFF888888),
+                                  amountLabel: '',
+                                  statusLabel: 'Manual payment required',
+                                  isAuto: false,
+                                );
+                          final remindAt =
+                              (reminder['remindAt'] as dynamic).toDate()
+                                  as DateTime;
+                          final detailInfo = [
+                            DateFormat('MMM dd, yyyy').format(remindAt),
+                            if (presentation.amountLabel.isNotEmpty)
+                              presentation.amountLabel,
+                          ].join(' • ');
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ReminderCard(
+                              month: DateFormat('MMM').format(remindAt),
+                              day: DateFormat('dd').format(remindAt),
+                              title: presentation.itemName,
+                              dueInfo: presentation.sectionLabel,
+                              detailInfo: detailInfo,
+                              detailColor: presentation.sectionColor,
+                              onTap: () => context.push('/upcoming-reminders'),
+                            ),
+                          );
+                        }),
                       );
                     },
                   );

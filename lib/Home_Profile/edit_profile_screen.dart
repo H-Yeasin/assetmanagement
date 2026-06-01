@@ -7,6 +7,7 @@ import '../services/storage_service.dart';
 import '../services/user_service.dart';
 import '../services/security_service.dart';
 import '../services/auth_service.dart';
+import '../services/vault_session_manager.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -49,6 +50,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage() async {
+    VaultSessionManager.instance.expectExternalActivity();
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,

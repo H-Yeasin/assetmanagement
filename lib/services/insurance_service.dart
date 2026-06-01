@@ -176,7 +176,7 @@ class InsuranceService {
     if (!policy.isActive) return [];
 
     final effectiveFrom = _normalizeDay(from ?? DateTime.now());
-    final effectiveTo = _normalizeDay(to ?? _addMonths(effectiveFrom, 6));
+    final effectiveTo = _normalizeDay(to ?? _addMonths(effectiveFrom, 24));
 
     if (policy.isOneTime) {
       final oneTimeDate =

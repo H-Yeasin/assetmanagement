@@ -11,6 +11,7 @@ class CategoryCard extends StatelessWidget {
   final String iconPath;
   final String title;
   final String subtitle;
+  final String subtext;
   final Color iconColor;
   final VoidCallback onTap;
 
@@ -20,6 +21,7 @@ class CategoryCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.iconColor,
+    this.subtext = "",
     required this.onTap,
   });
 
@@ -72,6 +74,15 @@ class CategoryCard extends StatelessWidget {
             Flexible(
               child: Text(
                 subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF888888)),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Flexible(
+              child: Text(
+                subtext,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 11, color: Color(0xFF888888)),
