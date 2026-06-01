@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-
 import '../Home_Dashboard/widgets.dart';
 import '../config/app_config.dart';
 import '../services/biometric_service.dart';
@@ -12,6 +11,11 @@ import '../services/vault_session_manager.dart';
 /// A single gate widget that checks BOTH subscription status and vault auth
 /// (PIN / biometrics) in a single linear async flow, with NO stream re-builds
 /// that would cause the screen to flicker or shake.
+///
+/// Registers with [VaultSessionManager] via enter/leave gate so that
+/// navigating between vault sub-routes does NOT trigger a lock, while
+/// leaving the vault entirely (or the app going to background) does.
+/// Also tracks user interaction for the idle timeout.
 ///
 /// Registers with [VaultSessionManager] via enter/leave gate so that
 /// navigating between vault sub-routes does NOT trigger a lock, while
@@ -79,7 +83,6 @@ class _VaultAccessGateState extends State<VaultAccessGate>
       _goHome(shouldLock: false);
     }
   }
-
 
   // ── Gate logic ─────────────────────────────────────────────────────────────
 

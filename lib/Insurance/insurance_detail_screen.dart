@@ -115,6 +115,7 @@ class _InsuranceDetailScreenState extends State<InsuranceDetailScreen> {
   Future<void> _rescheduleNotification() async {
     final baseDate = _baseReminderDate ?? _policy.renewalDate;
     if (_policy.id == null) return;
+    if (_policy.id == null) return;
 
     if (!_reminderEnabled) {
       final snapshot = await _firestore

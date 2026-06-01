@@ -163,7 +163,9 @@ class VaultSessionManager extends ChangeNotifier {
   void onAppBackground() {
     if (!_isUnlocked) return;
     if (_expectingExternalActivity) {
-      debugPrint('VaultSessionManager: app backgrounded for expected external activity – NOT locking vault');
+      debugPrint(
+        'VaultSessionManager: app backgrounded for expected external activity – NOT locking vault',
+      );
       return;
     }
     debugPrint('VaultSessionManager: app backgrounded – locking vault');
