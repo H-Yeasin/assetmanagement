@@ -6,24 +6,25 @@ import 'package:intl/intl.dart';
 
 import '../Home_Dashboard/widgets.dart';
 import '../shared/payment_timeline_helpers.dart';
-import '../services/housing_service.dart';
-import 'models/housing_cost_model.dart';
+import '../services/insurance_service.dart';
+import 'insurance_widgets.dart';
+import 'models/insurance_model.dart';
 
-class HousingPaymentTimelineScreen extends StatefulWidget {
-  final HousingCost? cost;
+class InsurancePaymentTimelineScreen extends StatefulWidget {
+  final InsurancePolicy? policy;
 
-  const HousingPaymentTimelineScreen({super.key, this.cost});
+  const InsurancePaymentTimelineScreen({super.key, this.policy});
 
   @override
-  State<HousingPaymentTimelineScreen> createState() =>
-      _HousingPaymentTimelineScreenState();
+  State<InsurancePaymentTimelineScreen> createState() =>
+      _InsurancePaymentTimelineScreenState();
 }
 
-class _HousingPaymentTimelineScreenState
-    extends State<HousingPaymentTimelineScreen> {
-  final HousingService _housingService = HousingService();
-  StreamSubscription<List<HousingCost>>? _subscription;
-  List<HousingCost> _costs = [];
+class _InsurancePaymentTimelineScreenState
+    extends State<InsurancePaymentTimelineScreen> {
+  final InsuranceService _insuranceService = InsuranceService();
+  StreamSubscription<List<InsurancePolicy>>? _subscription;
+  List<InsurancePolicy> _policies = [];
   bool _isLoading = true;
   String? _error;
   int _selectedTab = 0;
@@ -33,16 +34,18 @@ class _HousingPaymentTimelineScreenState
   @override
   void initState() {
     super.initState();
-    if (widget.cost != null) {
-      _costs = [widget.cost!];
+    _insuranceService.ensureAllActiveInsuranceReminders();
+
+    if (widget.policy != null) {
+      _policies = [widget.policy!];
       _isLoading = false;
-      _refreshSingleCost();
+      _refreshSinglePolicy();
     } else {
-      _subscription = _housingService.streamHousingCosts().listen(
-        (costs) {
+      _subscription = _insuranceService.streamInsurances(status: 'active').listen(
+        (policies) {
           if (!mounted) return;
           setState(() {
-            _costs = costs.where((cost) => cost.dueDate != null).toList();
+            _policies = policies;
             _isLoading = false;
             _error = null;
           });
@@ -64,13 +67,13 @@ class _HousingPaymentTimelineScreenState
     super.dispose();
   }
 
-  Future<void> _refreshSingleCost() async {
-    final id = widget.cost?.id;
+  Future<void> _refreshSinglePolicy() async {
+    final id = widget.policy?.id;
     if (id == null) return;
     try {
-      final cost = await _housingService.getHousingCost(id);
+      final policy = await _insuranceService.getInsurance(id);
       if (!mounted) return;
-      setState(() => _costs = [cost]);
+      setState(() => _policies = [policy]);
     } catch (_) {}
   }
 
@@ -86,35 +89,27 @@ class _HousingPaymentTimelineScreenState
     return DateTime(targetYear, normalizedMonth, day);
   }
 
-  List<DateTime> _occurrencesFor(HousingCost cost) {
-    final baseDate = cost.dueDate;
-    if (baseDate == null) return const [];
-
+  List<DateTime> _occurrencesFor(InsurancePolicy policy) {
     final today = _normalizeDay(DateTime.now());
-    final start = _normalizeDay(baseDate);
     final futureCutoff = _addMonths(today, rollingTimelineFutureMonths);
-    final dates = <DateTime>[];
-    var current = start;
-    var guard = 0;
-    while (!current.isAfter(futureCutoff) && guard < 240) {
-      dates.add(current);
-      current = _addMonths(current, 1);
-      guard++;
-    }
-    return dates;
+    return InsuranceService.generateOccurrences(
+      policy,
+      from: DateTime(2020),
+      to: futureCutoff,
+    );
   }
 
-  List<_HousingTimelineItem> _items({int? tab}) {
+  List<_InsuranceTimelineItem> _items({int? tab}) {
     final selectedTab = tab ?? _selectedTab;
     final today = _normalizeDay(DateTime.now());
-    final items = <_HousingTimelineItem>[];
+    final items = <_InsuranceTimelineItem>[];
 
-    for (final cost in _costs) {
-      for (final date in _occurrencesFor(cost)) {
+    for (final policy in _policies.where((policy) => policy.isActive)) {
+      for (final date in _occurrencesFor(policy)) {
         final day = _normalizeDay(date);
         items.add(
-          _HousingTimelineItem(
-            cost: cost,
+          _InsuranceTimelineItem(
+            policy: policy,
             date: day,
             isPast: day.isBefore(today),
           ),
@@ -132,22 +127,23 @@ class _HousingPaymentTimelineScreenState
     return items;
   }
 
-  Set<DateTime> _manualDays(List<_HousingTimelineItem> items) {
+  Set<DateTime> _manualDays(List<_InsuranceTimelineItem> items) {
     return items
-        .where((item) => !item.cost.autoPay)
+        .where((item) => !item.policy.autoPayEnabledForStatus)
         .map((item) => _normalizeDay(item.date))
         .toSet();
   }
 
-  Set<DateTime> _paidDays(List<_HousingTimelineItem> items) {
+  Set<DateTime> _paidDays(List<_InsuranceTimelineItem> items) {
     return items
-        .where((item) => item.cost.autoPay)
+        .where((item) => item.policy.autoPayEnabledForStatus)
         .map((item) => _normalizeDay(item.date))
         .toSet();
   }
 
-  String _statusLabel(_HousingTimelineItem item) {
-    if (item.cost.autoPay) {
+  String _statusLabel(_InsuranceTimelineItem item) {
+    if (item.policy.isOneTime) return item.policy.paymentStatusLabel;
+    if (item.policy.autoPayEnabledForStatus) {
       return item.isPast ? 'Paid automatically' : 'Scheduled auto-payment';
     }
     return item.isPast ? 'Past scheduled payment' : 'Manual payment required';
@@ -155,7 +151,7 @@ class _HousingPaymentTimelineScreenState
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.cost == null ? 'Payment Timeline' : widget.cost!.name;
+    final title = widget.policy == null ? 'Payment Timeline' : widget.policy!.name;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
@@ -176,7 +172,7 @@ class _HousingPaymentTimelineScreenState
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: brandRed))
+          ? const Center(child: CircularProgressIndicator(color: brandBlue))
           : _error != null
           ? Center(
               child: Padding(
@@ -195,11 +191,12 @@ class _HousingPaymentTimelineScreenState
                     children: [
                       const SizedBox(height: 12),
                       CalendarWidget(
-                        calendarId: widget.cost == null
-                            ? 'housing_payment_timeline'
-                            : 'housing_payment_timeline_${widget.cost!.id ?? widget.cost!.name}',
+                        calendarId: widget.policy == null
+                            ? 'insurance_payment_timeline'
+                            : 'insurance_payment_timeline_${widget.policy!.id ?? widget.policy!.name}',
                         paidDays: _paidDays(calendarItems),
                         manualDays: _manualDays(calendarItems),
+                        sectionColor: brandBlue,
                       ),
                       const SizedBox(height: 16),
                       const TimelineInfoNote(),
@@ -220,11 +217,11 @@ class _HousingPaymentTimelineScreenState
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: selected ? brandRed : Colors.white,
+                                    color: selected ? brandBlue : Colors.white,
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
                                       color: selected
-                                          ? brandRed
+                                          ? brandBlue
                                           : const Color(0xFFEDEDED),
                                     ),
                                   ),
@@ -247,7 +244,7 @@ class _HousingPaymentTimelineScreenState
                       ),
                       const SizedBox(height: 24),
                       const Text(
-                        'Scheduled Payments',
+                        'Scheduled Insurance Actions',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -260,22 +257,23 @@ class _HousingPaymentTimelineScreenState
                           padding: EdgeInsets.symmetric(vertical: 32),
                           child: Center(
                             child: Text(
-                              'No scheduled payments found.',
+                              'No scheduled insurance actions found.',
                               style: TextStyle(color: Color(0xFF888888)),
                             ),
                           ),
                         )
                       else
                         ...items.map(
-                          (item) => PaymentCard(
+                          (item) => UpcomingActionItem(
                             month: DateFormat('MMM').format(item.date),
                             day: DateFormat('dd').format(item.date),
-                            title: item.cost.name,
+                            title: item.policy.name,
+                            status: _statusLabel(item),
                             amount: NumberFormat.simpleCurrency(
                               decimalDigits: 2,
-                            ).format(item.cost.amount),
-                            status: _statusLabel(item),
-                            isPaid: item.cost.autoPay,
+                            ).format(item.policy.premium),
+                            isAutoPay: item.policy.autoPayEnabledForStatus,
+                            isWarrantyExpiry: item.policy.isOneTime,
                           ),
                         ),
                       const SizedBox(height: 24),
@@ -288,13 +286,13 @@ class _HousingPaymentTimelineScreenState
   }
 }
 
-class _HousingTimelineItem {
-  final HousingCost cost;
+class _InsuranceTimelineItem {
+  final InsurancePolicy policy;
   final DateTime date;
   final bool isPast;
 
-  const _HousingTimelineItem({
-    required this.cost,
+  const _InsuranceTimelineItem({
+    required this.policy,
     required this.date,
     required this.isPast,
   });

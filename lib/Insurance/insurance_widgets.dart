@@ -186,6 +186,7 @@ class UpcomingActionItem extends StatelessWidget {
   final String status;
   final String amount;
   final bool isAutoPay;
+  final bool isWarrantyExpiry;
 
   const UpcomingActionItem({
     super.key,
@@ -195,12 +196,22 @@ class UpcomingActionItem extends StatelessWidget {
     required this.status,
     required this.amount,
     required this.isAutoPay,
+    this.isWarrantyExpiry = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = isAutoPay ? const Color(0xFF2196F3) : brandBlue;
+    final statusColor = isWarrantyExpiry
+        ? const Color(0xFF7E57C2)
+        : isAutoPay
+        ? const Color(0xFF2196F3)
+        : brandBlue;
     final statusBgColor = statusColor.withValues(alpha: 0.1);
+    final statusIcon = isWarrantyExpiry
+        ? Icons.event_available
+        : isAutoPay
+        ? Icons.sync
+        : Icons.priority_high;
 
     return Container(
       width: double.infinity,
@@ -269,6 +280,8 @@ class UpcomingActionItem extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Icon(statusIcon, color: statusColor, size: 12),
+                      const SizedBox(width: 4),
                       Flexible(
                         child: Text(
                           status,
@@ -290,10 +303,12 @@ class UpcomingActionItem extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             amount,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
+              color: isWarrantyExpiry
+                  ? const Color(0xFF555555)
+                  : const Color(0xFF111111),
             ),
           ),
         ],

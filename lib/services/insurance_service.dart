@@ -180,14 +180,17 @@ class InsuranceService {
 
     if (policy.isOneTime) {
       final oneTimeDate =
-          policy.renewalDate ?? policy.endDate ?? policy.startDate;
+          policy.renewalDate ??
+          policy.endDate ??
+          policy.startDate ??
+          policy.createdAt;
       if (oneTimeDate == null) return [];
       final day = _normalizeDay(oneTimeDate);
       if (day.isBefore(effectiveFrom) || day.isAfter(effectiveTo)) return [];
       return [day];
     }
 
-    final baseDate = policy.startDate ?? policy.renewalDate;
+    final baseDate = policy.startDate ?? policy.renewalDate ?? policy.createdAt;
     if (baseDate == null) return [];
 
     final policyEndDate = policy.endDate == null
@@ -281,6 +284,28 @@ class InsuranceService {
       final docRef = await _firestore.collection('reminders').add(data);
       final doc = await docRef.get();
       results.add({...doc.data()!, 'id': doc.id});
+    }
+
+    return results;
+  }
+
+  Future<List<Map<String, dynamic>>> ensureAllActiveInsuranceReminders({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    if (_uid == null) return [];
+
+    final policies = await fetchInsurances(status: 'active');
+    final results = <Map<String, dynamic>>[];
+
+    for (final policy in policies) {
+      try {
+        results.addAll(
+          await ensureRecurringReminders(policy, from: from, to: to),
+        );
+      } catch (e) {
+        debugPrint('Error ensuring reminders for ${policy.id}: $e');
+      }
     }
 
     return results;

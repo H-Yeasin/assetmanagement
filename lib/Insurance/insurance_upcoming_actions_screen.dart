@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/insurance_service.dart';
+import '../shared/payment_timeline_helpers.dart';
 import 'package:ffp_vault/Insurance/insurance_widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -31,6 +32,7 @@ class _InsuranceUpcomingActionsScreenState
       _error = null;
     });
     try {
+      await _apiService.ensureAllActiveInsuranceReminders();
       final occurrences = await _apiService.fetchUpcomingRenewalOccurrences();
       setState(() {
         _upcomingOccurrences = occurrences;
@@ -127,6 +129,8 @@ class _InsuranceUpcomingActionsScreenState
                       ],
                     ),
                     const SizedBox(height: 16),
+                    const TimelineInfoNote(label: upcomingActionsInfoNoteLabel),
+                    const SizedBox(height: 24),
                     if (_upcomingOccurrences.isEmpty)
                       const Center(
                         child: Padding(
@@ -151,6 +155,7 @@ class _InsuranceUpcomingActionsScreenState
                             amount:
                                 '\$${NumberFormat('#,##0.00').format(p.premium)}',
                             isAutoPay: p.autoPayEnabledForStatus,
+                            isWarrantyExpiry: p.isOneTime,
                           ),
                         );
                       }),

@@ -211,6 +211,8 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
       final paymentDate = _parseDateText(_dateController.text);
       final renewalDate =
           _parseDateText(_renewalDateController.text) ?? paymentDate;
+      final startDate = _parseDateText(_startDateController.text);
+      final endDate = _parseDateText(_endDateController.text);
 
       String policyName = _text(_nameController);
 
@@ -245,6 +247,8 @@ class _AddInsuranceScreenState extends State<AddInsuranceScreen> {
         totalPayments: _selectedCategory == 'Auto'
             ? int.tryParse(_text(_totalPaymentsController))
             : null,
+        startDate: startDate ?? (_isWarrantyCategory ? null : paymentDate),
+        endDate: endDate ?? (_isWarrantyCategory ? renewalDate : null),
         paymentDay: _paymentDayDescription(paymentDate),
         personalInsuranceType: _selectedCategory == 'Personal'
             ? _personalInsuranceType

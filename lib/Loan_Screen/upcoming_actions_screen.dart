@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Home_Dashboard/widgets.dart';
 import '../services/loan_service.dart';
+import '../shared/payment_timeline_helpers.dart';
 import 'package:intl/intl.dart';
 
 class UpcomingActionsScreen extends StatefulWidget {
@@ -105,6 +106,8 @@ class _UpcomingActionsScreenState extends State<UpcomingActionsScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                const TimelineInfoNote(label: upcomingActionsInfoNoteLabel),
+                const SizedBox(height: 24),
                 if (upcomingGroups.isEmpty)
                   const Center(
                     child: Padding(

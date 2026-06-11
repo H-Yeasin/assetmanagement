@@ -44,17 +44,9 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     });
     try {
       final policies = await _apiService.fetchInsurances();
+      await _apiService.ensureAllActiveInsuranceReminders();
       final upcomingOccurrences = await _apiService
           .fetchUpcomingRenewalOccurrences();
-
-      // Backfill recurring reminders for all active policies
-      for (final policy in policies.where((p) => p.isActive)) {
-        try {
-          await _apiService.ensureRecurringReminders(policy);
-        } catch (e) {
-          debugPrint('Error ensuring reminders for ${policy.id}: $e');
-        }
-      }
 
       setState(() {
         _policies = policies;
@@ -72,7 +64,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $_error'), backgroundColor: brandBlue),
+          SnackBar(content: Text('Error: $_error'), backgroundColor: brandRed),
         );
       }
     }
@@ -163,7 +155,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator(color: brandBlue)),
+        body: Center(child: CircularProgressIndicator(color: brandRed)),
       );
     }
 
@@ -205,7 +197,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                       width: 40,
                       height: 40,
                       decoration: const BoxDecoration(
-                        color: brandBlue,
+                        color: brandRed,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -224,7 +216,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _loadInsurances,
-                color: brandBlue,
+                color: brandRed,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
@@ -311,6 +303,44 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                       const SizedBox(height: 12),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: GestureDetector(
+                          onTap: () =>
+                              context.push('/insurance-payment-timeline'),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFF0F0F0),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.calendar_month,
+                                  color: brandRed,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'View Payment Timeline',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: brandRed,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Column(
                           children: _upcomingOccurrences.isEmpty
                               ? [
@@ -342,6 +372,7 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                                       amount:
                                           '\$${NumberFormat('#,##0.00').format(p.premium)}',
                                       isAutoPay: p.autoPayEnabledForStatus,
+                                      isWarrantyExpiry: p.isOneTime,
                                     ),
                                   );
                                 }).toList(),
@@ -382,12 +413,12 @@ class _MyInsurancesScreenState extends State<MyInsurancesScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? brandBlue
+                                      ? brandRed
                                       : const Color(0xFFFBFBFB),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: isSelected
-                                        ? brandBlue
+                                        ? brandRed
                                         : const Color(0xFFF0F0F0),
                                   ),
                                 ),

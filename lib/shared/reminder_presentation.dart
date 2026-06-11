@@ -79,14 +79,21 @@ class ReminderPresentationResolver {
         case 'insurance':
           final policy = await insuranceService.getInsurance(itemId);
           final isAuto = policy.autoPayEnabledForStatus;
+          final isWarrantyExpiry = policy.isOneTime;
           return ReminderPresentation(
             itemName: policy.name,
             sectionLabel: 'Insurance',
-            sectionColor: const Color(0xFF2196F3),
-            amountLabel: NumberFormat.simpleCurrency(
-              decimalDigits: 2,
-            ).format(policy.premium),
-            statusLabel: isAuto
+            sectionColor: isWarrantyExpiry
+                ? const Color(0xFF7E57C2)
+                : const Color(0xFF2196F3),
+            amountLabel: isWarrantyExpiry
+                ? ''
+                : NumberFormat.simpleCurrency(
+                    decimalDigits: 2,
+                  ).format(policy.premium),
+            statusLabel: isWarrantyExpiry
+                ? policy.paymentStatusLabel
+                : isAuto
                 ? 'Paid automatically'
                 : 'Manual payment required',
             isAuto: isAuto,

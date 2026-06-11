@@ -8,6 +8,7 @@ import '../Insurance/models/insurance_model.dart';
 import '../services/housing_service.dart';
 import '../services/insurance_service.dart';
 import '../services/loan_service.dart';
+import '../shared/payment_timeline_helpers.dart';
 
 class UpcomingPaymentsScreen extends StatefulWidget {
   const UpcomingPaymentsScreen({super.key});
@@ -205,6 +206,10 @@ class _UpcomingPaymentsScreenState extends State<UpcomingPaymentsScreen> {
                           calendarId: 'upcoming_payments_calendar',
                           manualDays: manualDays,
                           paidDays: paidDays,
+                        ),
+                        const SizedBox(height: 16),
+                        const TimelineInfoNote(
+                          label: upcomingPaymentsInfoNoteLabel,
                         ),
                         if (nextUpcoming != null) ...[
                           const SizedBox(height: 18),

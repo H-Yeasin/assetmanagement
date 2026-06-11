@@ -188,10 +188,8 @@ class _LoanPaymentTimelineScreenState extends State<LoanPaymentTimelineScreen> {
                         paidDays: _paidDays(calendarItems),
                         manualDays: _manualDays(calendarItems),
                       ),
-                      if (_loans.any((loan) => loan.endDate == null)) ...[
-                        const SizedBox(height: 16),
-                        const TimelineInfoNote(),
-                      ],
+                      const SizedBox(height: 16),
+                      const TimelineInfoNote(),
                       const SizedBox(height: 24),
                       Row(
                         children: List.generate(_tabs.length, (index) {

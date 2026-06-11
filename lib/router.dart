@@ -50,6 +50,7 @@ import 'package:ffp_vault/Insurance/add_insurance_screen.dart';
 import 'package:ffp_vault/Insurance/insurance_additional_details_screen.dart';
 import 'package:ffp_vault/Insurance/edit_insurance_screen.dart';
 import 'package:ffp_vault/Insurance/insurance_add_documents_screen.dart';
+import 'package:ffp_vault/Insurance/insurance_payment_timeline_screen.dart';
 import 'package:ffp_vault/Insurance/insurance_upcoming_actions_screen.dart';
 import 'package:ffp_vault/Insurance/models/insurance_model.dart';
 import 'package:ffp_vault/Authentication/forgot_password.dart';
@@ -152,6 +153,12 @@ final GoRouter appRouter = GoRouter(
             final policy = state.extra as InsurancePolicy;
             return InsuranceAdditionalDetailsScreen(policy: policy);
           },
+        ),
+        GoRoute(
+          path: '/insurance-payment-timeline',
+          builder: (context, state) => InsurancePaymentTimelineScreen(
+            policy: state.extra as InsurancePolicy?,
+          ),
         ),
         GoRoute(
           path: '/upcoming-reminders',

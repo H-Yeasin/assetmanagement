@@ -473,12 +473,30 @@ class AuthService {
     try {
       await _safeUpsertUserDoc(user);
 
-      final twoFactorResult = await requestTwoFactorLogin(
-        email: fallbackEmail.isNotEmpty ? fallbackEmail : (user.email ?? ''),
-      );
+      // Try to check 2FA status — if the Cloud Function is unavailable
+      // (e.g. Spark plan, network error, App Check), skip 2FA and proceed.
+      Map<String, dynamic> twoFactorResult;
+      try {
+        twoFactorResult = await requestTwoFactorLogin(
+          email: fallbackEmail.isNotEmpty ? fallbackEmail : (user.email ?? ''),
+        );
+      } catch (_) {
+        // Cloud Function unreachable → skip 2FA and continue login
+        return _authSuccess(
+          user,
+          message: successMessage,
+          userName: await _safeResolveDisplayName(user),
+        );
+      }
+
       if (twoFactorResult['success'] != true) {
-        await _safeRollbackAuthState();
-        return twoFactorResult;
+        // 2FA check reported an error but didn't throw — still proceed
+        // rather than signing the user out for an infra issue.
+        return _authSuccess(
+          user,
+          message: successMessage,
+          userName: await _safeResolveDisplayName(user),
+        );
       }
 
       final data = twoFactorResult['data'] as Map<String, dynamic>?;

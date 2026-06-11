@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 
 const int rollingTimelineFutureMonths = 12;
 
+const String timelineInfoNoteLabel =
+    'Future payments are shown for the next 12 months and update automatically.';
+const String upcomingPaymentsInfoNoteLabel =
+    'Upcoming payments update automatically as your loan, housing, and insurance records change.';
+const String upcomingRemindersInfoNoteLabel =
+    'Upcoming reminders update automatically as your scheduled reminders change.';
+const String upcomingActionsInfoNoteLabel =
+    'Upcoming actions update automatically as your payment and renewal schedules change.';
+
 class TimelineInfoNote extends StatelessWidget {
   final String label;
 
   const TimelineInfoNote({
     super.key,
-    this.label =
-        'Future payments are shown for the next 12 months and update automatically.',
+    this.label = timelineInfoNoteLabel,
   });
 
   @override

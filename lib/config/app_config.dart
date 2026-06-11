@@ -8,8 +8,10 @@ class AppConfig {
   //
   // DEVELOPMENT MODE: Set to `true` to skip subscription checks.
   // PRODUCTION MODE: Set to `false` to strictly enforce subscriptions.
+  // <-- Toggle this value (true for dev, false for prod)
+
   static const bool bypassVaultSubscription = bool.fromEnvironment(
     'BYPASS_VAULT_SUBSCRIPTION',
-    defaultValue: true, // <-- Toggle this value (true for dev, false for prod)
+    defaultValue: false,
   );
 }

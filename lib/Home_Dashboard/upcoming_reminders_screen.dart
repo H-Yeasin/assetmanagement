@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../Home_Dashboard/widgets.dart';
 import '../shared/reminder_presentation.dart';
+import '../shared/payment_timeline_helpers.dart';
 import '../services/housing_service.dart';
 import '../services/insurance_service.dart';
 import '../services/loan_service.dart';
@@ -35,6 +36,7 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
       insuranceService: _insuranceService,
     );
     _loadGlobalNotificationPreference();
+    _insuranceService.ensureAllActiveInsuranceReminders();
   }
 
   Future<void> _loadGlobalNotificationPreference() async {
@@ -234,6 +236,10 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
                       initialFocusedDay: reminderItems.isNotEmpty
                           ? reminderItems.first.remindAt
                           : DateTime.now(),
+                    ),
+                    const SizedBox(height: 16),
+                    const TimelineInfoNote(
+                      label: upcomingRemindersInfoNoteLabel,
                     ),
                     const SizedBox(height: 32),
                     const Text(

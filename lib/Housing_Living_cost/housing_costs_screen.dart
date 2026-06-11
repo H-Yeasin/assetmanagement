@@ -6,7 +6,6 @@ import '../Home_Dashboard/widgets.dart';
 import '../services/housing_service.dart';
 import 'add_housing_cost_screen.dart';
 import 'housing_cost_detail_screen.dart';
-import 'housing_payment_timeline_screen.dart';
 import 'housing_widgets.dart';
 import 'models/housing_cost_model.dart';
 
@@ -50,6 +49,43 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
 
   double get _totalMonthlyPayment {
     return _costs.fold(0.0, (sum, c) => sum + c.amount);
+  }
+
+  DateTime _normalizeDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  DateTime _addMonths(DateTime date, int months) {
+    final targetMonth = date.month + months;
+    final targetYear = date.year + ((targetMonth - 1) ~/ 12);
+    final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+    final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+    final day = date.day > lastDay ? lastDay : date.day;
+    return DateTime(targetYear, normalizedMonth, day);
+  }
+
+  DateTime? _nextDueDate(HousingCost cost) {
+    final dueDate = cost.dueDate;
+    if (dueDate == null) return null;
+
+    final today = _normalizeDay(DateTime.now());
+    var nextDate = _normalizeDay(dueDate);
+    var guard = 0;
+    while (nextDate.isBefore(today) && guard < 240) {
+      nextDate = _addMonths(nextDate, 1);
+      guard++;
+    }
+    return nextDate;
+  }
+
+  List<_HousingUpcomingItem> get _upcomingItems {
+    final items = <_HousingUpcomingItem>[];
+    for (final cost in _costs) {
+      final date = _nextDueDate(cost);
+      if (date == null) continue;
+      items.add(_HousingUpcomingItem(cost: cost, date: date));
+    }
+    items.sort((a, b) => a.date.compareTo(b.date));
+    return items;
   }
 
   @override
@@ -192,7 +228,127 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                         ),
                       ),
 
+                      const SizedBox(height: 34),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Upcoming Actions',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF888888),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                context.push('/upcoming-actions');
+                              },
+                              child: const Text(
+                                'See All',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF111111),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: GestureDetector(
+                          onTap: () =>
+                              context.push('/housing-payment-timeline'),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFF0F0F0),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.calendar_month,
+                                  color: brandRed,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 14),
+                                Text(
+                                  'View Payment Timeline',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: brandRed,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: _upcomingItems.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Text(
+                                  'No upcoming actions',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: _upcomingItems.take(3).map((item) {
+                                  return PaymentCard(
+                                    month: DateFormat('MMM').format(item.date),
+                                    day: DateFormat('dd').format(item.date),
+                                    title: item.cost.name,
+                                    amount:
+                                        '\$${NumberFormat('#,##0.00').format(item.cost.amount)}',
+                                    status: item.cost.autoPay
+                                        ? 'Paid automatically'
+                                        : 'Manual payment required',
+                                    isPaid: item.cost.autoPay,
+                                    sectionColor: brandRed,
+                                  );
+                                }).toList(),
+                              ),
+                      ),
+
                       const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'All Housing and Living Costs',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF888888),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
 
                       // ── Costs List ──
                       if (_costs.isEmpty)
@@ -258,49 +414,6 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
                             }).toList(),
                           ),
                         ),
-
-                      const SizedBox(height: 24),
-                      if (_costs.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const HousingPaymentTimelineScreen(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: const Color(0xFFF0F0F0),
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.calendar_month, color: brandRed),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Payment Timeline',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: brandRed,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
                       const SizedBox(height: 32),
                     ],
                   ),
@@ -312,4 +425,11 @@ class _HousingCostsScreenState extends State<HousingCostsScreen> {
       ),
     );
   }
+}
+
+class _HousingUpcomingItem {
+  final HousingCost cost;
+  final DateTime date;
+
+  const _HousingUpcomingItem({required this.cost, required this.date});
 }

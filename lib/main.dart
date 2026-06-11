@@ -10,7 +10,7 @@ import 'package:ffp_vault/firebase_options.dart';
 import 'package:ffp_vault/services/notification_service.dart';
 import 'package:ffp_vault/services/subscription_service.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-// import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,13 +19,11 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    // If App Check is NOT enforced on Firebase Console, sending debug tokens
-    // from the iOS Simulator can sometimes cause 'unauthorized' errors in Storage.
-    // Disabling App Check completely during debug to test if this is the cause.
-    // FirebaseAppCheck.instance.activate(
-    //   androidProvider: AndroidProvider.debug,
-    //   appleProvider: AppleProvider.debug,
-    // );
+    // Enable App Check to satisfy Cloud Functions enforcement
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+      appleProvider: AppleProvider.debug,
+    );
   } catch (e) {
     debugPrint("Firebase initialization failed: $e");
   }
