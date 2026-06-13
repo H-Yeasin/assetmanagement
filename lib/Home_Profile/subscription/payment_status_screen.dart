@@ -3,20 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'dart:async';
 
 import '../../services/subscription_service.dart';
-
-class PaymentStatusArgs {
-  final bool isSuccess;
-  final String title;
-  final String message;
-  final String buttonLabel;
-
-  const PaymentStatusArgs({
-    required this.isSuccess,
-    required this.title,
-    required this.message,
-    this.buttonLabel = 'Done',
-  });
-}
+import 'models/subscription_confirmation.dart';
 
 class PaymentStatusScreen extends StatefulWidget {
   final PaymentStatusArgs args;

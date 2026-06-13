@@ -4,7 +4,8 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../services/subscription_service.dart';
-import 'payment_status_screen.dart';
+import 'models/subscription_checkout.dart';
+import 'models/subscription_confirmation.dart';
 
 class ChoosePaymentScreen extends StatefulWidget {
   const ChoosePaymentScreen({super.key});

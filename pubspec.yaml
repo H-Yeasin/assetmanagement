@@ -1,7 +1,7 @@
 name: ffp_vault
 description: "Financial Freedom Power."
 
-publish_to: 'none' 
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -47,6 +47,7 @@ dependencies:
   firebase_app_check: ^0.3.2+10
   firebase_messaging: ^15.2.10
   gal: ^2.3.2
+  purchases_flutter: ^10.2.3
 
 
 dev_dependencies:

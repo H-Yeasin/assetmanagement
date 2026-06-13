@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../config/app_config.dart';
 import '../services/subscription_service.dart';
+import '../Home_Profile/subscription/models/subscription_state.dart';
 
 class SubscriptionAccessGate extends StatefulWidget {
   final Widget child;

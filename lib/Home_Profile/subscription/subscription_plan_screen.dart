@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../services/subscription_service.dart';
+import 'models/subscription_state.dart';
+import 'widgets/feature_item.dart';
 
 class SubscriptionPlanScreen extends StatefulWidget {
   final bool openedFromVaultGate;
@@ -203,15 +205,15 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                             ),
                             child: Column(
                               children: const [
-                                _FeatureItem(text: 'Centralized Payment Tracking.'),
+                                FeatureItem(text: 'Centralized Payment Tracking.'),
                                 SizedBox(height: 16),
-                                _FeatureItem(text: 'Smart Reminders'),
+                                FeatureItem(text: 'Smart Reminders'),
                                 SizedBox(height: 16),
-                                _FeatureItem(text: 'Secure Document Vault'),
+                                FeatureItem(text: 'Secure Document Vault'),
                                 SizedBox(height: 16),
-                                _FeatureItem(text: 'Clear Timelines'),
+                                FeatureItem(text: 'Clear Timelines'),
                                 SizedBox(height: 16),
-                                _FeatureItem(text: 'Mobile First Access'),
+                                FeatureItem(text: 'Mobile First Access'),
                               ],
                             ),
                           ),
@@ -469,36 +471,3 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
   }
 }
 
-class _FeatureItem extends StatelessWidget {
-  final String text;
-
-  const _FeatureItem({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: const BoxDecoration(
-            color: Color(0xFFC61C36),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.check, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
