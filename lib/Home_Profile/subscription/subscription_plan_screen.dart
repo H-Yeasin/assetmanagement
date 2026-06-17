@@ -25,7 +25,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
       return;
     }
 
-    if (Navigator.of(context).canPop()) {
+    if (GoRouter.of(context).canPop()) {
       context.pop();
     } else {
       context.go('/home');
