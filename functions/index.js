@@ -4,17 +4,21 @@ import admin from "firebase-admin";
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { defineSecret } from "firebase-functions/params";
 import Stripe from "stripe";
 
+const rcWebhookSecret = defineSecret("RC_WEBHOOK_SECRET");
+
+// ── Stripe secrets (deprecated — remove after RevenueCat migration) ────────
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 const stripePublishableKey = defineSecret("STRIPE_PUBLISHABLE_KEY_SECRET");
 
-const smtpUserSecret = defineSecret("SMTP_USER_SECRET");
+const smtpUserSecret = defineSecret("support@financialfreedompower.com");
 const smtpPassSecret = defineSecret("SMTP_PASS_SECRET");
-const smtpHostSecret = defineSecret("SMTP_HOST_SECRET");
-const smtpFromSecret = defineSecret("SMTP_FROM_SECRET");
+const smtpHostSecret = defineSecret("smtp.titan.email");
+const smtpFromSecret = defineSecret("support@financialfreedompower.com");
 
 
 
@@ -27,10 +31,11 @@ const db =
     getFirestore(admin.app());
 const OTP_COLLECTION = "passwordResetOtps";
 const TWO_FACTOR_COLLECTION = "twoFactorOtps";
+const REGISTER_OTP_COLLECTION = "registerOtps";
 const OTP_EXPIRE_MINUTES = 10;
 const SUBSCRIPTION_PLAN = Object.freeze({
   code: "monthly_core",
-  name: "FFP Vault Monthly",
+  name: "FFP Vault Pro",
   amount: 699,
   currency: "usd",
 });
@@ -313,11 +318,13 @@ async function sendOtpEmail(email, otp, purpose = "reset") {
     reset: "Reset your password \u2013 FFP Vault",
     twoFactorEnable: "Enable two-factor authentication \u2013 FFP Vault",
     twoFactorLogin: "Verify your login \u2013 FFP Vault",
+    register: "Verify your email \u2013 FFP Vault",
   };
   const titleMap = {
     reset: "Reset your password",
     twoFactorEnable: "Enable two-factor authentication",
     twoFactorLogin: "Verify your login",
+    register: "Verify your email address",
   };
   const bodyMap = {
     reset: "We received a request to reset your password for your FFP Vault.",
@@ -325,6 +332,8 @@ async function sendOtpEmail(email, otp, purpose = "reset") {
       "We received a request to enable two-factor authentication on your FFP Vault account.",
     twoFactorLogin:
       "We received a login attempt for your FFP Vault account. Use the code below to complete your sign-in.",
+    register:
+      "Thank you for creating your FFP Vault account. Use the code below to verify your email address.",
   };
 
   const title = titleMap[purpose] || titleMap.reset;
@@ -488,6 +497,13 @@ async function getOtpState(email) {
 
 async function getTwoFactorState(uid, purpose) {
   const ref = db.collection(TWO_FACTOR_COLLECTION).doc(`${uid}_${purpose}`);
+  const snap = await ref.get();
+  if (!snap.exists) return { ref, data: null };
+  return { ref, data: snap.data() };
+}
+
+async function getRegisterOtpState(uid) {
+  const ref = db.collection(REGISTER_OTP_COLLECTION).doc(uid);
   const snap = await ref.get();
   if (!snap.exists) return { ref, data: null };
   return { ref, data: snap.data() };
@@ -784,6 +800,112 @@ export const verifyPasswordResetOtp = onCall(async (request) => {
     return { success: true, message: "OTP verified." };
   } catch (error) {
     console.error("verifyPasswordResetOtp failed:", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", error.message || "Failed to verify OTP");
+  }
+});
+
+
+export const requestRegisterOtp = onCall(
+  { secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret] },
+  async (request) => {
+    try {
+      if (!request.auth?.uid) {
+        throw new HttpsError("unauthenticated", "Login required to request registration OTP.");
+      }
+
+      const uid = request.auth.uid;
+      const email = normalizeEmail(
+        request.data?.email || request.auth.token?.email || "",
+      );
+      if (!validateEmail(email)) {
+        throw new HttpsError("invalid-argument", "Valid email is required.");
+      }
+
+      const otp = generateOtp();
+      const salt = crypto.randomBytes(16).toString("hex");
+      const otpHash = hashOtp(email, otp, salt);
+      const expiresAt = admin.firestore.Timestamp.fromDate(
+        new Date(Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000),
+      );
+
+      const ref = db.collection(REGISTER_OTP_COLLECTION).doc(uid);
+      await ref.set(
+        {
+          uid,
+          email,
+          otpHash,
+          salt,
+          attempts: 0,
+          expiresAt,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      await sendOtpEmail(email, otp, "register");
+      return { success: true, message: "Verification code sent.", email };
+    } catch (error) {
+      console.error("requestRegisterOtp failed:", error);
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError("internal", error.message || "Failed to send verification code");
+    }
+  },
+);
+
+
+export const verifyRegisterOtp = onCall(async (request) => {
+  try {
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Login required to verify registration OTP.");
+    }
+
+    const uid = request.auth.uid;
+    const otp = String(request.data?.otp || "").trim();
+    if (otp.length !== 6) {
+      throw new HttpsError("invalid-argument", "6-digit OTP is required.");
+    }
+
+    const { ref, data } = await getRegisterOtpState(uid);
+    if (!data) {
+      throw new HttpsError("not-found", "OTP not found. Request a new code.");
+    }
+    if (data.expiresAt?.toMillis?.() < Date.now()) {
+      await ref.delete();
+      throw new HttpsError("deadline-exceeded", "OTP expired. Request a new code.");
+    }
+
+    const valid = hashOtp(data.email, otp, data.salt) === data.otpHash;
+    if (!valid) {
+      const attempts = Number(data.attempts || 0) + 1;
+      if (attempts >= 5) {
+        await ref.delete();
+        throw new HttpsError("permission-denied", "Too many attempts. Request a new code.");
+      }
+      await ref.update({
+        attempts,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      throw new HttpsError("permission-denied", "Invalid OTP.");
+    }
+
+    // Mark email as verified in Firebase Auth
+    await admin.auth().updateUser(uid, { emailVerified: true });
+
+    // Mark verified in the user's Firestore document
+    await db.collection("users").doc(uid).set(
+      {
+        emailVerified: true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    await ref.delete();
+    return { success: true, message: "Email verified successfully.", email: data.email };
+  } catch (error) {
+    console.error("verifyRegisterOtp failed:", error);
     if (error instanceof HttpsError) throw error;
     throw new HttpsError("internal", error.message || "Failed to verify OTP");
   }
@@ -1246,6 +1368,297 @@ export const stripeWebhook = onRequest(
     }
   },
 );
+
+// ── RevenueCat Webhook ──────────────────────────────────────────────────────
+// Receives purchase lifecycle events from RevenueCat and syncs them to Firestore.
+// Set this URL in the RevenueCat dashboard:
+//   https://us-central1-YOUR_PROJECT.cloudfunctions.net/revenuecatWebhook
+// Authorization: Bearer token (set RC_WEBHOOK_SECRET in Firebase secrets).
+export const revenuecatWebhook = onRequest(
+  { secrets: [rcWebhookSecret] },
+  async (request, response) => {
+    if (request.method !== "POST") {
+      response.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const secret = rcWebhookSecret.value();
+    const authHeader = request.headers["authorization"] || "";
+    if (secret && authHeader !== `Bearer ${secret}`) {
+      console.warn("RevenueCat webhook: unauthorized request");
+      response.status(401).send("Unauthorized");
+      return;
+    }
+
+    try {
+      const event = request.body;
+      const eventType = event?.event?.type;
+      const appUserId = event?.event?.app_user_id; // This is the Firebase UID
+
+      if (!appUserId) {
+        response.status(400).send("Missing app_user_id");
+        return;
+      }
+
+      const userRef = db.collection("users").doc(appUserId);
+
+      const productId = event?.event?.product_id || "ffpvaultapp_pro_monthly";
+      const entitlementId =
+        event?.event?.entitlement_ids?.[0] || "ffpvaultapp_pro";
+      const expirationMs = event?.event?.expiration_at_ms || 0;
+
+      let subscriptionState;
+
+      switch (eventType) {
+        case "INITIAL_PURCHASE":
+        case "RENEWAL":
+        case "UNCANCELLATION":
+        case "TRANSFER":
+        case "PRODUCT_CHANGE":
+          subscriptionState = {
+            planCode: productId,
+            planName: "FFP Vault Pro",
+            amount: 699,
+            currency: "usd",
+            status: "active",
+            provider: "revenuecat",
+            rcCustomerId: appUserId,
+            rcEntitlementId: entitlementId,
+            cancelAtPeriodEnd: false,
+            currentPeriodEnd: expirationMs
+              ? admin.firestore.Timestamp.fromMillis(expirationMs)
+              : null,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          break;
+
+        case "CANCELLATION":
+          subscriptionState = {
+            planCode: productId,
+            planName: "FFP Vault Pro",
+            amount: 699,
+            currency: "usd",
+            status: "active", // stays active until period end
+            provider: "revenuecat",
+            rcCustomerId: appUserId,
+            rcEntitlementId: entitlementId,
+            cancelAtPeriodEnd: true,
+            currentPeriodEnd: expirationMs
+              ? admin.firestore.Timestamp.fromMillis(expirationMs)
+              : null,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          break;
+
+        case "EXPIRATION":
+        case "SUBSCRIPTION_PAUSED":
+        case "BILLING_ISSUE":
+        case "SUBSCRIPTION_EXTENDED":
+          subscriptionState = {
+            planCode: "",
+            planName: "",
+            amount: 0,
+            currency: "usd",
+            status: "expired",
+            provider: "revenuecat",
+            rcCustomerId: appUserId,
+            rcEntitlementId: "",
+            cancelAtPeriodEnd: false,
+            currentPeriodEnd: null,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          break;
+
+        case "TEST":
+          // RevenueCat test events — acknowledge but don't change state.
+          console.log(`RevenueCat test event received for ${appUserId}`);
+          response.json({ received: true, action: "test_ignored" });
+          return;
+
+        default:
+          console.log(
+            `RevenueCat unhandled event type: ${eventType} for ${appUserId}`,
+          );
+          response.json({ received: true, action: "ignored" });
+          return;
+      }
+
+      await userRef.set(
+        { subscription: subscriptionState },
+        { mergeFields: ["subscription"] },
+      );
+
+      console.log(
+        `RevenueCat ${eventType} synced for user ${appUserId}`,
+      );
+      response.json({ received: true });
+    } catch (error) {
+      console.error("RevenueCat webhook error:", error);
+      response.status(500).send(`Webhook Error: ${error.message}`);
+    }
+  },
+);
+
+// ── Delete User Account (complete data wipe) ─────────────────────────────────
+// Deletes ALL user data across Firestore sub-collections, Cloud Storage files,
+// OTP records, payment history, reminders, and Stripe subscriptions.
+// Requires Firebase Auth (admin SDK) — must be called by an authenticated user.
+export const deleteUserAccount = onCall({ secrets: [stripeSecretKey] }, async (request) => {
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Login required to delete account.");
+  }
+
+  const uid = request.auth.uid;
+  const email = request.auth.token?.email || "";
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const errors = [];
+
+  // 1. Cancel any active Stripe subscription
+  try {
+    const userSnap = await db.collection("users").doc(uid).get();
+    const subscription = userSnap.data()?.subscription;
+    const stripeCustomerId = subscription?.stripeCustomerId;
+    const stripeSubscriptionId = subscription?.stripeSubscriptionId;
+
+    if (stripeCustomerId || stripeSubscriptionId) {
+      const stripe = getStripeClient();
+
+      if (stripeSubscriptionId && stripeSubscriptionId.startsWith("sub_")) {
+        try {
+          await stripe.subscriptions.cancel(stripeSubscriptionId);
+        } catch (e) {
+          // Subscription may already be canceled or missing — non-fatal
+          console.warn(`Stripe subscription cancel note for ${uid}: ${e.message}`);
+        }
+      }
+
+      if (stripeCustomerId && stripeCustomerId.startsWith("cus_")) {
+        try {
+          await stripe.customers.del(stripeCustomerId);
+        } catch (e) {
+          console.warn(`Stripe customer delete note for ${uid}: ${e.message}`);
+        }
+      }
+
+    }
+  } catch (e) {
+    errors.push(`Stripe cleanup: ${e.message}`);
+  }
+
+  // 2. Delete ALL Firestore collections for this user
+  const firestoreCollections = [
+    { name: "users", docId: uid },
+    { name: "housingCosts", field: "userId", value: uid },
+    { name: "loans", field: "userId", value: uid },
+    { name: "insurancePolicies", field: "userId", value: uid },
+    { name: "documents", field: "userId", value: uid },
+    { name: "reminders", field: "userId", value: uid },
+  ];
+
+  for (const col of firestoreCollections) {
+    try {
+      if (col.docId) {
+        await db.collection(col.name).doc(col.docId).delete();
+      } else {
+        const snapshot = await db
+          .collection(col.name)
+          .where(col.field, "==", col.value)
+          .get();
+
+        const batchSize = 500;
+        for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+          const batch = db.batch();
+          const slice = snapshot.docs.slice(i, i + batchSize);
+          slice.forEach((doc) => batch.delete(doc.ref));
+          await batch.commit();
+        }
+      }
+    } catch (e) {
+      errors.push(`Firestore ${col.name}: ${e.message}`);
+    }
+  }
+
+  // 3. Delete subscriptionPayments
+  try {
+    const paymentSnap = await db
+      .collection("subscriptionPayments")
+      .where("uid", "==", uid)
+      .get();
+
+    const batchSize = 500;
+    for (let i = 0; i < paymentSnap.docs.length; i += batchSize) {
+      const batch = db.batch();
+      const slice = paymentSnap.docs.slice(i, i + batchSize);
+      slice.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+    }
+  } catch (e) {
+    errors.push(`subscriptionPayments: ${e.message}`);
+  }
+
+  // 4. Delete OTP records (passwordResetOtps by email, twoFactorOtps by uid prefix)
+  try {
+    if (normalizedEmail) {
+      const otpDocId = docIdForEmail(normalizedEmail);
+      await db.collection(OTP_COLLECTION).doc(otpDocId).delete();
+    }
+  } catch (e) {
+    errors.push(`passwordResetOtps: ${e.message}`);
+  }
+
+  try {
+    const tfSnap = await db
+      .collection(TWO_FACTOR_COLLECTION)
+      .where("uid", "==", uid)
+      .get();
+
+    for (const doc of tfSnap.docs) {
+      await doc.ref.delete();
+    }
+  } catch (e) {
+    errors.push(`twoFactorOtps: ${e.message}`);
+  }
+
+  // 5. Delete ALL Cloud Storage files under the user's prefix
+  const storageModules = ["avatars", "housing", "loans", "insurance", "documents"];
+  const bucket = getStorage().bucket();
+
+  for (const module of storageModules) {
+    try {
+      const prefix = `${module}/${uid}/`;
+      const [files] = await bucket.getFiles({ prefix });
+
+      const deletePromises = files.map((file) =>
+        file.delete().catch((e) =>
+          console.warn(`Storage delete ${file.name}: ${e.message}`)
+        )
+      );
+      await Promise.all(deletePromises);
+    } catch (e) {
+      errors.push(`Storage ${module}/${uid}: ${e.message}`);
+    }
+  }
+
+  // 6. Delete the Firebase Auth user (this is the final irrevocable step)
+  try {
+    await admin.auth().deleteUser(uid);
+  } catch (e) {
+    errors.push(`Auth user deletion: ${e.message}`);
+  }
+
+  if (errors.length > 0) {
+    console.error(`Account deletion for ${uid} completed with ${errors.length} errors:`, errors);
+    return {
+      success: true,
+      message: "Account deleted with some cleanup errors. Support has been notified.",
+      errors,
+    };
+  }
+
+  console.log(`Account ${uid} fully deleted successfully.`);
+  return { success: true, message: "Account deleted successfully." };
+});
 
 // ── Check Reminders Cron Job ────────────────────────────────────────────────
 export const checkRemindersAndNotify = onSchedule(

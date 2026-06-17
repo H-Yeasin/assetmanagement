@@ -1,10 +1,12 @@
 import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import 'shared_widgets.dart';
-import 'login.dart';
 
 /// Universal OTP verification screen.
 /// Receives [email] and [flow] via route extra.
@@ -155,16 +157,22 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
       if (!mounted) return;
 
       if (result['success'] == true) {
-        // After verification the user must log in to get tokens.
-        // Show success and pop to login.
-        _showSnack('Email verified! Please log in.');
-        await Future.delayed(const Duration(milliseconds: 800));
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const Login()),
+        // User is already authenticated from registration.
+        // Get fresh token and save session.
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final idToken = await user.getIdToken();
+          final token = user.refreshToken;
+          await StorageService.saveSession(
+            accessToken: idToken ?? '',
+            refreshToken: token ?? '',
+            userId: user.uid,
+            email: user.email ?? widget.email,
+            name: user.displayName ?? 'User',
           );
         }
+        if (!mounted) return;
+        context.go('/home');
       } else {
         _showSnack(result['message'] ?? 'Invalid OTP');
       }
@@ -180,9 +188,9 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     try {
       if (widget.flow == 'forgot') {
         await AuthService.forgotPassword(email: widget.email);
+      } else if (widget.flow == 'register') {
+        await AuthService.requestRegisterOtp(email: widget.email);
       }
-      // For register flow the backend doesn't have a standalone resend endpoint;
-      // user can go back to sign-up or handle this on login.
       _showSnack('OTP resent to ${widget.email}');
       _startCountdown();
     } catch (_) {

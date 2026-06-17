@@ -1,0 +1,136 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Helper functions
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /** True when the request carries a valid Firebase Auth token. */
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    /** True when the authenticated user's UID matches the provided userId. */
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    /**
+     * True when the incoming document's `userId` field matches the
+     * authenticated user.  Used on create/update to prevent UID spoofing.
+     */
+    function incomingUserIdMatches() {
+      return request.resource.data.userId == request.auth.uid;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // users  –  one document per authenticated user  {uid} == document id
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /users/{uid} {
+      // Only the owning user can read their own profile.
+      allow get, list: if isOwner(uid);
+
+      // User creates their own profile document on registration.
+      // The document id MUST equal their auth UID (enforced by the match).
+      allow create: if isOwner(uid);
+
+      // User can update their own profile fields (name, email, avatar, fcmToken,
+      // phone, etc.).  The `subscription` sub-map is managed by server-side
+      // webhooks via the Admin SDK (which bypasses rules) — the user cannot
+      // overwrite subscription status directly.
+      allow update: if isOwner(uid)
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                           .hasAny(['subscription']);
+
+      // User can delete their own profile (account deletion is also handled
+      // by the `deleteUserAccount` Cloud Function via Admin SDK).
+      allow delete: if isOwner(uid);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // loans  –  user loan records
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /loans/{docId} {
+      allow get, list:  if isOwner(resource.data.userId);
+      allow create:     if isAuth() && incomingUserIdMatches();
+      allow update:     if isOwner(resource.data.userId)
+                        && incomingUserIdMatches();
+      allow delete:     if isOwner(resource.data.userId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // housingCosts  –  user housing / living-cost records
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /housingCosts/{docId} {
+      allow get, list:  if isOwner(resource.data.userId);
+      allow create:     if isAuth() && incomingUserIdMatches();
+      allow update:     if isOwner(resource.data.userId)
+                        && incomingUserIdMatches();
+      allow delete:     if isOwner(resource.data.userId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // insurancePolicies  –  user insurance policy records
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /insurancePolicies/{docId} {
+      allow get, list:  if isOwner(resource.data.userId);
+      allow create:     if isAuth() && incomingUserIdMatches();
+      allow update:     if isOwner(resource.data.userId)
+                        && incomingUserIdMatches();
+      allow delete:     if isOwner(resource.data.userId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // documents  –  vault files & folders (stored as DocumentFile rows)
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /documents/{docId} {
+      allow get, list:  if isOwner(resource.data.userId);
+      allow create:     if isAuth() && incomingUserIdMatches();
+      allow update:     if isOwner(resource.data.userId)
+                        && incomingUserIdMatches();
+      allow delete:     if isOwner(resource.data.userId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // reminders  –  payment / renewal reminders
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /reminders/{docId} {
+      allow get, list:  if isOwner(resource.data.userId);
+      allow create:     if isAuth() && incomingUserIdMatches();
+      allow update:     if isOwner(resource.data.userId)
+                        && incomingUserIdMatches();
+      allow delete:     if isOwner(resource.data.userId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Server-only collections  –  no direct client access
+    // ═══════════════════════════════════════════════════════════════════════════
+    //
+    // These collections are read/written exclusively by Cloud Functions using
+    // the Firebase Admin SDK (which bypasses Firestore security rules).
+    // Direct client read/write is denied to prevent:
+    //   • OTP hash / email enumeration attacks
+    //   • Tampering with payment records
+    //   • Bypassing 2FA verification
+
+    match /passwordResetOtps/{docId} {
+      allow read, write: if false;
+    }
+
+    match /twoFactorOtps/{docId} {
+      allow read, write: if false;
+    }
+
+    match /subscriptionPayments/{docId} {
+      allow read, write: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Deny everything else (defence in depth)
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

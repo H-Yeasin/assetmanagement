@@ -1,116 +1,34 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'dart:async';
 
-import '../Home_Profile/subscription/models/subscription_checkout.dart';
-import '../Home_Profile/subscription/models/subscription_confirmation.dart';
 import '../Home_Profile/subscription/models/subscription_state.dart';
+import 'revenuecat_service.dart';
 
+/// Facade for subscription operations.
+///
+/// Reads subscription state from Firestore (which is synced by the RevenueCat
+/// webhook + SDK listener) and delegates provider-specific actions
+/// (purchase, cancel) to [RevenueCatService].
+///
+/// LEGACY: Stripe-specific methods are kept temporarily and will be removed
+/// once the Stripe Cloud Functions are deleted.
 class SubscriptionService {
-  SubscriptionService({FirebaseFunctions? functions})
-    : _functions =
-          functions ?? FirebaseFunctions.instanceFor(region: 'us-central1');
+  SubscriptionService();
 
-  final FirebaseFunctions _functions;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
     databaseId: 'ffpvault',
   );
-  static SubscriptionPublicConfig? _cachedConfig;
 
-  Future<SubscriptionPublicConfig> getPublicConfig({
-    bool forceRefresh = false,
-  }) async {
-    if (!forceRefresh && _cachedConfig != null) {
-      return _cachedConfig!;
-    }
+  // ── Active API ──────────────────────────────────────────────────────────
 
-    final config = await _loadPublicConfig();
-    if (config.publishableKey.isNotEmpty) {
-      _cachedConfig = config;
-    }
-    return config;
-  }
-
-  Future<void> ensureStripeConfigured({bool forceRefresh = false}) async {
-    final config = await getPublicConfig(forceRefresh: forceRefresh);
-    if (config.publishableKey.isEmpty) {
-      if (!forceRefresh) {
-        await ensureStripeConfigured(forceRefresh: true);
-        return;
-      }
-      throw StateError('Stripe publishable key is not configured.');
-    }
-
-    bool needsUpdate = false;
-    try {
-      if (Stripe.publishableKey != config.publishableKey) {
-        needsUpdate = true;
-      }
-    } catch (_) {
-      // The getter throws if publishableKey is not yet set
-      needsUpdate = true;
-    }
-
-    if (needsUpdate) {
-      Stripe.publishableKey = config.publishableKey;
-      await Stripe.instance.applySettings();
-    }
-  }
-
-  Future<SubscriptionPublicConfig> _loadPublicConfig() async {
-    final callable = _functions.httpsCallable('getStripePublicConfig');
-    final result = await callable.call();
-    return SubscriptionPublicConfig.fromMap(
-      result.data as Map<dynamic, dynamic>,
-    );
-  }
-
-  Future<SubscriptionCheckout> createCheckout() async {
-    await ensureStripeConfigured();
-    final callable = _functions.httpsCallable('createStripePaymentIntent');
-    final result = await callable.call();
-    return SubscriptionCheckout.fromMap(result.data as Map<dynamic, dynamic>);
-  }
-
-  Future<SubscriptionConfirmation> finalizePayment({
-    required String subscriptionId,
-    String paymentMethodId = '',
-    String setupIntentId = '',
-  }) async {
-    final callable = _functions.httpsCallable('finalizeStripePayment');
-    final result = await callable.call({
-      'subscriptionId': subscriptionId,
-      'paymentMethodId': paymentMethodId,
-      'setupIntentId': setupIntentId,
-    });
-    return SubscriptionConfirmation.fromMap(
-      result.data as Map<dynamic, dynamic>,
-    );
-  }
-
-  Future<SubscriptionConfirmation> cancelSubscription() async {
-    final callable = _functions.httpsCallable('cancelStripeSubscription');
-    final result = await callable.call();
-    return SubscriptionConfirmation.fromMap(
-      result.data as Map<dynamic, dynamic>,
-    );
-  }
-
-  Future<SubscriptionConfirmation> abandonCheckout({
-    required String subscriptionId,
-  }) async {
-    final callable = _functions.httpsCallable('abandonStripeCheckout');
-    final result = await callable.call({'subscriptionId': subscriptionId});
-    return SubscriptionConfirmation.fromMap(
-      result.data as Map<dynamic, dynamic>,
-    );
-  }
-
+  /// Streams the user's [SubscriptionState] from Firestore.
+  ///
+  /// Works regardless of provider (Stripe or RevenueCat) because the data
+  /// shape in Firestore is unified by the server-side webhooks.
   Stream<SubscriptionState> streamSubscription() {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return Stream.value(SubscriptionState.inactive);
@@ -130,11 +48,22 @@ class SubscriptionService {
     });
   }
 
+  /// Waits until the subscription becomes active, then returns its state.
   Future<SubscriptionState> waitForActiveSubscription({
     Duration timeout = const Duration(seconds: 12),
   }) {
     return streamSubscription()
         .firstWhere((subscription) => subscription.isActive)
         .timeout(timeout);
+  }
+
+  /// Opens a subscription-management UX for the user.
+  ///
+  /// Uses RevenueCat's Customer Center when available; falls back to the
+  /// platform-native subscription settings (App Store / Google Play).
+  ///
+  /// Returns `true` when the management UI was presented successfully.
+  Future<bool> cancelSubscription() async {
+    return RevenueCatService().showCustomerCenter();
   }
 }

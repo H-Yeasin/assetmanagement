@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:ffp_vault/services/storage_service.dart';
@@ -149,6 +150,10 @@ class UserService {
   }
 
   // ── Delete Account ────────────────────────────────────────────────────────
+  /// Re-authenticates the user (when password provider), then delegates all
+  /// data cleanup — Firestore, Storage, Stripe, OTPs, reminders, payments —
+  /// to the [deleteUserAccount] Cloud Function which runs with admin privileges
+  /// and can delete every resource the user owns in one atomic-ish pass.
   static Future<Map<String, dynamic>> deleteAccount({
     required String email,
     String? password,
@@ -161,6 +166,7 @@ class UserService {
         return _formatError("Email does not match current account");
       }
 
+      // Re-authenticate password users before proceeding
       final isPasswordProvider = user.providerData.any(
         (p) => p.providerId == 'password',
       );
@@ -175,23 +181,22 @@ class UserService {
         await user.reauthenticateWithCredential(credential);
       }
 
-      final uid = user.uid;
+      // Delegate all server-side cleanup to the Cloud Function.
+      // It deletes: Auth user, Firestore docs, Storage files, Stripe
+      // subscriptions, OTPs, reminders, and payment history.
+      final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
+      final callable = functions.httpsCallable('deleteUserAccount');
+      final result = await callable.call();
 
-      // Best-effort cleanup before deleting auth user.
-      try {
-        await _db.collection('users').doc(uid).delete();
-      } catch (_) {}
-      try {
-        await _storage.ref().child('avatars/$uid/profile.jpg').delete();
-      } catch (_) {}
-
-      await user.delete();
-
+      final data = (result.data as Map).cast<String, dynamic>();
       return {
         'statusCode': 200,
-        'success': true,
-        'message': 'Account deleted successfully',
+        'success': data['success'] == true,
+        'message': data['message'] as String? ?? 'Account deleted successfully',
+        'errors': data['errors'] ?? <String>[],
       };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? "Failed to delete account");
     } on FirebaseAuthException catch (e) {
       return _formatError(e.message ?? "Failed to delete account");
     } catch (e) {

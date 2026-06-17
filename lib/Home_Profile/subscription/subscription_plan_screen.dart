@@ -38,9 +38,10 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancel Subscription'),
+        title: const Text('Manage Subscription'),
         content: const Text(
-          'Your subscription will stay active until the end of the current billing period, then it will cancel automatically.',
+          'You will be redirected to your App Store / Google Play subscription '
+          'settings where you can cancel or manage your plan.',
         ),
         actions: [
           TextButton(
@@ -49,7 +50,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Cancel Plan'),
+            child: const Text('Open Settings'),
           ),
         ],
       ),
@@ -59,20 +60,18 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
 
     setState(() => _isCancelling = true);
     try {
-      await _subscriptionService.cancelSubscription();
+      final opened = await _subscriptionService.cancelSubscription();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Cancellation scheduled. Your plan remains active until period end.',
+      if (!opened) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Unable to open subscription settings. Please manage your '
+              'subscription directly through the App Store or Google Play.',
+            ),
           ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to cancel subscription: $e')),
-      );
+        );
+      }
     } finally {
       if (mounted) setState(() => _isCancelling = false);
     }

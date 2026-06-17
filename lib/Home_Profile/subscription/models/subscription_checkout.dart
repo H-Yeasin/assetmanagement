@@ -36,7 +36,7 @@ class SubscriptionCheckout {
       amount: (data['amount'] as num?)?.toInt() ?? 0,
       currency: data['currency'] as String? ?? 'usd',
       planCode: data['planCode'] as String? ?? 'monthly_core',
-      planName: data['planName'] as String? ?? 'FFP Vault Monthly',
+      planName: data['planName'] as String? ?? 'FFP Vault Pro',
     );
   }
 }

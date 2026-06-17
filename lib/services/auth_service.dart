@@ -351,13 +351,48 @@ class AuthService {
     }
   }
 
+  static Future<Map<String, dynamic>> requestRegisterOtp({
+    required String email,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('requestRegisterOtp');
+      final response = await callable.call({'email': email.trim()});
+      final data = (response.data as Map?)?.cast<String, dynamic>() ?? {};
+      return {
+        'statusCode': 200,
+        'success': true,
+        'message': data['message'] ?? 'Verification code sent',
+        'data': {'email': data['email'] ?? email.trim()},
+      };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? 'Failed to send verification code');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
+  }
+
   static Future<Map<String, dynamic>> verifyEmailOtp({
     required String email,
     required String otp,
   }) async {
-    return _formatError(
-      'Email OTP verification is not enabled. Use email verification link or phone OTP.',
-    );
+    try {
+      final callable = _functions.httpsCallable('verifyRegisterOtp');
+      final response = await callable.call({
+        'email': email.trim(),
+        'otp': otp.trim(),
+      });
+      final data = (response.data as Map?)?.cast<String, dynamic>() ?? {};
+      return {
+        'statusCode': 200,
+        'success': true,
+        'message': data['message'] ?? 'Email verified',
+        'data': {'email': data['email'] ?? email.trim()},
+      };
+    } on FirebaseFunctionsException catch (e) {
+      return _formatError(e.message ?? 'Invalid verification code');
+    } catch (e) {
+      return _formatError(e.toString());
+    }
   }
 
   static Future<Map<String, dynamic>> resetPassword({
@@ -431,7 +466,7 @@ class AuthService {
             DateTime.now().add(const Duration(days: 14)),
           ),
           'planCode': 'monthly_core',
-          'planName': 'FFP Vault Monthly (Trial)',
+          'planName': 'FFP Vault Pro (Trial)',
         },
     }, SetOptions(merge: true));
   }

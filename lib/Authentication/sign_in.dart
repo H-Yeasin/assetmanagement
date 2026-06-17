@@ -64,16 +64,23 @@ class _SignInState extends State<SignIn> {
 
       if (result['success'] == true) {
         final data = result['data'] as Map<String, dynamic>? ?? {};
-        final accessToken = data['accessToken'] as String? ?? '';
-        final userId = data['_id'] as String? ?? '';
-        if (accessToken.isNotEmpty && userId.isNotEmpty) {
-          _showSnack('Registration completed. Please log in.');
+        final userEmail = data['user']?['email'] as String? ?? email;
+
+        // Send OTP to the user's email for verification
+        final otpResult = await AuthService.requestRegisterOtp(email: userEmail);
+
+        if (!mounted) return;
+
+        if (otpResult['success'] == true) {
+          context.push('/verify-otp', extra: {
+            'email': userEmail,
+            'flow': 'register',
+          });
+        } else {
+          _showSnack(otpResult['message'] ?? 'Failed to send verification code. Please try logging in.');
+          // Log out so user can attempt login (account was created but OTP failed)
           await AuthService.logout();
           await StorageService.clearSession();
-          if (!mounted) return;
-          context.go('/login');
-        } else {
-          _showSnack('Registration completed. Please log in.');
         }
       } else {
         _showSnack(result['message'] ?? 'Registration failed');

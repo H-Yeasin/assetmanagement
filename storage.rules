@@ -1,0 +1,96 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Helper functions
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /** True when the request carries a valid Firebase Auth token. */
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    /** True when the authenticated user's UID matches the {uid} path segment. */
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    /**
+     * True when the uploaded file's MIME type is an allowed document or image
+     * format.  Keeps executable / shell / HTML payloads out of the vault.
+     */
+    function isAllowedContentType() {
+      return request.resource.contentType.matches(
+        'image/(jpeg|png|gif|webp|heic|heif|bmp|tiff)'
+      ) || request.resource.contentType.matches(
+        'application/(pdf|msword|rtf|zip|x-tar|x-7z-compressed)'
+      ) || request.resource.contentType.matches(
+        'application/vnd\\.openxmlformats-officedocument\\.(wordprocessingml\\.document|spreadsheetml\\.sheet|presentationml\\.presentation)'
+      ) || request.resource.contentType.matches(
+        'application/vnd\\.ms-(excel|powerpoint|word)'
+      ) || request.resource.contentType in [
+        'text/plain',
+        'text/csv',
+        'text/rtf',
+      ];
+    }
+
+    /** Max upload size: 25 MiB (26 214 400 bytes). */
+    function isUnderMaxSize() {
+      return request.resource.size <= 25 * 1024 * 1024;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Vault document storage  –  {module}/{uid}/{originalName}
+    // ═══════════════════════════════════════════════════════════════════════════
+    //
+    // Modules: loans | housing | insurance | documents
+    //
+    // Upload path pattern (from loan_service, housing_service, insurance_service):
+    //   {module}/{uid}/{timestamp}_{originalName}
+    //
+    // Only the owning user may read or write files under their own UID prefix.
+
+    match /{module}/{uid}/{filename} {
+      // Only allow recognised vault modules — blocks unknown prefixes.
+      allow read:  if isAuth()
+                   && uid == request.auth.uid
+                   && module in ['loans', 'housing', 'insurance', 'documents'];
+
+      allow create, update:
+                   if isAuth()
+                   && uid == request.auth.uid
+                   && module in ['loans', 'housing', 'insurance', 'documents']
+                   && isAllowedContentType()
+                   && isUnderMaxSize();
+
+      // Deletion is allowed for the owner (the app deletes files when removing
+      // documents from the vault).
+      allow delete: if isAuth()
+                    && uid == request.auth.uid
+                    && module in ['loans', 'housing', 'insurance', 'documents'];
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // User avatars  –  avatars/{uid}/profile.jpg
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /avatars/{uid}/{filename} {
+      allow read:  if isOwner(uid);
+
+      allow create, update:
+                   if isOwner(uid)
+                   && request.resource.contentType.matches('image/(jpeg|png|gif|webp)')
+                   && request.resource.size <= 5 * 1024 * 1024;  // 5 MiB
+
+      allow delete: if isOwner(uid);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Deny everything else  (defence in depth)
+    // ═══════════════════════════════════════════════════════════════════════════
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
