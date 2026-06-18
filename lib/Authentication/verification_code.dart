@@ -16,11 +16,13 @@ import 'shared_widgets.dart';
 class VerificationCodeScreen extends StatefulWidget {
   final String email;
   final String flow; // 'register' | 'forgot'
+  final int initialResendSeconds;
 
   const VerificationCodeScreen({
     super.key,
     required this.email,
     required this.flow,
+    this.initialResendSeconds = 45,
   });
 
   @override
@@ -58,7 +60,8 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
 
   void _startCountdown() {
     _timer?.cancel();
-    setState(() => _resendSeconds = 45);
+    setState(() => _resendSeconds = widget.initialResendSeconds);
+    if (_resendSeconds <= 0) return;
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) {
         t.cancel();
@@ -171,6 +174,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
             name: user.displayName ?? 'User',
           );
         }
+        await StorageService.clearPendingRegistration();
         if (!mounted) return;
         context.go('/home');
       } else {

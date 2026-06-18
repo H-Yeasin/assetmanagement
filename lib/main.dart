@@ -10,6 +10,7 @@ import 'package:ffp_vault/services/revenuecat_service.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -22,11 +23,16 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    // Enable App Check to satisfy Cloud Functions enforcement
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug,
-      appleProvider: AppleProvider.debug,
-    );
+    if (!kDebugMode || AppConfig.useFirebaseAppCheck) {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: kDebugMode
+            ? AndroidProvider.debug
+            : AndroidProvider.playIntegrity,
+        appleProvider: kDebugMode
+            ? AppleProvider.debug
+            : AppleProvider.appAttest,
+      );
+    }
   } catch (e) {
     debugPrint("Firebase initialization failed: $e");
   }
@@ -72,12 +78,12 @@ Future<void> _initRevenueCat() async {
   // can associate purchases with this account.
   final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
-    RevenueCatService()
-        .login()
-        .then(
-          (_) => debugPrint('RevenueCat login succeeded.'),
-          onError: (e) => debugPrint('RevenueCat login error: $e'),
-        );
+    try {
+      await RevenueCatService().login();
+      debugPrint('RevenueCat login succeeded.');
+    } catch (e) {
+      debugPrint('RevenueCat login error: $e');
+    }
   }
 
   // Keep RC logged-in identity in sync with Firebase auth state.

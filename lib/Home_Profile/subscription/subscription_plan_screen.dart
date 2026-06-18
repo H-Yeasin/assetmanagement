@@ -25,8 +25,11 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
       return;
     }
 
-    if (GoRouter.of(context).canPop()) {
-      context.pop();
+    final router = GoRouter.of(context);
+    final hasPreviousRoute = router.routerDelegate.currentConfiguration.matches.length > 1;
+
+    if (hasPreviousRoute && router.canPop()) {
+      router.pop();
     } else {
       context.go('/home');
     }

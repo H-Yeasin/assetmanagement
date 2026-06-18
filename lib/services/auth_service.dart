@@ -47,7 +47,39 @@ class AuthService {
       }
       return _formatError("Registration failed");
     } on FirebaseAuthException catch (e) {
-      return _formatError(e.message ?? "An error occurred during registration");
+      if (e.code == 'email-already-in-use') {
+        try {
+          final userCredential = await _auth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+          final user = userCredential.user;
+          await user?.reload();
+          final refreshedUser = _auth.currentUser;
+
+          if (refreshedUser != null && !refreshedUser.emailVerified) {
+            await _safeUpsertUserDoc(refreshedUser, fallbackName: fullName);
+            return _authSuccess(
+              refreshedUser,
+              message: 'Registration pending verification',
+              userName: fullName,
+            );
+          }
+
+          await _safeRollbackAuthState();
+        } catch (_) {
+          // Fall through to the original account-exists message below.
+        }
+        return _formatError(
+          'An account already exists for this email. Please log in.',
+        );
+      }
+      return _formatError(
+        _friendlyAuthMessage(
+          e,
+          fallback: "An error occurred during registration",
+        ),
+      );
     } catch (e) {
       return _formatError(e.toString());
     }
@@ -74,7 +106,9 @@ class AuthService {
       }
       return _formatError("Login failed");
     } on FirebaseAuthException catch (e) {
-      return _formatError(e.message ?? "Invalid email or password");
+      return _formatError(
+        _friendlyAuthMessage(e, fallback: "Invalid email or password"),
+      );
     } catch (e) {
       return _formatError(e.toString());
     }
@@ -104,7 +138,9 @@ class AuthService {
         successMessage: 'Google login successful',
       );
     } on FirebaseAuthException catch (e) {
-      return _formatError(e.message ?? 'Google sign-in failed.');
+      return _formatError(
+        _friendlyAuthMessage(e, fallback: 'Google sign-in failed.'),
+      );
     } catch (e) {
       return _formatError(e.toString());
     }
@@ -150,7 +186,9 @@ class AuthService {
         successMessage: 'Apple login successful',
       );
     } on FirebaseAuthException catch (e) {
-      return _formatError(e.message ?? 'Apple sign-in failed.');
+      return _formatError(
+        _friendlyAuthMessage(e, fallback: 'Apple sign-in failed.'),
+      );
     } catch (e) {
       return _formatError(e.toString());
     }
@@ -169,11 +207,9 @@ class AuthService {
         'message': 'OTP sent to your email',
       };
     } on FirebaseFunctionsException catch (e) {
-      final msg = e.message ?? 'Error sending OTP';
-      final detail = e.code != 'unknown' ? '[${e.code.toUpperCase()}] $msg' : msg;
-      return _formatError(detail, 400);
+      final msg = _friendlyFunctionMessage(e, fallback: 'Error sending OTP');
+      return _formatError(msg, 400);
     } on FirebaseAuthException catch (e) {
-
       return _formatError(e.message ?? "Error sending OTP");
     } catch (e) {
       return _formatError(e.toString());
@@ -228,7 +264,12 @@ class AuthService {
         'data': {'email': data['email'] ?? email.trim()},
       };
     } on FirebaseFunctionsException catch (e) {
-      return _formatError(e.message ?? 'Failed to send verification code');
+      return _formatError(
+        _friendlyFunctionMessage(
+          e,
+          fallback: 'Failed to send verification code',
+        ),
+      );
     } catch (e) {
       return _formatError(e.toString());
     }
@@ -420,11 +461,12 @@ class AuthService {
         'message': 'Password reset successful',
       };
     } on FirebaseFunctionsException catch (e) {
-      final msg = e.message ?? "Error resetting password";
-      final detail = e.code != 'unknown' ? '[${e.code.toUpperCase()}] $msg' : msg;
-      return _formatError(detail, 400);
+      final msg = _friendlyFunctionMessage(
+        e,
+        fallback: "Error resetting password",
+      );
+      return _formatError(msg, 400);
     } on FirebaseAuthException catch (e) {
-
       return _formatError(e.message ?? "Error resetting password");
     } catch (e) {
       return _formatError(e.toString());
@@ -620,5 +662,42 @@ class AuthService {
       'message': message,
       'data': null,
     };
+  }
+
+  static String _friendlyAuthMessage(
+    FirebaseAuthException e, {
+    required String fallback,
+  }) {
+    switch (e.code) {
+      case 'invalid-credential':
+      case 'user-not-found':
+      case 'wrong-password':
+        return 'This account no longer exists or the password is incorrect.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection and try again.';
+      default:
+        return e.message ?? fallback;
+    }
+  }
+
+  static String _friendlyFunctionMessage(
+    FirebaseFunctionsException e, {
+    required String fallback,
+  }) {
+    final message = e.message ?? fallback;
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid login') ||
+        lower.contains('authentication failed') ||
+        lower.contains('535 5.7.8') ||
+        lower.contains('smtp')) {
+      return 'Email service is not configured correctly. Please contact support.';
+    }
+    return message;
   }
 }

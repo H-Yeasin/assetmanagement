@@ -17,6 +17,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _lottieController;
+  bool _didNavigate = false;
 
   @override
   void initState() {
@@ -37,6 +38,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigateAfterSplash() async {
+    if (_didNavigate) return;
+    _didNavigate = true;
+
     try {
       final seenOnboarding = await StorageService.hasSeenOnboarding();
       if (!mounted) return;
@@ -50,8 +54,28 @@ class _SplashScreenState extends State<SplashScreen>
       }
 
       final firebaseUser = FirebaseAuth.instance.currentUser;
+      final pendingRegistrationEmail =
+          await StorageService.getPendingRegistrationEmail();
       final pendingTwoFactor = await StorageService.hasPendingTwoFactorLogin();
       if (!mounted) return;
+
+      if (pendingRegistrationEmail != null &&
+          pendingRegistrationEmail.isNotEmpty) {
+        if (firebaseUser != null) {
+          context.go(
+            '/verify-otp',
+            extra: {
+              'email': pendingRegistrationEmail,
+              'flow': 'register',
+              'initialResendSeconds': 0,
+            },
+          );
+          return;
+        }
+
+        await StorageService.clearPendingRegistration();
+        if (!mounted) return;
+      }
 
       if (pendingTwoFactor) {
         if (firebaseUser != null) {
@@ -61,11 +85,7 @@ class _SplashScreenState extends State<SplashScreen>
           if (!mounted) return;
           context.go(
             '/two-factor-otp',
-            extra: {
-              'email': email,
-              'flow': 'login',
-              'rememberMe': rememberMe,
-            },
+            extra: {'email': email, 'flow': 'login', 'rememberMe': rememberMe},
           );
           return;
         }
@@ -115,6 +135,7 @@ class _SplashScreenState extends State<SplashScreen>
       }
     } catch (e) {
       debugPrint("Navigation error: $e");
+      if (!mounted) return;
       // Fallback to onboarding if something breaks
       Navigator.pushReplacement(
         context,
@@ -128,24 +149,39 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: Lottie.asset(
-          'assets/images/lottie_Animation/Logo_animation_Lottie_fixed.json',
-          controller: _lottieController,
-          width: MediaQuery.of(context).size.width * 3.00,
-          height: MediaQuery.of(context).size.width * 3.00,
-          fit: BoxFit.contain,
-          delegates: const LottieDelegates(),
-          onLoaded: (composition) {
-            _lottieController
-              ..duration = composition.duration
-              ..forward().whenComplete(() {
-                if (mounted) _navigateAfterSplash();
-              });
-          },
-          errorBuilder: (context, error, stackTrace) {
-            _navigateAfterSplash();
-            return const SizedBox();
-          },
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            const SizedBox(
+              width: 36,
+              height: 36,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: Color(0xFFC61C36),
+              ),
+            ),
+            Lottie.asset(
+              'assets/images/lottie_Animation/Logo_animation_Lottie_fixed.json',
+              controller: _lottieController,
+              width: MediaQuery.of(context).size.width * 1.4,
+              height: MediaQuery.of(context).size.width * 1.4,
+              fit: BoxFit.contain,
+              delegates: const LottieDelegates(),
+              onLoaded: (composition) {
+                _lottieController
+                  ..duration = composition.duration
+                  ..forward().whenComplete(() {
+                    if (mounted) _navigateAfterSplash();
+                  });
+              },
+              errorBuilder: (context, error, stackTrace) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _navigateAfterSplash();
+                });
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
         ),
       ),
     );

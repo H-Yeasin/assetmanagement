@@ -26,6 +26,20 @@ Set these as Firebase Functions secrets before deploy:
 
 `RC_WEBHOOK_SECRET` must match the bearer token configured in RevenueCat.
 
+If OTP sending fails with `535 5.7.8` or `authentication failed`, the SMTP
+server rejected the configured credentials. For Gmail/Google Workspace, use an
+App Password, not the normal mailbox password.
+
+Example:
+
+```bash
+firebase functions:secrets:set SMTP_HOST_SECRET
+firebase functions:secrets:set SMTP_USER_SECRET
+firebase functions:secrets:set SMTP_PASS_SECRET
+firebase functions:secrets:set SMTP_FROM_SECRET
+firebase deploy --only functions
+```
+
 ## 3) Deploy functions
 
 ```bash

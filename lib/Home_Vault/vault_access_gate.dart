@@ -5,6 +5,7 @@ import '../Home_Dashboard/widgets.dart';
 import '../config/app_config.dart';
 import '../services/biometric_service.dart';
 import '../services/security_service.dart';
+import '../services/revenuecat_service.dart';
 import '../services/subscription_service.dart';
 import '../services/vault_session_manager.dart';
 
@@ -98,7 +99,27 @@ class _VaultAccessGateState extends State<VaultAccessGate>
 
       if (!mounted) return;
 
-      if (!subscription.isActive && !AppConfig.bypassVaultSubscription) {
+      // Fallback: if Firestore shows inactive, check RevenueCat directly.
+      // RevenueCat's backend may have activated the entitlement before the
+      // Firestore sync completed.
+      bool isActive = subscription.isActive;
+      if (!isActive && !AppConfig.bypassVaultSubscription) {
+        try {
+          final activeSubscription = await _subscriptionService
+              .waitForActiveSubscription(timeout: const Duration(seconds: 8));
+          isActive = activeSubscription.isActive;
+        } catch (_) {
+          final rcActive = await RevenueCatService().checkProEntitlement();
+          if (rcActive) {
+            // Force a Firestore sync so future reads see the correct state.
+            final customerInfo = await RevenueCatService().getCustomerInfo();
+            await RevenueCatService().syncToFirestore(customerInfo);
+            isActive = true;
+          }
+        }
+      }
+
+      if (!isActive && !AppConfig.bypassVaultSubscription) {
         VaultSessionManager.instance.lock();
         // Replace the gated vault route so back navigation returns to the
         // previous stable screen instead of a half-initialized gate.

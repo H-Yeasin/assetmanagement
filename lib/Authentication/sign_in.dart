@@ -67,20 +67,34 @@ class _SignInState extends State<SignIn> {
         final userEmail = data['user']?['email'] as String? ?? email;
 
         // Send OTP to the user's email for verification
-        final otpResult = await AuthService.requestRegisterOtp(email: userEmail);
+        final otpResult = await AuthService.requestRegisterOtp(
+          email: userEmail,
+        );
 
         if (!mounted) return;
 
         if (otpResult['success'] == true) {
-          context.push('/verify-otp', extra: {
-            'email': userEmail,
-            'flow': 'register',
-          });
+          await StorageService.setPendingRegistration(email: userEmail);
+          if (!mounted) return;
+          context.push(
+            '/verify-otp',
+            extra: {'email': userEmail, 'flow': 'register'},
+          );
         } else {
-          _showSnack(otpResult['message'] ?? 'Failed to send verification code. Please try logging in.');
-          // Log out so user can attempt login (account was created but OTP failed)
-          await AuthService.logout();
-          await StorageService.clearSession();
+          _showSnack(
+            otpResult['message'] ??
+                'Could not send the code. Try resending it.',
+          );
+          await StorageService.setPendingRegistration(email: userEmail);
+          if (!mounted) return;
+          context.push(
+            '/verify-otp',
+            extra: {
+              'email': userEmail,
+              'flow': 'register',
+              'initialResendSeconds': 0,
+            },
+          );
         }
       } else {
         _showSnack(result['message'] ?? 'Registration failed');

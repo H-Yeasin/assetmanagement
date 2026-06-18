@@ -252,7 +252,20 @@ async function sendOtpEmail(email, otp, purpose = "reset") {
 </html>
   `;
 
-  await client.sendMail({ from, to: email, subject, html });
+  try {
+    await client.sendMail({ from, to: email, subject, html });
+  } catch (error) {
+    console.error("SMTP send failed:", {
+      code: error?.code,
+      command: error?.command,
+      responseCode: error?.responseCode,
+      response: error?.response,
+    });
+    throw new HttpsError(
+      "failed-precondition",
+      "Email service is not configured correctly. Please contact support.",
+    );
+  }
 }
 
 async function getOtpState(email) {
@@ -964,7 +977,11 @@ export const deleteUserAccount = onCall(async (request) => {
   try {
     await admin.auth().deleteUser(uid);
   } catch (e) {
-    errors.push(`Auth user deletion: ${e.message}`);
+    console.error(`Auth user deletion failed for ${uid}:`, e);
+    throw new HttpsError(
+      "internal",
+      "We could not fully delete your account. Please try again or contact support.",
+    );
   }
 
   if (errors.length > 0) {

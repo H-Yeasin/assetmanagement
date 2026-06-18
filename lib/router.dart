@@ -135,9 +135,8 @@ final GoRouter appRouter = GoRouter(
         ),
         GoRoute(
           path: '/housing-payment-timeline',
-          builder: (context, state) => HousingPaymentTimelineScreen(
-            cost: state.extra as HousingCost?,
-          ),
+          builder: (context, state) =>
+              HousingPaymentTimelineScreen(cost: state.extra as HousingCost?),
         ),
         GoRoute(
           path: '/my-insurances',
@@ -378,6 +377,7 @@ final GoRouter appRouter = GoRouter(
         return VerificationCodeScreen(
           email: extra['email'] as String? ?? '',
           flow: extra['flow'] as String? ?? 'register',
+          initialResendSeconds: extra['initialResendSeconds'] as int? ?? 45,
         );
       },
     ),

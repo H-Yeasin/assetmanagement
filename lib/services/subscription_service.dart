@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'dart:async';
 
 import '../Home_Profile/subscription/models/subscription_state.dart';
+import '../config/app_config.dart';
 import 'revenuecat_service.dart';
 
 /// Facade for subscription operations.
@@ -46,12 +47,43 @@ class SubscriptionService {
   }
 
   /// Waits until the subscription becomes active, then returns its state.
+  ///
+  /// Polls both the Firestore stream AND RevenueCat directly so that a delayed
+  /// Firestore sync doesn't block vault access. When RevenueCat reports the
+  /// entitlement as active before Firestore does, we force a sync.
   Future<SubscriptionState> waitForActiveSubscription({
-    Duration timeout = const Duration(seconds: 12),
-  }) {
-    return streamSubscription()
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    // Race the Firestore stream against periodic RevenueCat direct checks.
+    final firestoreFuture = streamSubscription()
         .firstWhere((subscription) => subscription.isActive)
         .timeout(timeout);
+
+    // Poll RevenueCat every 2 seconds as a fallback.
+    final rcFuture = _pollRevenueCat(timeout: timeout);
+
+    // Whichever resolves first wins.
+    return Future.any([firestoreFuture, rcFuture]);
+  }
+
+  /// Polls RevenueCat directly until the vault entitlement is active, or the
+  /// timeout expires. Returns a [SubscriptionState] when active, or `null` on
+  /// timeout.
+  Future<SubscriptionState> _pollRevenueCat({
+    required Duration timeout,
+  }) async {
+    final customerInfo = await RevenueCatService().waitForActiveCustomerInfo(
+      timeout: timeout,
+    );
+    await RevenueCatService().syncToFirestore(customerInfo);
+
+    return SubscriptionState.fromRevenueCat({
+      'isActive': true,
+      'entitlementId': AppConfig.vaultEntitlementId,
+      'appUserId': FirebaseAuth.instance.currentUser?.uid ?? '',
+      'productId': '',
+      'willRenew': true,
+    });
   }
 
   /// Opens a subscription-management UX for the user.

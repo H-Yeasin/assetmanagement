@@ -12,6 +12,16 @@ class AppConfig {
     defaultValue: false,
   );
 
+  /// Enables Firebase App Check token generation for Firebase services.
+  ///
+  /// Keep this enabled for production. For local emulator/debug testing, set
+  /// `USE_FIREBASE_APP_CHECK=false` if the device's App Check provider is
+  /// failing before OTP Cloud Functions can be called.
+  static const bool useFirebaseAppCheck = bool.fromEnvironment(
+    'USE_FIREBASE_APP_CHECK',
+    defaultValue: false,
+  );
+
   // ── RevenueCat API Keys ─────────────────────────────────────────────────
 
   /// Default RevenueCat API key used when no `--dart-define` override is set.

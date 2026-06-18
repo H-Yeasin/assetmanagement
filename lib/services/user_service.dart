@@ -198,6 +198,11 @@ class UserService {
     } on FirebaseFunctionsException catch (e) {
       return _formatError(e.message ?? "Failed to delete account");
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-credential' ||
+          e.code == 'wrong-password' ||
+          e.code == 'user-mismatch') {
+        return _formatError('The password you entered is incorrect.');
+      }
       return _formatError(e.message ?? "Failed to delete account");
     } catch (e) {
       return _formatError(e.toString());

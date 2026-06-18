@@ -40,7 +40,6 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
           ),
         ),
       );
-      context.go('/subscription-plan');
     } catch (_) {
       if (!mounted) return;
       context.go('/subscription-plan');

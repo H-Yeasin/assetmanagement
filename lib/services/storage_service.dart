@@ -18,6 +18,7 @@ class StorageService {
   static const _kRememberedEmail = 'remembered_email';
   static const _kPendingTwoFactorEmail = 'pending_two_factor_email';
   static const _kPendingTwoFactorPersist = 'pending_two_factor_persist';
+  static const _kPendingRegisterEmail = 'pending_register_email';
   static const _kReminderNotificationsEnabled =
       'reminder_notifications_enabled';
 
@@ -44,6 +45,7 @@ class StorageService {
       if (avatar != null) _storage.write(key: _kUserAvatar, value: avatar),
       _storage.delete(key: _kPendingTwoFactorEmail),
       _storage.delete(key: _kPendingTwoFactorPersist),
+      _storage.delete(key: _kPendingRegisterEmail),
     ]);
   }
 
@@ -93,6 +95,7 @@ class StorageService {
       _storage.delete(key: _kSessionPersistent),
       _storage.delete(key: _kPendingTwoFactorEmail),
       _storage.delete(key: _kPendingTwoFactorPersist),
+      _storage.delete(key: _kPendingRegisterEmail),
     ]);
   }
 
@@ -172,6 +175,15 @@ class StorageService {
     final val = await _storage.read(key: _kPendingTwoFactorPersist);
     return val == 'true';
   }
+
+  static Future<void> setPendingRegistration({required String email}) =>
+      _storage.write(key: _kPendingRegisterEmail, value: email.trim());
+
+  static Future<void> clearPendingRegistration() =>
+      _storage.delete(key: _kPendingRegisterEmail);
+
+  static Future<String?> getPendingRegistrationEmail() =>
+      _storage.read(key: _kPendingRegisterEmail);
 
   // ── Reminder Notifications ────────────────────────────────────────────────
   static Future<void> setReminderNotificationsEnabled(bool enabled) =>

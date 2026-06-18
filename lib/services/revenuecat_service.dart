@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -46,7 +50,7 @@ class RevenueCatService {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return null;
     final loginResult = await Purchases.logIn(uid);
-    await _syncToFirestore(loginResult.customerInfo);
+    await syncToFirestore(loginResult.customerInfo);
     return loginResult.customerInfo;
   }
 
@@ -55,7 +59,17 @@ class RevenueCatService {
   /// Call on Firebase sign-out so the next user doesn't inherit the previous
   /// user's purchases.
   Future<void> logout() async {
-    await Purchases.logOut();
+    try {
+      await Purchases.logOut();
+    } on PlatformException catch (e) {
+      if (e.code == '22') return;
+      if (e.details is Map &&
+          (e.details as Map)['readableErrorCode'] ==
+              'LogOutWithAnonymousUserError') {
+        return;
+      }
+      rethrow;
+    }
   }
 
   // ── Customer info listener ───────────────────────────────────────────────
@@ -66,7 +80,7 @@ class RevenueCatService {
   /// made on other devices.
   void listenForCustomerInfoUpdates() {
     Purchases.addCustomerInfoUpdateListener((customerInfo) async {
-      await _syncToFirestore(customerInfo);
+      await syncToFirestore(customerInfo);
     });
   }
 
@@ -137,11 +151,27 @@ class RevenueCatService {
   /// Throws [PlatformException] on cancellation or error. Check
   /// `details['userCancelled']` to detect user-initiated cancellation.
   ///
-  /// Returns the updated [CustomerInfo] after the purchase.
+  /// After a successful platform purchase, RevenueCat's backend may take a
+  /// few seconds to activate the entitlement. This method polls
+  /// [Purchases.getCustomerInfo] for up to 4 seconds so the Firestore sync
+  /// writes `status: 'active'` instead of a transient `'inactive'`.
+  ///
+  /// Returns the latest [CustomerInfo] after the entitlement is confirmed.
   Future<CustomerInfo> purchase(Package package) async {
     final result = await Purchases.purchase(PurchaseParams.package(package));
-    await _syncToFirestore(result.customerInfo);
-    return result.customerInfo;
+
+    CustomerInfo customerInfo;
+    try {
+      customerInfo = await waitForActiveCustomerInfo(
+        initialCustomerInfo: result.customerInfo,
+        timeout: const Duration(seconds: 20),
+      );
+    } on TimeoutException {
+      customerInfo = await Purchases.getCustomerInfo();
+    }
+
+    await syncToFirestore(customerInfo);
+    return customerInfo;
   }
 
   // ── Restore ──────────────────────────────────────────────────────────────
@@ -152,7 +182,7 @@ class RevenueCatService {
   /// immediately updated.
   Future<CustomerInfo> restorePurchases() async {
     final customerInfo = await Purchases.restorePurchases();
-    await _syncToFirestore(customerInfo);
+    await syncToFirestore(customerInfo);
     return customerInfo;
   }
 
@@ -203,9 +233,7 @@ class RevenueCatService {
   Future<bool> _showPlatformSubscriptionSettings() async {
     try {
       // iOS: App Store Subscriptions
-      final iosUri = Uri.parse(
-        'https://apps.apple.com/account/subscriptions',
-      );
+      final iosUri = Uri.parse('https://apps.apple.com/account/subscriptions');
       // Android: Google Play Subscriptions
       final androidUri = Uri.parse(
         'https://play.google.com/store/account/subscriptions',
@@ -237,8 +265,7 @@ class RevenueCatService {
   Future<bool> checkProEntitlement() async {
     try {
       final customerInfo = await Purchases.getCustomerInfo();
-      final entitlement =
-          customerInfo.entitlements.active[AppConfig.vaultEntitlementId];
+      final entitlement = _vaultEntitlementFrom(customerInfo);
       return entitlement?.isActive ?? false;
     } catch (_) {
       return false;
@@ -254,7 +281,7 @@ class RevenueCatService {
   Future<EntitlementInfo?> getProEntitlement() async {
     try {
       final customerInfo = await Purchases.getCustomerInfo();
-      return customerInfo.entitlements.active[AppConfig.vaultEntitlementId];
+      return _vaultEntitlementFrom(customerInfo);
     } catch (_) {
       return null;
     }
@@ -282,6 +309,34 @@ class RevenueCatService {
     return await Purchases.getCustomerInfo();
   }
 
+  /// Polls RevenueCat until the vault entitlement is active, then returns the
+  /// latest [CustomerInfo]. Throws [TimeoutException] if it never activates.
+  Future<CustomerInfo> waitForActiveCustomerInfo({
+    CustomerInfo? initialCustomerInfo,
+    Duration timeout = const Duration(seconds: 20),
+    Duration interval = const Duration(seconds: 1),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    CustomerInfo customerInfo =
+        initialCustomerInfo ?? await Purchases.getCustomerInfo();
+
+    while (true) {
+      if (_vaultEntitlementFrom(customerInfo)?.isActive == true) {
+        return customerInfo;
+      }
+
+      if (!DateTime.now().isBefore(deadline)) {
+        _logEntitlementMismatch(customerInfo);
+        throw TimeoutException(
+          'RevenueCat entitlement did not become active before timeout.',
+        );
+      }
+
+      await Future.delayed(interval);
+      customerInfo = await Purchases.getCustomerInfo();
+    }
+  }
+
   /// Returns the cached [CustomerInfo] if available (avoids a network call).
   ///
   /// RevenueCat keeps the latest customer info in memory after the first fetch.
@@ -302,12 +357,14 @@ class RevenueCatService {
 
   /// Sync RevenueCat customer info to Firestore so the access gate works
   /// without waiting for the webhook.
-  Future<void> _syncToFirestore(CustomerInfo customerInfo) async {
+  ///
+  /// Public so that [SubscriptionService] and gate widgets can force a sync
+  /// when they detect a stale Firestore state.
+  Future<void> syncToFirestore(CustomerInfo customerInfo) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
 
-    final vaultEntitlement =
-        customerInfo.entitlements.active[AppConfig.vaultEntitlementId];
+    final vaultEntitlement = _vaultEntitlementFrom(customerInfo);
 
     // expirationDate is an ISO 8601 string in RevenueCat 10.x.
     Timestamp? periodEnd;
@@ -320,6 +377,20 @@ class RevenueCatService {
     }
 
     final isActive = vaultEntitlement?.isActive ?? false;
+
+    // Regression guard: don't let a stale CustomerInfo (e.g. from login or
+    // a transient listener event) overwrite an active, non-expired subscription.
+    if (!isActive) {
+      final existingDoc = await _db.collection('users').doc(uid).get();
+      final existingSub = existingDoc.data()?['subscription'];
+      if (existingSub is Map && existingSub['status'] == 'active') {
+        final periodEnd = existingSub['currentPeriodEnd'];
+        if (periodEnd is Timestamp &&
+            periodEnd.toDate().isAfter(DateTime.now())) {
+          return; // Keep the existing active subscription intact.
+        }
+      }
+    }
 
     final subData = <String, dynamic>{
       'provider': 'revenuecat',
@@ -338,5 +409,38 @@ class RevenueCatService {
     await _db.collection('users').doc(uid).set({
       'subscription': subData,
     }, SetOptions(merge: true));
+  }
+
+  EntitlementInfo? _vaultEntitlementFrom(CustomerInfo customerInfo) {
+    final configured =
+        customerInfo.entitlements.active[AppConfig.vaultEntitlementId] ??
+        customerInfo.entitlements.all[AppConfig.vaultEntitlementId];
+
+    if (configured?.isActive == true) return configured;
+
+    final activeEntitlements = customerInfo.entitlements.active;
+    if (activeEntitlements.length == 1) {
+      final fallback = activeEntitlements.entries.single;
+      if (fallback.value.isActive) {
+        debugPrint(
+          'RevenueCat entitlement key mismatch: configured '
+          '"${AppConfig.vaultEntitlementId}", active "${fallback.key}". '
+          'Update RC_VAULT_ENTITLEMENT_ID to remove this fallback.',
+        );
+        return fallback.value;
+      }
+    }
+
+    return null;
+  }
+
+  void _logEntitlementMismatch(CustomerInfo customerInfo) {
+    final activeKeys = customerInfo.entitlements.active.keys.join(', ');
+    final allKeys = customerInfo.entitlements.all.keys.join(', ');
+    debugPrint(
+      'RevenueCat vault entitlement not active. Configured: '
+      '"${AppConfig.vaultEntitlementId}". Active: [$activeKeys]. '
+      'All: [$allKeys].',
+    );
   }
 }
