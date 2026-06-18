@@ -6,20 +6,13 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { defineSecret } from "firebase-functions/params";
-import Stripe from "stripe";
 
 const rcWebhookSecret = defineSecret("RC_WEBHOOK_SECRET");
 
-// ── Stripe secrets (deprecated — remove after RevenueCat migration) ────────
-const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
-const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
-const stripePublishableKey = defineSecret("STRIPE_PUBLISHABLE_KEY_SECRET");
-
-const smtpUserSecret = defineSecret("support@financialfreedompower.com");
+const smtpUserSecret = defineSecret("SMTP_USER_SECRET");
 const smtpPassSecret = defineSecret("SMTP_PASS_SECRET");
-const smtpHostSecret = defineSecret("smtp.titan.email");
-const smtpFromSecret = defineSecret("support@financialfreedompower.com");
-
+const smtpHostSecret = defineSecret("SMTP_HOST_SECRET");
+const smtpFromSecret = defineSecret("SMTP_FROM_SECRET");
 
 
 admin.initializeApp();
@@ -33,232 +26,6 @@ const OTP_COLLECTION = "passwordResetOtps";
 const TWO_FACTOR_COLLECTION = "twoFactorOtps";
 const REGISTER_OTP_COLLECTION = "registerOtps";
 const OTP_EXPIRE_MINUTES = 10;
-const SUBSCRIPTION_PLAN = Object.freeze({
-  code: "monthly_core",
-  name: "FFP Vault Pro",
-  amount: 699,
-  currency: "usd",
-});
-const SUBSCRIPTION_TRIAL_DAYS = 14;
-
-function getStripeClient() {
-  const apiKey = stripeSecretKey.value() || process.env.STRIPE_SECRET_KEY;
-  if (!apiKey) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Stripe secret key is not configured.",
-    );
-  }
-  return new Stripe(apiKey);
-}
-
-function getStripePublishableKey() {
-  const key =
-    stripePublishableKey.value() ||
-    process.env.STRIPE_PUBLISHABLE_KEY_SECRET ||
-    process.env.STRIPE_PUBLISHABLE_KEY;
-  if (!key) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Stripe publishable key is not configured.",
-    );
-  }
-  return key;
-}
-
-function subscriptionTimestamp(unixSeconds) {
-  return unixSeconds ?
-    admin.firestore.Timestamp.fromMillis(unixSeconds * 1000) :
-    null;
-}
-
-function buildSubscriptionState({
-  customerId,
-  subscription,
-  paymentIntentId = "",
-  activated = false,
-}) {
-  const resolvedCustomerId = typeof customerId === "string" ?
-    customerId :
-    typeof subscription.customer === "string" ?
-      subscription.customer :
-      subscription.customer?.id || "";
-
-  return {
-    planCode: SUBSCRIPTION_PLAN.code,
-    planName: SUBSCRIPTION_PLAN.name,
-    amount: SUBSCRIPTION_PLAN.amount,
-    currency: SUBSCRIPTION_PLAN.currency,
-    status: subscription?.status || "inactive",
-    provider: "stripe",
-    stripeCustomerId: resolvedCustomerId,
-    stripeSubscriptionId: subscription?.id || "",
-    cancelAtPeriodEnd: subscription?.cancel_at_period_end === true,
-    currentPeriodEnd: subscriptionTimestamp(subscription?.current_period_end),
-    stripePaymentIntentId: paymentIntentId,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    ...(activated ?
-      { activatedAt: admin.firestore.FieldValue.serverTimestamp() } :
-      {}),
-  };
-}
-
-function buildInactiveSubscriptionState(customerId = "") {
-  return {
-    planCode: "",
-    planName: "",
-    amount: 0,
-    currency: SUBSCRIPTION_PLAN.currency,
-    status: "inactive",
-    provider: "stripe",
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: "",
-    cancelAtPeriodEnd: false,
-    currentPeriodEnd: null,
-    stripePaymentIntentId: "",
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
-}
-
-async function replaceUserSubscription(userRef, subscriptionState) {
-  await userRef.set(
-    { subscription: subscriptionState },
-    { mergeFields: ["subscription"] },
-  );
-}
-
-async function findUserByStripeCustomerId(customerId) {
-  if (!customerId) return null;
-  const snapshot = await db
-    .collection("users")
-    .where("subscription.stripeCustomerId", "==", customerId)
-    .limit(1)
-    .get();
-
-  if (snapshot.empty) return null;
-  return snapshot.docs[0];
-}
-
-async function resolveUserRefForSubscription(subscription) {
-  const uid = subscription?.metadata?.uid;
-  if (uid) {
-    return db.collection("users").doc(uid);
-  }
-
-  const customerId = typeof subscription?.customer === "string" ?
-    subscription.customer :
-    subscription?.customer?.id || "";
-  const userDoc = await findUserByStripeCustomerId(customerId);
-  return userDoc?.ref ?? null;
-}
-
-async function cancelStripeSubscriptionIfRetryable(stripeClient, subscriptionId) {
-  if (!subscriptionId) return null;
-
-  try {
-    const subscription = await stripeClient.subscriptions.retrieve(subscriptionId);
-    if (["incomplete", "incomplete_expired"].includes(subscription.status) ||
-      (subscription.status === "trialing" && !subscription.default_payment_method)) {
-      return await stripeClient.subscriptions.cancel(subscriptionId);
-    }
-    return subscription;
-  } catch (error) {
-    if (error?.code === "resource_missing") {
-      return null;
-    }
-    throw error;
-  }
-}
-
-async function syncStripeSubscriptionToFirestore(
-  subscription,
-  { paymentIntentId = "", activated = false } = {},
-) {
-  const userRef = await resolveUserRefForSubscription(subscription);
-  if (!userRef) {
-    console.warn(`No user found for Stripe subscription ${subscription.id}`);
-    return;
-  }
-
-  await replaceUserSubscription(
-    userRef,
-    buildSubscriptionState({
-      customerId: subscription.customer,
-      subscription,
-      paymentIntentId,
-      activated,
-    }),
-  );
-}
-
-async function markStripeCustomerInactive(customerId, subscriptionStatus = "inactive") {
-  const userDoc = await findUserByStripeCustomerId(customerId);
-  if (!userDoc) {
-    console.warn(`No user found for Stripe customer ${customerId}`);
-    return;
-  }
-
-  await replaceUserSubscription(
-    userDoc.ref,
-    {
-      ...buildInactiveSubscriptionState(customerId),
-      status: subscriptionStatus,
-    },
-  );
-}
-
-async function recordStripePayment({
-  uid,
-  subscriptionId,
-  paymentIntentId,
-  amount,
-  currency,
-  status,
-  invoiceId = "",
-}) {
-  if (!paymentIntentId) return;
-
-  const paymentRef = db.collection("subscriptionPayments").doc(paymentIntentId);
-  const paymentSnap = await paymentRef.get();
-  if (paymentSnap.exists) return;
-
-  await paymentRef.set({
-    uid,
-    planCode: SUBSCRIPTION_PLAN.code,
-    planName: SUBSCRIPTION_PLAN.name,
-    amount,
-    currency,
-    status,
-    invoiceId,
-    stripeSubscriptionId: subscriptionId,
-    stripePaymentIntentId: paymentIntentId,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
-}
-
-async function getOrCreateStripeCustomer(uid, email, stripeClient) {
-  const userRef = db.collection("users").doc(uid);
-  const userSnap = await userRef.get();
-  const userData = userSnap.exists ? userSnap.data() : {};
-  const existingCustomerId = userData?.subscription?.stripeCustomerId;
-
-  if (existingCustomerId) {
-    return { customerId: existingCustomerId, userRef, userData };
-  }
-
-  const customer = await stripeClient.customers.create({
-    email: email || undefined,
-    metadata: { uid },
-  });
-
-  await userRef.set({
-    subscription: {
-      stripeCustomerId: customer.id,
-    },
-  }, { merge: true });
-
-  return { customerId: customer.id, userRef, userData };
-}
 
 function normalizeEmail(email) {
   return String(email || "")
@@ -539,8 +306,6 @@ async function issueTwoFactorOtp({ uid, email, purpose }) {
 export const requestPasswordResetOtp = onCall(
   { secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret] },
   async (request) => {
-
-
     try {
       const email = normalizeEmail(request.data?.email);
       if (!validateEmail(email)) {
@@ -597,8 +362,6 @@ export const requestPasswordResetOtp = onCall(
 export const requestTwoFactorEnable = onCall(
   { secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret] },
   async (request) => {
-
-
     if (!request.auth?.uid) {
       throw new HttpsError("unauthenticated", "Login required.");
     }
@@ -676,8 +439,6 @@ export const verifyTwoFactorEnable = onCall(async (request) => {
 export const requestTwoFactorLogin = onCall(
   { secrets: [smtpUserSecret, smtpPassSecret, smtpHostSecret, smtpFromSecret] },
   async (request) => {
-
-
     if (!request.auth?.uid) {
       throw new HttpsError("unauthenticated", "Login required.");
     }
@@ -960,415 +721,6 @@ export const resetPasswordWithOtp = onCall(async (request) => {
 });
 
 
-export const getStripePublicConfig = onCall({ secrets: [stripePublishableKey] }, async () => {
-  return {
-    publishableKey: getStripePublishableKey(),
-    currency: SUBSCRIPTION_PLAN.currency,
-    amount: SUBSCRIPTION_PLAN.amount,
-    planCode: SUBSCRIPTION_PLAN.code,
-    planName: SUBSCRIPTION_PLAN.name,
-    firestoreDbId,
-  };
-});
-
-export const createStripePaymentIntent = onCall({ secrets: [stripeSecretKey] }, async (request) => {
-  if (!request.auth?.uid) {
-    throw new HttpsError("unauthenticated", "Login required to make payments.");
-  }
-
-  try {
-    const stripe = getStripeClient();
-    const { customerId, userRef, userData } = await getOrCreateStripeCustomer(
-      request.auth.uid,
-      request.auth.token.email,
-      stripe,
-    );
-
-    const activeStatus = userData?.subscription?.status;
-    const existingSubscriptionId = userData?.subscription?.stripeSubscriptionId;
-    if (existingSubscriptionId) {
-      const existingSubscription = await cancelStripeSubscriptionIfRetryable(
-        stripe,
-        existingSubscriptionId,
-      );
-      const existingStatus = existingSubscription?.status || activeStatus;
-
-      if (["active", "trialing", "past_due", "unpaid"].includes(existingStatus)) {
-        throw new HttpsError(
-          "already-exists",
-          "An active subscription already exists for this account.",
-        );
-      }
-
-      if (["canceled", "incomplete", "incomplete_expired"].includes(existingStatus)) {
-        await replaceUserSubscription(
-          userRef,
-          buildInactiveSubscriptionState(customerId),
-        );
-      }
-    }
-
-    // Get or create product for the subscription
-    const products = await stripe.products.list({
-      limit: 1,
-      active: true,
-    });
-    let product = products.data.find((p) => p.name === SUBSCRIPTION_PLAN.name);
-    if (!product) {
-      product = await stripe.products.create({
-        name: SUBSCRIPTION_PLAN.name,
-      });
-    }
-
-    const subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{
-        price_data: {
-          currency: SUBSCRIPTION_PLAN.currency,
-          product: product.id,
-          unit_amount: SUBSCRIPTION_PLAN.amount,
-          recurring: {
-            interval: "month",
-          },
-        },
-      }],
-      trial_period_days: SUBSCRIPTION_TRIAL_DAYS,
-      payment_behavior: "default_incomplete",
-      payment_settings: {
-        save_default_payment_method: "on_subscription",
-      },
-      trial_settings: {
-        end_behavior: {
-          missing_payment_method: "cancel",
-        },
-      },
-      metadata: {
-        uid: request.auth.uid,
-        planCode: SUBSCRIPTION_PLAN.code,
-        planName: SUBSCRIPTION_PLAN.name,
-      },
-      expand: ["pending_setup_intent"],
-    });
-
-    const setupIntent = subscription.pending_setup_intent;
-    if (!setupIntent?.client_secret) {
-      throw new HttpsError(
-        "internal",
-        "Unable to initialize subscription trial.",
-      );
-    }
-
-    const ephemeralKey = await stripe.ephemeralKeys.create(
-      { customer: customerId },
-      { apiVersion: "2024-06-20" },
-    );
-
-    await replaceUserSubscription(
-      userRef,
-      buildSubscriptionState({
-        customerId,
-        subscription,
-      }),
-    );
-
-    return {
-      clientSecret: setupIntent.client_secret,
-      setupIntentId: setupIntent.id,
-      customerId,
-      customerEphemeralKeySecret: ephemeralKey.secret,
-      subscriptionId: subscription.id,
-      amount: SUBSCRIPTION_PLAN.amount,
-      currency: SUBSCRIPTION_PLAN.currency,
-      planCode: SUBSCRIPTION_PLAN.code,
-      planName: SUBSCRIPTION_PLAN.name,
-    };
-  } catch (error) {
-    console.error("Stripe Error in createStripePaymentIntent:", error);
-    if (error instanceof HttpsError) {
-      throw error;
-    }
-    throw new HttpsError("internal", error.message || "An unknown internal error occurred.");
-  }
-});
-
-export const finalizeStripePayment = onCall({ secrets: [stripeSecretKey] }, async (request) => {
-  if (!request.auth?.uid) {
-    throw new HttpsError("unauthenticated", "Login required to make payments.");
-  }
-
-  const subscriptionId = String(request.data?.subscriptionId || "").trim();
-  if (!subscriptionId.startsWith("sub_")) {
-    throw new HttpsError("invalid-argument", "Valid subscriptionId is required.");
-  }
-  const paymentMethodId = String(request.data?.paymentMethodId || "").trim();
-  const setupIntentId = String(request.data?.setupIntentId || "").trim();
-
-  try {
-    const stripe = getStripeClient();
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-      expand: ["pending_setup_intent"],
-    });
-    const setupIntent = subscription.pending_setup_intent;
-
-    if (setupIntent && setupIntent.status !== "succeeded") {
-      throw new HttpsError(
-        "failed-precondition",
-        "Payment setup has not completed successfully.",
-      );
-    }
-
-    if (subscription.metadata?.uid !== request.auth.uid) {
-      throw new HttpsError("permission-denied", "Subscription does not belong to this user.");
-    }
-
-    let resolvedPaymentMethodId = paymentMethodId;
-    if (!resolvedPaymentMethodId && setupIntentId.startsWith("seti_")) {
-      const retrievedSetupIntent = await stripe.setupIntents.retrieve(setupIntentId);
-      if (retrievedSetupIntent.status !== "succeeded") {
-        throw new HttpsError(
-          "failed-precondition",
-          "Payment setup has not completed successfully.",
-        );
-      }
-      resolvedPaymentMethodId = typeof retrievedSetupIntent.payment_method === "string" ?
-        retrievedSetupIntent.payment_method :
-        retrievedSetupIntent.payment_method?.id || "";
-    }
-
-    if (!resolvedPaymentMethodId.startsWith("pm_")) {
-      throw new HttpsError(
-        "failed-precondition",
-        "No payment method was attached to the subscription setup.",
-      );
-    }
-
-    await stripe.customers.update(subscription.customer, {
-      invoice_settings: {
-        default_payment_method: resolvedPaymentMethodId,
-      },
-    });
-
-    const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
-      default_payment_method: resolvedPaymentMethodId,
-    });
-
-    await replaceUserSubscription(
-      db.collection("users").doc(request.auth.uid),
-      buildSubscriptionState({
-        customerId: updatedSubscription.customer,
-        subscription: updatedSubscription,
-        paymentIntentId: "",
-        activated: true,
-      }),
-    );
-
-    return {
-      status: "trial_started",
-      subscriptionStatus: updatedSubscription.status,
-      paymentIntentId: "",
-      subscriptionId: updatedSubscription.id,
-      cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
-    };
-  } catch (error) {
-    if (error instanceof HttpsError) {
-      throw error;
-    }
-    throw new HttpsError("internal", error.message);
-  }
-});
-
-export const abandonStripeCheckout = onCall({ secrets: [stripeSecretKey] }, async (request) => {
-  if (!request.auth?.uid) {
-    throw new HttpsError("unauthenticated", "Login required to manage billing.");
-  }
-
-  const subscriptionId = String(request.data?.subscriptionId || "").trim();
-  if (!subscriptionId.startsWith("sub_")) {
-    throw new HttpsError("invalid-argument", "Valid subscriptionId is required.");
-  }
-
-  try {
-    const stripe = getStripeClient();
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    if (subscription.metadata?.uid !== request.auth.uid) {
-      throw new HttpsError("permission-denied", "Subscription does not belong to this user.");
-    }
-
-    const customerId = typeof subscription.customer === "string" ?
-      subscription.customer :
-      subscription.customer?.id || "";
-
-    if (["active", "trialing"].includes(subscription.status) &&
-      subscription.default_payment_method) {
-      return {
-        status: "kept",
-        subscriptionStatus: subscription.status,
-        paymentIntentId: "",
-        subscriptionId: subscription.id,
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      };
-    }
-
-    if (!["canceled", "incomplete_expired"].includes(subscription.status)) {
-      await stripe.subscriptions.cancel(subscription.id);
-    }
-
-    await replaceUserSubscription(
-      db.collection("users").doc(request.auth.uid),
-      buildInactiveSubscriptionState(customerId),
-    );
-
-    return {
-      status: "abandoned",
-      subscriptionStatus: "inactive",
-      paymentIntentId: "",
-      subscriptionId: subscription.id,
-      cancelAtPeriodEnd: false,
-    };
-  } catch (error) {
-    if (error instanceof HttpsError) {
-      throw error;
-    }
-    throw new HttpsError("internal", error.message);
-  }
-});
-
-export const cancelStripeSubscription = onCall({ secrets: [stripeSecretKey] }, async (request) => {
-  if (!request.auth?.uid) {
-    throw new HttpsError("unauthenticated", "Login required to manage billing.");
-  }
-
-  const userRef = db.collection("users").doc(request.auth.uid);
-  const userSnap = await userRef.get();
-  const subscriptionId = userSnap.data()?.subscription?.stripeSubscriptionId;
-
-  if (!subscriptionId) {
-    throw new HttpsError("not-found", "No active subscription was found.");
-  }
-
-  try {
-    const stripe = getStripeClient();
-    const subscription = await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true,
-    });
-
-    await replaceUserSubscription(
-      userRef,
-      buildSubscriptionState({
-        customerId: subscription.customer,
-        subscription,
-      }),
-    );
-
-    return {
-      status: "cancel_scheduled",
-      subscriptionStatus: subscription.status,
-      paymentIntentId: "",
-      subscriptionId: subscription.id,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    };
-  } catch (error) {
-    if (error instanceof HttpsError) {
-      throw error;
-    }
-    throw new HttpsError("internal", error.message);
-  }
-});
-
-export const stripeWebhook = onRequest(
-  { secrets: [stripeSecretKey, stripeWebhookSecret] },
-  async (request, response) => {
-    if (request.method !== "POST") {
-      response.status(405).send("Method Not Allowed");
-      return;
-    }
-
-    const signature = request.headers["stripe-signature"];
-    if (!signature) {
-      response.status(400).send("Missing Stripe signature");
-      return;
-    }
-
-    try {
-      const stripe = getStripeClient();
-      const webhookSecret = stripeWebhookSecret.value() || process.env.STRIPE_WEBHOOK_SECRET;
-      if (!webhookSecret) {
-        throw new Error("Stripe webhook secret is not configured.");
-      }
-
-      const event = stripe.webhooks.constructEvent(
-        request.rawBody,
-        signature,
-        webhookSecret,
-      );
-
-      switch (event.type) {
-        case "customer.subscription.created":
-        case "customer.subscription.updated": {
-          const subscription = event.data.object;
-          await syncStripeSubscriptionToFirestore(subscription);
-          break;
-        }
-        case "customer.subscription.deleted": {
-          const subscription = event.data.object;
-          const customerId = typeof subscription.customer === "string" ?
-            subscription.customer :
-            subscription.customer?.id || "";
-          await markStripeCustomerInactive(customerId, subscription.status || "canceled");
-          break;
-        }
-        case "invoice.payment_succeeded": {
-          const invoice = event.data.object;
-          if (!invoice.subscription) break;
-          const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-          const userRef = await resolveUserRefForSubscription(subscription);
-          if (userRef) {
-            await recordStripePayment({
-              uid: userRef.id,
-              subscriptionId: subscription.id,
-              paymentIntentId: typeof invoice.payment_intent === "string" ?
-                invoice.payment_intent :
-                invoice.payment_intent?.id || "",
-              amount: invoice.amount_paid,
-              currency: invoice.currency,
-              status: "succeeded",
-              invoiceId: invoice.id,
-            });
-          }
-          await syncStripeSubscriptionToFirestore(
-            subscription,
-            {
-              paymentIntentId: typeof invoice.payment_intent === "string" ?
-                invoice.payment_intent :
-                invoice.payment_intent?.id || "",
-              activated: true,
-            },
-          );
-          break;
-        }
-        case "invoice.payment_failed": {
-          const invoice = event.data.object;
-          if (!invoice.subscription) break;
-          const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-          await syncStripeSubscriptionToFirestore(subscription, {
-            paymentIntentId: typeof invoice.payment_intent === "string" ?
-              invoice.payment_intent :
-              invoice.payment_intent?.id || "",
-          });
-          break;
-        }
-        default:
-          break;
-      }
-
-      response.json({ received: true });
-    } catch (error) {
-      console.error("Stripe webhook error", error);
-      response.status(400).send(`Webhook Error: ${error.message}`);
-    }
-  },
-);
-
 // ── RevenueCat Webhook ──────────────────────────────────────────────────────
 // Receives purchase lifecycle events from RevenueCat and syncs them to Firestore.
 // Set this URL in the RevenueCat dashboard:
@@ -1425,9 +777,9 @@ export const revenuecatWebhook = onRequest(
             rcCustomerId: appUserId,
             rcEntitlementId: entitlementId,
             cancelAtPeriodEnd: false,
-            currentPeriodEnd: expirationMs
-              ? admin.firestore.Timestamp.fromMillis(expirationMs)
-              : null,
+            currentPeriodEnd: expirationMs ?
+              admin.firestore.Timestamp.fromMillis(expirationMs) :
+              null,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           };
           break;
@@ -1443,9 +795,9 @@ export const revenuecatWebhook = onRequest(
             rcCustomerId: appUserId,
             rcEntitlementId: entitlementId,
             cancelAtPeriodEnd: true,
-            currentPeriodEnd: expirationMs
-              ? admin.firestore.Timestamp.fromMillis(expirationMs)
-              : null,
+            currentPeriodEnd: expirationMs ?
+              admin.firestore.Timestamp.fromMillis(expirationMs) :
+              null,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           };
           break;
@@ -1501,9 +853,9 @@ export const revenuecatWebhook = onRequest(
 
 // ── Delete User Account (complete data wipe) ─────────────────────────────────
 // Deletes ALL user data across Firestore sub-collections, Cloud Storage files,
-// OTP records, payment history, reminders, and Stripe subscriptions.
+// OTP records, payment history, and reminders.
 // Requires Firebase Auth (admin SDK) — must be called by an authenticated user.
-export const deleteUserAccount = onCall({ secrets: [stripeSecretKey] }, async (request) => {
+export const deleteUserAccount = onCall(async (request) => {
   if (!request.auth?.uid) {
     throw new HttpsError("unauthenticated", "Login required to delete account.");
   }
@@ -1514,39 +866,7 @@ export const deleteUserAccount = onCall({ secrets: [stripeSecretKey] }, async (r
 
   const errors = [];
 
-  // 1. Cancel any active Stripe subscription
-  try {
-    const userSnap = await db.collection("users").doc(uid).get();
-    const subscription = userSnap.data()?.subscription;
-    const stripeCustomerId = subscription?.stripeCustomerId;
-    const stripeSubscriptionId = subscription?.stripeSubscriptionId;
-
-    if (stripeCustomerId || stripeSubscriptionId) {
-      const stripe = getStripeClient();
-
-      if (stripeSubscriptionId && stripeSubscriptionId.startsWith("sub_")) {
-        try {
-          await stripe.subscriptions.cancel(stripeSubscriptionId);
-        } catch (e) {
-          // Subscription may already be canceled or missing — non-fatal
-          console.warn(`Stripe subscription cancel note for ${uid}: ${e.message}`);
-        }
-      }
-
-      if (stripeCustomerId && stripeCustomerId.startsWith("cus_")) {
-        try {
-          await stripe.customers.del(stripeCustomerId);
-        } catch (e) {
-          console.warn(`Stripe customer delete note for ${uid}: ${e.message}`);
-        }
-      }
-
-    }
-  } catch (e) {
-    errors.push(`Stripe cleanup: ${e.message}`);
-  }
-
-  // 2. Delete ALL Firestore collections for this user
+  // 1. Delete ALL Firestore collections for this user
   const firestoreCollections = [
     { name: "users", docId: uid },
     { name: "housingCosts", field: "userId", value: uid },

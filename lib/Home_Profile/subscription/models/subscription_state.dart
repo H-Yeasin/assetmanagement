@@ -54,7 +54,7 @@ class SubscriptionState {
     amount: 0,
     currency: 'usd',
     status: 'inactive',
-    provider: SubscriptionProvider.stripe,
+    provider: SubscriptionProvider.revenuecat,
     providerCustomerId: '',
     providerSubscriptionId: '',
     cancelAtPeriodEnd: false,
@@ -98,7 +98,7 @@ class SubscriptionState {
     }
 
     // Detect provider from Firestore data.
-    final providerRaw = data['provider'] as String? ?? 'stripe';
+    final providerRaw = data['provider'] as String? ?? 'revenuecat';
     final provider = providerRaw == 'revenuecat'
         ? SubscriptionProvider.revenuecat
         : SubscriptionProvider.stripe;

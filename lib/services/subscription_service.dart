@@ -12,8 +12,6 @@ import 'revenuecat_service.dart';
 /// webhook + SDK listener) and delegates provider-specific actions
 /// (purchase, cancel) to [RevenueCatService].
 ///
-/// LEGACY: Stripe-specific methods are kept temporarily and will be removed
-/// once the Stripe Cloud Functions are deleted.
 class SubscriptionService {
   SubscriptionService();
 
@@ -27,8 +25,7 @@ class SubscriptionService {
 
   /// Streams the user's [SubscriptionState] from Firestore.
   ///
-  /// Works regardless of provider (Stripe or RevenueCat) because the data
-  /// shape in Firestore is unified by the server-side webhooks.
+  /// Works with the RevenueCat subscription data synced by the webhook.
   Stream<SubscriptionState> streamSubscription() {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return Stream.value(SubscriptionState.inactive);

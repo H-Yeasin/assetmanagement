@@ -13,22 +13,18 @@ cd functions
 npm install
 ```
 
-## 2) Configure SMTP env for sending email OTP
+## 2) Configure secrets
 
-Set these as function environment variables/secrets before deploy:
+Set these as Firebase Functions secrets before deploy:
 
-- `SMTP_HOST`
-- `SMTP_PORT` (`587` or `465`)
-- `SMTP_USER`
-- `SMTP_PASS`
-- `SMTP_FROM`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_PUBLISHABLE_KEY_SECRET`
+- `SMTP_HOST_SECRET`
+- `SMTP_USER_SECRET`
+- `SMTP_PASS_SECRET`
+- `SMTP_FROM_SECRET`
+- `RC_WEBHOOK_SECRET`
 - `FIRESTORE_DB_ID` (set to `ffpvault` if you use the named Firestore database)
 
-`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PUBLISHABLE_KEY_SECRET`
-are configured as Firebase Functions secrets in this project.
+`RC_WEBHOOK_SECRET` must match the bearer token configured in RevenueCat.
 
 ## 3) Deploy functions
 
