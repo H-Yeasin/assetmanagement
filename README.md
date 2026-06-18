@@ -34,8 +34,8 @@ A Flutter mobile application for organizing your finances with clarity and confi
 - Account deletion with confirmation
 
 ### Subscription & Payments
-- Stripe-integrated subscription plans
-- Payment sheet with multiple payment methods
+- RevenueCat-integrated subscription plans
+- Native App Store / Google Play purchase flow
 
 ### Notifications
 - Local notifications for payment reminders
@@ -51,7 +51,7 @@ A Flutter mobile application for organizing your finances with clarity and confi
 | Local Storage  | Hive (with Hive Generator), Flutter Secure Storage            |
 | Backend        | Firebase (Auth, Firestore, Storage, Cloud Functions, App Check, Messaging) |
 | Authentication | Firebase Auth (Email/Password, Google Sign-In, Sign in with Apple) |
-| Payments       | Stripe (flutter_stripe)                                       |
+| Payments       | RevenueCat (purchases_flutter, purchases_ui_flutter)          |
 | Notifications  | flutter_local_notifications, FCM                              |
 | Biometrics     | local_auth                                                    |
 | Calendar       | table_calendar                                                |
@@ -118,14 +118,16 @@ lib/
    flutter run
    ```
 
-### Stripe Configuration
+### RevenueCat Configuration
 
-The app uses Stripe for subscription payments. Ensure the Stripe publishable key is configured via the `SubscriptionService`.
+The app uses RevenueCat for subscription payments and vault access. See
+[REVENUECAT_QUICK_GUIDE.md](REVENUECAT_QUICK_GUIDE.md) for the active setup,
+required entitlement IDs, webhook details, and testing checklist.
 
 ## Environment Variables & Configuration
 
 - Firebase project: `ffp-vault-app`
-- Stripe URL scheme: `ffpvault`
+- RevenueCat entitlement: `ffpvaultapp_pro`
 - App Check: Debug provider enabled for development
 
 ## Building
