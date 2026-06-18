@@ -25,6 +25,8 @@ Keep these IDs aligned between RevenueCat, the app config, and store products.
 |---|---|---|
 | Entitlement ID | `ffpvaultapp_pro` | Vault access checks |
 | Package ID | `monthly` | Monthly package lookup |
+| Active paywall key | `default` | Selects a named offering in `AppConfig.revenueCatOfferingIds` |
+| Offering override | empty | Directly overrides the selected named offering |
 | Plan name | `FFP Vault Pro` | UI and Firestore subscription data |
 | Firestore DB | `ffpvault` | User subscription records |
 | Price fallback | `699` / `usd` | UI and Firestore fallback metadata |
@@ -60,8 +62,7 @@ flutter run --dart-define=RC_VAULT_ENTITLEMENT_ID=your_entitlement_key
 | [lib/config/app_config.dart](lib/config/app_config.dart) | RevenueCat keys, entitlement ID, offering/package config |
 | [lib/services/revenuecat_service.dart](lib/services/revenuecat_service.dart) | SDK wrapper for offerings, purchases, restores, entitlement checks, Firestore sync |
 | [lib/services/subscription_service.dart](lib/services/subscription_service.dart) | App-facing subscription facade used by UI/gates |
-| [lib/Home_Profile/subscription/choose_payment_screen.dart](lib/Home_Profile/subscription/choose_payment_screen.dart) | Custom subscription purchase screen |
-| [lib/Home_Profile/subscription/rc_paywall_screen.dart](lib/Home_Profile/subscription/rc_paywall_screen.dart) | Optional RevenueCat hosted paywall screen |
+| [lib/Home_Profile/subscription/subscription_plan_screen.dart](lib/Home_Profile/subscription/subscription_plan_screen.dart) | Custom subscription screen and RevenueCat purchase/paywall entry point |
 | [lib/Home_Profile/subscription/payment_status_screen.dart](lib/Home_Profile/subscription/payment_status_screen.dart) | Waits for activation before opening the vault |
 | [functions/index.js](functions/index.js) | `revenuecatWebhook` Cloud Function |
 
@@ -129,8 +130,42 @@ Optional flags:
 flutter run \
   --dart-define=RC_API_KEY=your_revenuecat_public_key \
   --dart-define=RC_VAULT_ENTITLEMENT_ID=ffpvaultapp_pro \
+  --dart-define=RC_ACTIVE_PAYWALL=default \
+  --dart-define=RC_PACKAGE_ID=monthly \
   --dart-define=USE_REVENUECAT_PAYWALL=false
 ```
+
+### Switching Offerings And Paywalls
+
+RevenueCat-hosted paywalls are attached to offerings in the RevenueCat
+dashboard. The app uses [AppConfig.revenueCatOfferingIds](lib/config/app_config.dart)
+as the code-controlled list of named offerings:
+
+```dart
+static const Map<String, String> revenueCatOfferingIds = {
+  'default': '',
+  'launch': 'launch',
+  'promo': 'promo',
+  'annual': 'annual',
+};
+```
+
+To switch from code, change `activeRevenueCatPaywall`'s default value in
+`app_config.dart`. To switch per build, set:
+
+```sh
+flutter run --dart-define=RC_ACTIVE_PAYWALL=promo
+```
+
+To bypass the named map and target a specific RevenueCat offering directly, set:
+
+```sh
+flutter run --dart-define=RC_OFFERING_ID=your_offering_id
+```
+
+When `USE_REVENUECAT_PAYWALL=false`, the custom subscription screen purchases
+the package from the selected offering. When `USE_REVENUECAT_PAYWALL=true`, the
+same screen presents the RevenueCat-hosted paywall attached to that offering.
 
 For development only, vault subscription checks can be bypassed:
 

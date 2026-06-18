@@ -78,22 +78,61 @@ class AppConfig {
     defaultValue: 'ffpvaultapp_pro',
   );
 
-  /// The RevenueCat offering identifier to fetch.
+  /// Direct RevenueCat offering override.
   ///
-  /// RevenueCat supports multiple offerings (e.g. "default", "promo", "sale").
-  /// Leave empty to use the current default offering from the dashboard.
+  /// When this is not empty, it wins over [activeRevenueCatPaywall] and the
+  /// [revenueCatOfferingIds] map below.
   ///
   /// Set via `--dart-define=RC_OFFERING_ID=your_offering_id`.
-  static const String rcOfferingId = String.fromEnvironment(
+  static const String rcOfferingIdOverride = String.fromEnvironment(
     'RC_OFFERING_ID',
     defaultValue: '',
   );
+
+  /// Selects one of the named offerings in [revenueCatOfferingIds].
+  ///
+  /// RevenueCat paywalls are attached to offerings in the RevenueCat dashboard,
+  /// so changing this value switches which hosted paywall is presented when
+  /// [useRevenueCatPaywall] is true.
+  ///
+  /// Set via `--dart-define=RC_ACTIVE_PAYWALL=launch`, or change the default
+  /// here when you want the app's code-controlled default.
+  static const String activeRevenueCatPaywall = String.fromEnvironment(
+    'RC_ACTIVE_PAYWALL',
+    defaultValue: 'default',
+  );
+
+  /// Named RevenueCat offerings/paywalls controlled from code.
+  ///
+  /// Add your RevenueCat offering identifiers here, then switch between them
+  /// with [activeRevenueCatPaywall] or `RC_ACTIVE_PAYWALL`.
+  ///
+  /// An empty offering ID means "use the RevenueCat dashboard current offering".
+  static const Map<String, String> revenueCatOfferingIds = {
+    'default': '',
+    'launch': 'launch',
+    'promo': 'promo',
+    'annual': 'annual',
+  };
+
+  /// The effective RevenueCat offering identifier used for both:
+  /// - Custom plan purchases on SubscriptionPlanScreen.
+  /// - RevenueCat-hosted paywalls when [useRevenueCatPaywall] is true.
+  static String get rcOfferingId {
+    if (rcOfferingIdOverride.isNotEmpty) return rcOfferingIdOverride;
+    return revenueCatOfferingIds[activeRevenueCatPaywall] ??
+        revenueCatOfferingIds['default'] ??
+        '';
+  }
 
   /// The product/package identifiers your app expects within an offering.
   ///
   /// These must match the package identifiers configured in your RevenueCat
   /// offering (RevenueCat Dashboard → Offerings → Packages).
-  static const String monthlyPackageId = 'monthly';
+  static const String monthlyPackageId = String.fromEnvironment(
+    'RC_PACKAGE_ID',
+    defaultValue: 'monthly',
+  );
 
   /// Human-readable plan name shown in the UI.
   static const String planName = 'FFP Vault Pro';
@@ -106,8 +145,9 @@ class AppConfig {
 
   /// Controls which purchase UI is presented to the user.
   ///
-  /// `false` (default) — Your custom-branded [ChoosePaymentScreen].
-  /// `true`  — RevenueCat's native paywall via [RCPaywallScreen].
+  /// `false` (default) — Purchase directly from your custom-branded
+  /// [SubscriptionPlanScreen].
+  /// `true`  — Present RevenueCat's hosted paywall from the subscribe button.
   ///
   /// Both options use RevenueCat under the hood for purchase processing.
   static const bool useRevenueCatPaywall = bool.fromEnvironment(

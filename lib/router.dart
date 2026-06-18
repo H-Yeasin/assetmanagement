@@ -1,9 +1,6 @@
 import 'package:ffp_vault/Home_Profile/subscription/subscription_plan_screen.dart';
-import 'package:ffp_vault/Home_Profile/subscription/choose_payment_screen.dart';
-import 'package:ffp_vault/Home_Profile/subscription/rc_paywall_screen.dart';
 import 'package:ffp_vault/Home_Profile/subscription/payment_status_screen.dart';
 import 'package:ffp_vault/Home_Profile/subscription/models/subscription_confirmation.dart';
-import 'package:ffp_vault/config/app_config.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ffp_vault/Splash_Screen/splash_screen.dart';
@@ -228,12 +225,6 @@ final GoRouter appRouter = GoRouter(
           openedFromVaultGate: extra?['openedFromVaultGate'] == true,
         );
       },
-    ),
-    GoRoute(
-      path: '/choose-payment',
-      builder: (context, state) => AppConfig.useRevenueCatPaywall
-          ? const RCPaywallScreen()
-          : const ChoosePaymentScreen(),
     ),
     GoRoute(
       path: '/payment-success',

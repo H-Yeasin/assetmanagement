@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
+import '../../config/app_config.dart';
+import '../../services/revenuecat_service.dart';
 import '../../services/subscription_service.dart';
+import 'models/subscription_confirmation.dart';
 import 'models/subscription_state.dart';
 import 'widgets/feature_item.dart';
 
@@ -17,7 +23,22 @@ class SubscriptionPlanScreen extends StatefulWidget {
 
 class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
   final SubscriptionService _subscriptionService = SubscriptionService();
+  final RevenueCatService _rcService = RevenueCatService();
   bool _isCancelling = false;
+  bool _isPurchasing = false;
+  Package? _monthlyPackage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOfferings();
+  }
+
+  Future<void> _loadOfferings() async {
+    final package = await _rcService.getMonthlyPackage();
+    if (!mounted) return;
+    setState(() => _monthlyPackage = package);
+  }
 
   void _handleBackNavigation() {
     if (widget.openedFromVaultGate) {
@@ -80,6 +101,145 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
     }
   }
 
+  Future<void> _handleSubscribe() async {
+    if (AppConfig.useRevenueCatPaywall) {
+      await _presentRevenueCatPaywall();
+      return;
+    }
+
+    await _purchase();
+  }
+
+  Future<void> _presentRevenueCatPaywall() async {
+    if (_isPurchasing) return;
+
+    setState(() => _isPurchasing = true);
+    try {
+      final offering = await _rcService.getCurrentOffering(forceRefresh: true);
+      if (!mounted) return;
+
+      final result = await RevenueCatUI.presentPaywall(offering: offering);
+      if (!mounted) return;
+
+      switch (result) {
+        case PaywallResult.purchased:
+        case PaywallResult.restored:
+          final customerInfo = await _rcService.getCustomerInfo();
+          await _rcService.syncToFirestore(customerInfo);
+          if (!mounted) return;
+          context.go(
+            '/payment-success',
+            extra: const PaymentStatusArgs(
+              isSuccess: true,
+              title: 'Subscription Active',
+              message:
+                  'Welcome to the FFP Vault.\n\nYour subscription is now active and you can start organizing your finances with clarity and confidence.',
+              buttonLabel: 'Open the Vault',
+            ),
+          );
+          break;
+        case PaywallResult.cancelled:
+        case PaywallResult.notPresented:
+          break;
+        case PaywallResult.error:
+          context.go(
+            '/payment-failed',
+            extra: const PaymentStatusArgs(
+              isSuccess: false,
+              title: 'Something Went Wrong',
+              message:
+                  'We could not complete your purchase. Please try again.',
+            ),
+          );
+          break;
+      }
+    } catch (_) {
+      if (!mounted) return;
+      context.go(
+        '/payment-failed',
+        extra: const PaymentStatusArgs(
+          isSuccess: false,
+          title: 'Payment Failed',
+          message: 'We could not complete your purchase. Please try again.',
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isPurchasing = false);
+    }
+  }
+
+  Future<void> _purchase() async {
+    if (_isPurchasing) return;
+
+    var package = _monthlyPackage;
+    package ??= await _rcService.getMonthlyPackage(forceRefresh: true);
+    if (!mounted) return;
+
+    if (mounted && package != _monthlyPackage) {
+      setState(() => _monthlyPackage = package);
+    }
+
+    if (package == null) {
+      _showError(
+        'Subscription is not available right now. Please try again later.',
+      );
+      return;
+    }
+
+    setState(() => _isPurchasing = true);
+
+    try {
+      await _rcService.purchase(package);
+
+      if (!mounted) return;
+      context.go(
+        '/payment-success',
+        extra: const PaymentStatusArgs(
+          isSuccess: true,
+          title: 'Subscription Active',
+          message:
+              'Welcome to the FFP Vault.\n\nYour subscription is now active and you can start organizing your finances with clarity and confidence.',
+          buttonLabel: 'Open the Vault',
+        ),
+      );
+    } on PlatformException catch (e) {
+      final cancelled =
+          e.details is Map && (e.details as Map)['userCancelled'] == true;
+
+      if (!mounted) return;
+      if (cancelled) return;
+
+      context.go(
+        '/payment-failed',
+        extra: PaymentStatusArgs(
+          isSuccess: false,
+          title: 'Payment Not Completed',
+          message: e.message?.isNotEmpty == true
+              ? e.message!
+              : 'We could not complete your payment. Please try again.',
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      context.go(
+        '/payment-failed',
+        extra: const PaymentStatusArgs(
+          isSuccess: false,
+          title: 'Payment Failed',
+          message: 'We could not complete your payment. Please try again.',
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isPurchasing = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   String _formatPeriodEnd(DateTime? date) {
     if (date == null) return 'Billing updates after activation';
     return 'Active until ${DateFormat('MMM d, yyyy').format(date)}';
@@ -102,6 +262,8 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
         final isSubscribed = subscription.isSubscribed;
         final isFreeTrialActive = subscription.isFreeTrialActive;
         final hasAccess = subscription.isActive;
+        final packagePrice =
+            _monthlyPackage?.storeProduct.priceString ?? '\$6.99';
 
         return PopScope(
           canPop: false,
@@ -310,8 +472,8 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                               children: [
                                                 TextSpan(
                                                   text: isSubscribed
-                                                      ? '\$6.99'
-                                                      : 'Then \$6.99',
+                                                      ? packagePrice
+                                                      : 'Then $packagePrice',
                                                   style: const TextStyle(
                                                     fontSize: 20,
                                                     fontWeight: FontWeight.w800,
@@ -406,9 +568,9 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                           _isCancelling
                                       ? null
                                       : _cancelSubscription
-                                : () {
-                                    context.push('/choose-payment');
-                                  },
+                                : _isPurchasing
+                                    ? null
+                                    : _handleSubscribe,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFC61C36),
                               foregroundColor: Colors.white,
@@ -417,7 +579,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                               ),
                               elevation: 0,
                             ),
-                            child: _isCancelling
+                            child: _isCancelling || _isPurchasing
                                 ? const CircularProgressIndicator(
                                     color: Colors.white,
                                   )
