@@ -24,6 +24,7 @@ class AuthService {
     required String password,
     required String confirmPassword,
   }) async {
+    final stopwatch = Stopwatch()..start();
     try {
       if (password != confirmPassword) {
         return _formatError("Passwords do not match");
@@ -39,7 +40,10 @@ class AuthService {
         await user.updateDisplayName(fullName);
         await user.reload();
         await _safeUpsertUserDoc(user, fallbackName: fullName);
-        return _authSuccess(
+        debugPrint(
+          'AuthService.register completed in ${stopwatch.elapsedMilliseconds}ms',
+        );
+        return _registrationPendingSuccess(
           user,
           message: 'Registration successful',
           userName: fullName,
@@ -59,7 +63,11 @@ class AuthService {
 
           if (refreshedUser != null && !refreshedUser.emailVerified) {
             await _safeUpsertUserDoc(refreshedUser, fallbackName: fullName);
-            return _authSuccess(
+            debugPrint(
+              'AuthService.register existing pending user completed in '
+              '${stopwatch.elapsedMilliseconds}ms',
+            );
+            return _registrationPendingSuccess(
               refreshedUser,
               message: 'Registration pending verification',
               userName: fullName,
@@ -395,10 +403,15 @@ class AuthService {
   static Future<Map<String, dynamic>> requestRegisterOtp({
     required String email,
   }) async {
+    final stopwatch = Stopwatch()..start();
     try {
       final callable = _functions.httpsCallable('requestRegisterOtp');
       final response = await callable.call({'email': email.trim()});
       final data = (response.data as Map?)?.cast<String, dynamic>() ?? {};
+      debugPrint(
+        'AuthService.requestRegisterOtp completed in '
+        '${stopwatch.elapsedMilliseconds}ms',
+      );
       return {
         'statusCode': 200,
         'success': true,
@@ -655,6 +668,28 @@ class AuthService {
   }
 
   // ── Helper ───────────────────────────────────────────────────────────────
+  static Map<String, dynamic> _registrationPendingSuccess(
+    User user, {
+    required String message,
+    required String userName,
+  }) {
+    return {
+      'statusCode': 200,
+      'success': true,
+      'message': message,
+      'data': {
+        '_id': user.uid,
+        'user': {
+          '_id': user.uid,
+          'email': user.email ?? '',
+          'phone': user.phoneNumber ?? '',
+          'fullName': user.displayName ?? userName,
+          'avatar': {'url': user.photoURL ?? ''},
+        },
+      },
+    };
+  }
+
   static Map<String, dynamic> _formatError(String message, [int code = 400]) {
     return {
       'statusCode': code,

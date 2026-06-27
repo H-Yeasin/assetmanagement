@@ -31,9 +31,9 @@ class AppConfig {
   ///
   /// The key is only used as a fallback — `--dart-define` takes precedence:
   /// ```sh
-  /// flutter run --dart-define=RC_API_KEY=test_UWshnmVmdrmAtFWWZLaSJJgMiQW
+  /// flutter run --dart-define=RC_API_KEY=your_revenuecat_public_key
   /// ```
-  static const String _defaultRcApiKey = 'test_UWshnmVmdrmAtFWWZLaSJJgMiQW';
+  static const String _defaultRcApiKey = '';
 
   /// Unified RevenueCat API key (works across both platforms in RevenueCat v5+).
   ///

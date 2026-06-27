@@ -3,7 +3,7 @@ description: "Financial Freedom Power."
 
 publish_to: 'none'
 
-version: 2.0.0+2
+version: 5.0.0+5
 
 environment:
   sdk: ^3.10.4

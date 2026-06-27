@@ -37,13 +37,21 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   bool _loading = false;
+  bool _sendingCode = false;
+  bool _codeSendFailed = false;
   int _resendSeconds = 45;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _startCountdown();
+    if (widget.flow == 'register') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sendRegisterOtp();
+      });
+    } else {
+      _startCountdown();
+    }
   }
 
   @override
@@ -76,6 +84,18 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   }
 
   String get _otp => _controllers.map((c) => c.text).join();
+
+  String get _deliveryMessage {
+    if (widget.flow == 'register') {
+      if (_sendingCode) {
+        return 'Sending a 6-digit code to ${widget.email}';
+      }
+      if (_codeSendFailed) {
+        return "We couldn't send a code. Tap resend to try again.";
+      }
+    }
+    return "We've sent a 6-digit code to ${widget.email}";
+  }
 
   void _onKeyTap(String value) {
     for (int i = 0; i < 6; i++) {
@@ -188,17 +208,51 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   }
 
   Future<void> _handleResend() async {
-    if (_resendSeconds > 0) return;
+    if (_resendSeconds > 0 || _sendingCode) return;
     try {
       if (widget.flow == 'forgot') {
-        await AuthService.forgotPassword(email: widget.email);
+        final result = await AuthService.forgotPassword(email: widget.email);
+        if (result['success'] != true) {
+          _showSnack(result['message'] ?? 'Failed to resend OTP');
+          return;
+        }
       } else if (widget.flow == 'register') {
-        await AuthService.requestRegisterOtp(email: widget.email);
+        await _sendRegisterOtp(showSuccess: true);
+        return;
       }
       _showSnack('OTP resent to ${widget.email}');
       _startCountdown();
     } catch (_) {
       _showSnack('Failed to resend OTP');
+    }
+  }
+
+  Future<void> _sendRegisterOtp({bool showSuccess = false}) async {
+    if (_sendingCode) return;
+    setState(() {
+      _sendingCode = true;
+      _codeSendFailed = false;
+    });
+
+    final result = await AuthService.requestRegisterOtp(email: widget.email);
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      if (showSuccess) _showSnack('OTP resent to ${widget.email}');
+      _startCountdown();
+    } else {
+      _timer?.cancel();
+      setState(() {
+        _resendSeconds = 0;
+        _codeSendFailed = true;
+      });
+      _showSnack(
+        result['message'] ?? 'Could not send the code. Try resending it.',
+      );
+    }
+
+    if (mounted) {
+      setState(() => _sendingCode = false);
     }
   }
 
@@ -213,147 +267,175 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     );
   }
 
+  void _handleBack() {
+    switch (widget.flow) {
+      case 'forgot':
+        context.go('/forgot-password');
+        break;
+      case 'twofactor':
+        context.go('/login');
+        break;
+      case 'register':
+      default:
+        context.go('/signup');
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBack();
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF111111)),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF111111)),
+            onPressed: _handleBack,
+          ),
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  const AppLogo(),
-                  const SizedBox(height: 28),
-                  const Text(
-                    'Enter Verification Code',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF111111),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "We've sent a 6-digit code to ${widget.email}",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF888888),
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // OTP Boxes
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(6, (index) {
-                      return Flexible(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          height: 56,
-                          constraints: const BoxConstraints(maxWidth: 48),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: _controllers[index].text.isNotEmpty
-                                  ? brandRed
-                                  : const Color(0xFFC61C36),
-                              width: 1.0,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            _controllers[index].text,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF111111),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Resend countdown / button
-                  GestureDetector(
-                    onTap: _resendSeconds == 0 ? _handleResend : null,
-                    child: Text(
-                      _resendSeconds > 0
-                          ? 'Resend code in ${_resendSeconds}s'
-                          : 'Resend code',
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    const AppLogo(),
+                    const SizedBox(height: 28),
+                    const Text(
+                      'Enter Verification Code',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: _resendSeconds > 0
-                            ? const Color(0xFF888888)
-                            : brandRed,
-                        fontWeight: _resendSeconds == 0
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111111),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _deliveryMessage,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF888888),
+                      ),
+                    ),
+                    const SizedBox(height: 48),
 
-                  const SizedBox(height: 40),
-
-                  _loading
-                      ? const SizedBox(
-                          height: 54,
-                          child: Center(
-                            child: CircularProgressIndicator(color: brandRed),
+                    // OTP Boxes
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(6, (index) {
+                        return Flexible(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            height: 56,
+                            constraints: const BoxConstraints(maxWidth: 48),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _controllers[index].text.isNotEmpty
+                                    ? brandRed
+                                    : const Color(0xFFC61C36),
+                                width: 1.0,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _controllers[index].text,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF111111),
+                              ),
+                            ),
                           ),
-                        )
-                      : AppPrimaryButton(label: 'Verify', onTap: _handleVerify),
+                        );
+                      }),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Resend countdown / button
+                    GestureDetector(
+                      onTap: _resendSeconds == 0 && !_sendingCode
+                          ? _handleResend
+                          : null,
+                      child: Text(
+                        _sendingCode
+                            ? 'Sending code...'
+                            : _resendSeconds > 0
+                            ? 'Resend code in ${_resendSeconds}s'
+                            : 'Resend code',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _resendSeconds > 0 || _sendingCode
+                              ? const Color(0xFF888888)
+                              : brandRed,
+                          fontWeight: _resendSeconds == 0 && !_sendingCode
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    _loading
+                        ? const SizedBox(
+                            height: 54,
+                            child: Center(
+                              child: CircularProgressIndicator(color: brandRed),
+                            ),
+                          )
+                        : AppPrimaryButton(
+                            label: 'Verify',
+                            onTap: _handleVerify,
+                          ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Custom Keypad
+            Container(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                24,
+                20,
+                MediaQuery.of(context).padding.bottom + 20,
+              ),
+              decoration: const BoxDecoration(
+                color: brandRed,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                children: [
+                  _buildKeyRow(['1', '2', '3']),
+                  const SizedBox(height: 12),
+                  _buildKeyRow(['4', '5', '6']),
+                  const SizedBox(height: 12),
+                  _buildKeyRow(['7', '8', '9']),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [_buildKey('0'), _buildBackspaceKey()],
+                  ),
                 ],
               ),
             ),
-          ),
-
-          // Custom Keypad
-          Container(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              24,
-              20,
-              MediaQuery.of(context).padding.bottom + 20,
-            ),
-            decoration: const BoxDecoration(
-              color: brandRed,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-              ),
-            ),
-            child: Column(
-              children: [
-                _buildKeyRow(['1', '2', '3']),
-                const SizedBox(height: 12),
-                _buildKeyRow(['4', '5', '6']),
-                const SizedBox(height: 12),
-                _buildKeyRow(['7', '8', '9']),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [_buildKey('0'), _buildBackspaceKey()],
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
