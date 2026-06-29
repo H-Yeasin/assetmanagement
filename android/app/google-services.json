@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "165022828842-l2lmrp8oejc8iu7b54uqnd0cononb96o.apps.googleusercontent.com",
+          "client_id": "165022828842-sp4vlidqlardjjthco4tq6igoak832pt.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.ffpvault.app",
-            "certificate_hash": "2cf1fae5576e1d76926479d4d80b6070ed6b0de0"
+            "certificate_hash": "9d68cf6fc4c4777d1ccc70ad2b5e5933d81a35e4"
           }
         },
         {
