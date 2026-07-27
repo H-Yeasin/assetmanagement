@@ -1,0 +1,19 @@
+{
+  "_comment": "────────── FFVault Environment Template ──────────",
+  "_usage":  "1. Copy this file to env/local.json",
+  "_usage2": "2. Fill in your real keys in local.json (never commit local.json)",
+  "_usage3": "3. Build: flutter run --dart-define-from-file=env/local.json",
+
+  "RC_API_KEY": "test_xxx_or_appl_xxx_or_goog_xxx",
+  "RC_VAULT_ENTITLEMENT_ID": "ffpvaultapp_pro",
+  "RC_ACTIVE_PAYWALL": "default",
+  "RC_OFFERING_ID": "",
+  "RC_PACKAGE_ID": "monthly",
+
+  "RC_APPLE_API_KEY": "",
+  "RC_GOOGLE_API_KEY": "",
+
+  "USE_REVENUECAT_PAYWALL": false,
+  "USE_CUSTOMER_CENTER": false,
+  "BYPASS_VAULT_SUBSCRIPTION": false
+}

@@ -51,5 +51,5 @@ temp_interactive_push.bat
 .gitignore
 
 # Environment / secrets
-env/
 *.env
+local.json
