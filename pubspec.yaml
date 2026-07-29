@@ -1,13 +1,12 @@
 name: ffp_vault
 description: "Financial Freedom Power."
 
-publish_to: 'none'
+publish_to: "none"
 
 version: 6.0.0+6
 
 environment:
   sdk: ^3.10.4
-
 
 dependencies:
   flutter:
@@ -50,7 +49,6 @@ dependencies:
   purchases_flutter: ^10.2.3
   purchases_ui_flutter: ^10.2.3
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -65,9 +63,13 @@ dependency_overrides:
   # the native splash screen.
   path_provider_android: 2.2.15
 
-
 flutter:
-
+  # This project pins FirebaseFirestore to invertase's precompiled frameworks in
+  # ios/Podfile (huge iOS build-time saver). Flutter's SPM integration also
+  # resolves FirebaseFirestore via cloud_firestore, producing duplicate symbols
+  # at link time, so SPM stays off here.
+  #  config:
+  #    enable-swift-package-manager: false
 
   uses-material-design: true
 
