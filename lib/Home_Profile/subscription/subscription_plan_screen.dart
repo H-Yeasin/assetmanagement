@@ -47,7 +47,8 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
     }
 
     final router = GoRouter.of(context);
-    final hasPreviousRoute = router.routerDelegate.currentConfiguration.matches.length > 1;
+    final hasPreviousRoute =
+        router.routerDelegate.currentConfiguration.matches.length > 1;
 
     if (hasPreviousRoute && router.canPop()) {
       router.pop();
@@ -147,8 +148,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
             extra: const PaymentStatusArgs(
               isSuccess: false,
               title: 'Something Went Wrong',
-              message:
-                  'We could not complete your purchase. Please try again.',
+              message: 'We could not complete your purchase. Please try again.',
             ),
           );
           break;
@@ -235,9 +235,9 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _formatPeriodEnd(DateTime? date) {
@@ -310,11 +310,12 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    subscription.status == 'trialing' && !isFreeTrialActive 
-                                        ? 'Your trial has\nexpired'
-                                        : 'Subscribe to\nthe Vault',
+                                    subscription.status == 'trialing' &&
+                                            !isFreeTrialActive
+                                        ? 'Start your 14 days\nfree trial'
+                                        : 'Subscribe to\nFFP Vault Pro',
                                     style: const TextStyle(
-                                      fontSize: 30,
+                                      fontSize: 25,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.black,
                                       height: 1.2,
@@ -326,9 +327,9 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                           const SizedBox(height: 20),
                           if (hasAccess)
                             Text(
-                              isSubscribed 
-                                ? 'Manage your\nmonthly plan'
-                                : '14 days free trial\nactive',
+                              isSubscribed
+                                  ? 'Manage your\nmonthly plan'
+                                  : '14 days free trial\nactive',
                               style: const TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w800,
@@ -341,8 +342,8 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                             isSubscribed
                                 ? 'Your subscription is active. You can keep it, or cancel anytime before your next billing date.'
                                 : isFreeTrialActive
-                                    ? 'You have full access to the Vault during your trial. Subscribe now to maintain access after it ends.'
-                                    : 'Organize your payments. Secure your documents.\nStay in control without the mental load.',
+                                ? 'You have full access to the Vault during your trial. Subscribe now to maintain access after it ends.'
+                                : 'Organize your payments. Secure your documents.\nStay in control without the mental load.',
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF888888),
@@ -369,7 +370,9 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                             ),
                             child: Column(
                               children: const [
-                                FeatureItem(text: 'Centralized Payment Tracking.'),
+                                FeatureItem(
+                                  text: 'Centralized Payment Tracking.',
+                                ),
                                 SizedBox(height: 16),
                                 FeatureItem(text: 'Smart Reminders'),
                                 SizedBox(height: 16),
@@ -406,7 +409,7 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            isSubscribed 
+                                            isSubscribed
                                                 ? 'Subscription'
                                                 : '14 days free trial',
                                             style: const TextStyle(
@@ -422,13 +425,16 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                                       ? 'Cancellation scheduled'
                                                       : 'Subscription active'
                                                 : isFreeTrialActive
-                                                    ? 'Currently active'
-                                                    : 'Trial expired',
+                                                ? 'Currently active'
+                                                : 'Trial expired',
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500,
                                               color:
-                                                  subscription.cancelAtPeriodEnd || (!isSubscribed && !isFreeTrialActive)
+                                                  subscription
+                                                          .cancelAtPeriodEnd ||
+                                                      (!isSubscribed &&
+                                                          !isFreeTrialActive)
                                                   ? const Color(0xFFFF9800)
                                                   : const Color(0xFFC61C36),
                                             ),
@@ -494,10 +500,15 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                           const SizedBox(height: 4),
                                           Text(
                                             isSubscribed
-                                                ? _formatPeriodEnd(subscription.currentPeriodEnd)
-                                                : isFreeTrialActive 
-                                                    ? _formatTrialEnd(subscription.trialEndDate)
-                                                    : 'Starts immediately',
+                                                ? _formatPeriodEnd(
+                                                    subscription
+                                                        .currentPeriodEnd,
+                                                  )
+                                                : isFreeTrialActive
+                                                ? _formatTrialEnd(
+                                                    subscription.trialEndDate,
+                                                  )
+                                                : 'Starts immediately',
                                             style: const TextStyle(
                                               fontSize: 13,
                                               color: Color(0xFF888888),
@@ -569,8 +580,8 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
                                       ? null
                                       : _cancelSubscription
                                 : _isPurchasing
-                                    ? null
-                                    : _handleSubscribe,
+                                ? null
+                                : _handleSubscribe,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFC61C36),
                               foregroundColor: Colors.white,
@@ -634,4 +645,3 @@ class _SubscriptionPlanScreenState extends State<SubscriptionPlanScreen> {
     );
   }
 }
-
