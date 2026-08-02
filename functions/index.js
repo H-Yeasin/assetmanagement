@@ -772,6 +772,15 @@ export const revenuecatWebhook = onRequest(
         event?.event?.entitlement_ids?.[0] || "ffpvaultapp_pro";
       const expirationMs = event?.event?.expiration_at_ms || 0;
 
+      // 'TRIAL' | 'INTRO' | 'NORMAL' | 'PREPAID' — tells us whether this event
+      // is inside the store's own free-trial/intro period or a normal paying
+      // period. Never hardcode trial length here: expirationMs already
+      // reflects whatever Play Console/App Store Connect has configured
+      // (including grace-period extensions on BILLING_ISSUE).
+      const periodTypeRaw = event?.event?.period_type;
+      const isTrialPeriod =
+        periodTypeRaw === "TRIAL" || periodTypeRaw === "INTRO";
+
       let subscriptionState;
 
       switch (eventType) {
@@ -780,17 +789,21 @@ export const revenuecatWebhook = onRequest(
         case "UNCANCELLATION":
         case "TRANSFER":
         case "PRODUCT_CHANGE":
+        case "SUBSCRIPTION_EXTENDED":
           subscriptionState = {
             planCode: productId,
             planName: "FFP Vault Pro",
             amount: 699,
             currency: "usd",
-            status: "active",
+            status: isTrialPeriod ? "trialing" : "active",
             provider: "revenuecat",
             rcCustomerId: appUserId,
             rcEntitlementId: entitlementId,
             cancelAtPeriodEnd: false,
             currentPeriodEnd: expirationMs ?
+              admin.firestore.Timestamp.fromMillis(expirationMs) :
+              null,
+            trialEndDate: isTrialPeriod && expirationMs ?
               admin.firestore.Timestamp.fromMillis(expirationMs) :
               null,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -803,11 +816,36 @@ export const revenuecatWebhook = onRequest(
             planName: "FFP Vault Pro",
             amount: 699,
             currency: "usd",
-            status: "active", // stays active until period end
+            status: isTrialPeriod ? "trialing" : "active", // stays active/trialing until period end
             provider: "revenuecat",
             rcCustomerId: appUserId,
             rcEntitlementId: entitlementId,
             cancelAtPeriodEnd: true,
+            currentPeriodEnd: expirationMs ?
+              admin.firestore.Timestamp.fromMillis(expirationMs) :
+              null,
+            trialEndDate: isTrialPeriod && expirationMs ?
+              admin.firestore.Timestamp.fromMillis(expirationMs) :
+              null,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          break;
+
+        case "BILLING_ISSUE":
+          // Play/App Store is in its grace-period retry window (7 days as
+          // configured in Play Console). Keep the subscriber's plan/entitlement
+          // intact — do NOT revoke access here. Only a later EXPIRATION event
+          // (grace period + account hold truly exhausted) should do that.
+          subscriptionState = {
+            planCode: productId,
+            planName: "FFP Vault Pro",
+            amount: 699,
+            currency: "usd",
+            status: "past_due",
+            provider: "revenuecat",
+            rcCustomerId: appUserId,
+            rcEntitlementId: entitlementId,
+            cancelAtPeriodEnd: false,
             currentPeriodEnd: expirationMs ?
               admin.firestore.Timestamp.fromMillis(expirationMs) :
               null,
@@ -817,8 +855,6 @@ export const revenuecatWebhook = onRequest(
 
         case "EXPIRATION":
         case "SUBSCRIPTION_PAUSED":
-        case "BILLING_ISSUE":
-        case "SUBSCRIPTION_EXTENDED":
           subscriptionState = {
             planCode: "",
             planName: "",
