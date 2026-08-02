@@ -378,12 +378,35 @@ class RevenueCatService {
 
     final isActive = vaultEntitlement?.isActive ?? false;
 
+    // Whether the active entitlement is currently inside the store's own
+    // free-trial/intro period, and whether a renewal charge has failed and
+    // the store is in its grace-period retry window. Mirrors the same
+    // period_type / BILLING_ISSUE logic the RevenueCat webhook applies, so
+    // this immediate post-purchase sync doesn't briefly show 'active' and
+    // then get corrected once the webhook lands.
+    final periodType = vaultEntitlement?.periodType;
+    final isTrialPeriod =
+        periodType == PeriodType.trial || periodType == PeriodType.intro;
+    final hasBillingIssue =
+        isActive && vaultEntitlement?.billingIssueDetectedAt != null;
+
+    final status = !isActive
+        ? 'inactive'
+        : hasBillingIssue
+        ? 'past_due'
+        : isTrialPeriod
+        ? 'trialing'
+        : 'active';
+
     // Regression guard: don't let a stale CustomerInfo (e.g. from login or
     // a transient listener event) overwrite an active, non-expired subscription.
     if (!isActive) {
       final existingDoc = await _db.collection('users').doc(uid).get();
       final existingSub = existingDoc.data()?['subscription'];
-      if (existingSub is Map && existingSub['status'] == 'active') {
+      if (existingSub is Map &&
+          const ['active', 'trialing', 'past_due'].contains(
+            existingSub['status'],
+          )) {
         final periodEnd = existingSub['currentPeriodEnd'];
         if (periodEnd is Timestamp &&
             periodEnd.toDate().isAfter(DateTime.now())) {
@@ -400,9 +423,10 @@ class RevenueCatService {
       'planName': AppConfig.planName,
       'amount': AppConfig.defaultPlanAmountCents,
       'currency': AppConfig.defaultPlanCurrency,
-      'status': isActive ? 'active' : 'inactive',
+      'status': status,
       'cancelAtPeriodEnd': vaultEntitlement?.willRenew == false,
       'currentPeriodEnd': periodEnd,
+      'trialEndDate': status == 'trialing' ? periodEnd : null,
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
