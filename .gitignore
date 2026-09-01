@@ -53,3 +53,5 @@ temp_interactive_push.bat
 # Environment / secrets
 *.env
 local.json
+config.bat
+node_modules
